@@ -372,8 +372,36 @@ def faculty_my_reports_view(request):
 def staff_dashboard_view(request):
 	"""Staff dashboard — shows overview cards and a student directory table."""
 	from .models import Student as StudentModel
+	from django.db.models import Count, Sum, Case, When, IntegerField
 	# Fetch students with related user for names; keep it simple (no pagination yet)
-	students = StudentModel.objects.select_related("user").order_by("user__first_name", "user__last_name", "student_id")
+	students = (
+		StudentModel.objects.select_related("user")
+		.annotate(
+			violations_count=Count("violations", distinct=True),
+			pending_count=Sum(
+				Case(
+					When(violations__status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW], then=1),
+					default=0,
+					output_field=IntegerField(),
+				)
+			),
+			resolved_count=Sum(
+				Case(
+					When(violations__status=Violation.Status.RESOLVED, then=1),
+					default=0,
+					output_field=IntegerField(),
+				)
+			),
+			ongoing_count=Sum(
+				Case(
+					When(violations__status=Violation.Status.UNDER_REVIEW, then=1),
+					default=0,
+					output_field=IntegerField(),
+				)
+			),
+		)
+		.order_by("user__first_name", "user__last_name", "student_id")
+	)
 	# Violation-based metrics
 	violation_qs = Violation.objects.all()
 	# Total students (separate card)

@@ -41,17 +41,17 @@
 
   <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
     <section class="dashboard-grid">
-      <div class="dash-card">
+      <div class="dash-card metric-filter" data-filter="all" role="button" tabindex="0">
         <div class="card-icon"><i class="fas fa-users"></i></div>
         <div class="card-title">Total Students</div>
         <div class="card-metric">{{ total_students|default:'0' }}</div>
       </div>
-      <div class="dash-card">
+      <div class="dash-card metric-filter" data-filter="has-violations" role="button" tabindex="0">
         <div class="card-icon"><i class="fas fa-user-graduate"></i></div>
         <div class="card-title">Students with Violations</div>
         <div class="card-metric">{{ students_with_violations|default:'0' }}</div>
       </div>
-      <div class="dash-card">
+      <div class="dash-card metric-filter" data-filter="pending" role="button" tabindex="0">
         <div class="card-icon"><i class="fas fa-triangle-exclamation"></i></div>
         <div class="card-title">Pending Violations</div>
         <div class="card-metric">{{ pending_violations|default:'0' }}</div>
@@ -60,11 +60,11 @@
         <div class="card-icon"><i class="fas fa-clipboard-check"></i></div>
         <div class="card-title">Resolved & Ongoing</div>
         <div style="display:flex; gap:20px; align-items:flex-end; flex-wrap:wrap;">
-          <div>
+          <div class="metric-chip" data-filter="resolved" role="button" tabindex="0">
             <div class="card-desc" style="margin-bottom:4px;">Resolved</div>
             <div class="card-metric">{{ resolved_violations|default:'0' }}</div>
           </div>
-          <div>
+          <div class="metric-chip" data-filter="ongoing" role="button" tabindex="0">
             <div class="card-desc" style="margin-bottom:4px;">Ongoing</div>
             <div class="card-metric">{{ ongoing_sanctions|default:'0' }}</div>
           </div>
@@ -100,7 +100,11 @@
           <tbody>
             {% if students and students|length %}
               {% for s in students %}
-              <tr>
+              <tr class="student-row"
+                  data-violations="{{ s.violations_count|default:'0' }}"
+                  data-pending="{{ s.pending_count|default:'0' }}"
+                  data-resolved="{{ s.resolved_count|default:'0' }}"
+                  data-ongoing="{{ s.ongoing_count|default:'0' }}">
                 <td>{{ s.student_id }}</td>
                 <td>
                   <a href="#" class="student-detail-link"
@@ -126,14 +130,14 @@
                 <td>{{ s.contact_number|default:'—' }}</td>
                 <td>
                   <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <a class="ghost-btn" style="padding:6px 10px;" href="{% url 'violations:staff_student_detail' s.student_id %}"><i class="fas fa-id-card"></i> View</a>
-                    <a class="ghost-btn" style="padding:6px 10px;" href="{% url 'violations:staff_student_detail' s.student_id %}#violations"><i class="fas fa-list"></i> Violations</a>
+                    <a class="action-btn gray" href="{% url 'violations:staff_student_detail' s.student_id %}"><i class="fas fa-id-card"></i> View</a>
+                    {# Removed Violations button per request #}
                     {% if s.user.email %}
-                      <a class="ghost-btn" style="padding:6px 10px;" href="mailto:{{ s.user.email }}"><i class="fas fa-envelope"></i> Contact</a>
+                      <a class="action-btn gray" href="mailto:{{ s.user.email }}"><i class="fas fa-envelope"></i> Contact</a>
                     {% elif s.contact_number %}
-                      <a class="ghost-btn" style="padding:6px 10px;" href="tel:{{ s.contact_number }}"><i class="fas fa-phone"></i> Contact</a>
+                      <a class="action-btn gray" href="tel:{{ s.contact_number }}"><i class="fas fa-phone"></i> Contact</a>
                     {% else %}
-                      <button class="ghost-btn" style="padding:6px 10px; opacity:.6; cursor:not-allowed;" disabled><i class="fas fa-ban"></i> Contact</button>
+                      <button class="action-btn gray" disabled><i class="fas fa-ban"></i> Contact</button>
                     {% endif %}
                   </div>
                 </td>
@@ -269,6 +273,38 @@
           openModal();
         });
       });
+    })();
+  </script>
+  <script>
+    // Metric-based filtering (cards/chips control the student directory rows)
+    (function(){
+      const applyFilter = (mode) => {
+        document.querySelectorAll('.student-row').forEach(row => {
+          const v = parseInt(row.dataset.violations || '0');
+          const p = parseInt(row.dataset.pending || '0');
+          const r = parseInt(row.dataset.resolved || '0');
+          const o = parseInt(row.dataset.ongoing || '0');
+          let show = true;
+          if (mode === 'has-violations') show = v > 0;
+          else if (mode === 'pending') show = p > 0;
+          else if (mode === 'resolved') show = r > 0;
+          else if (mode === 'ongoing') show = o > 0;
+          // 'all' shows everything
+          row.style.display = show ? '' : 'none';
+        });
+      };
+
+      const attach = (selector) => {
+        document.querySelectorAll(selector).forEach(el => {
+          el.addEventListener('click', () => applyFilter(el.dataset.filter || 'all'));
+          el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); applyFilter(el.dataset.filter || 'all'); }
+          });
+        });
+      };
+
+      attach('.metric-filter');
+      attach('.metric-chip');
     })();
   </script>
 </body>

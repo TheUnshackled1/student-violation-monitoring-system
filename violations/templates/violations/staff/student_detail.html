@@ -99,45 +99,6 @@
       </div>
     </section>
 
-    <section class="card" id="violations">
-      <h3 style="margin-bottom:12px;">Violations</h3>
-      <div class="searchbar" style="max-width:320px; width:100%; margin-bottom:10px;">
-        <i class="fas fa-search"></i>
-        <input type="text" placeholder="Filter by type, status, location…" oninput="filterViolations(this.value)" />
-      </div>
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Incident</th>
-              <th>Reported By</th>
-              <th>Reported</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% if violations and violations|length %}
-              {% for v in violations %}
-              <tr>
-                <td>#{{ v.id }}</td>
-                <td>{{ v.get_type_display }}</td>
-                <td>{{ v.get_status_display }}</td>
-                <td>{{ v.incident_at|date:"Y-m-d H:i" }}</td>
-                <td>{{ v.reported_by.get_full_name|default:v.reported_by.username }}</td>
-                <td>{{ v.created_at|date:"Y-m-d" }}</td>
-              </tr>
-              {% endfor %}
-            {% else %}
-              <tr>
-                <td colspan="6" style="text-align:center; color:#555;">No violations for this student.</td>
-              </tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
-    </section>
   </main>
 
   <aside class="notif-panel" id="notifPanel" aria-hidden="true">
@@ -151,15 +112,5 @@
   </aside>
 
   <script src="{% static 'violations/js/script.js' %}"></script>
-  <script>
-    // Filter violations table rows by text match
-    function filterViolations(query){
-      const q = (query||'').toLowerCase();
-      document.querySelectorAll('#violations table tbody tr').forEach(row => {
-        const text = row.innerText.toLowerCase();
-        row.style.display = text.includes(q) ? '' : 'none';
-      });
-    }
-  </script>
 </body>
 </html>

@@ -587,6 +587,24 @@ body.role-staff .background-image { background-image: url('../images/bg_staff.sv
     padding: 12px 18px;
 }
 
+/* Action buttons used on white cards/tables */
+.action-btn {
+    color: #475467;
+    border: 1px solid #d0d5dd;
+    background: #ffffff;
+    padding: 8px 12px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+}
+.action-btn:hover { background: #f2f4f7; }
+.action-btn.gray { background: #f9fafb; border-color: #d0d5dd; color: #475467; }
+.action-btn[disabled], .action-btn:disabled { opacity: .65; cursor: not-allowed; background: #f2f4f7; color: #98a2b3; border-color: #e4e7ec; }
+
 .auth-title {
     font-size: clamp(1.2rem, 2.2vw, 1.6rem);
     margin-bottom: 18px;
