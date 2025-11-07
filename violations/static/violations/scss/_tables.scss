@@ -1,0 +1,5 @@
+@use 'variables' as v;
+
+.table-responsive { overflow:auto; }
+.table { width:100%; border-collapse: collapse; }
+.table th, .table td { text-align:left; padding:10px 12px; border-bottom:1px solid #eee; }

@@ -1,0 +1,17 @@
+// Main SCSS entry point
+// Import order: variables/mixins first, then partials
+@use 'variables';
+@use 'mixins';
+@use 'login';
+@use 'dashboard';
+@use 'forms';
+@use 'overlays';
+@use 'components';
+@use 'layout';
+@use 'auth';
+@use 'tables';
+
+/* Additional future partials could include:
+	@use 'animations';
+	@use 'themes/dark';
+*/

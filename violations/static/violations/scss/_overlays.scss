@@ -1,0 +1,41 @@
+@use 'variables' as v;
+
+// Modals
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: v.$z-overlay;
+}
+.modal.show { display: flex; }
+.modal-card {
+  background: #fff;
+  border-radius: v.$radius-lg;
+  width: min(560px, 92vw);
+  box-shadow: v.$shadow-modal;
+}
+.modal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid #eee; }
+.modal-body { padding:14px; }
+.modal-actions { padding:12px 14px; border-top:1px solid #eee; display:flex; justify-content:flex-end; }
+
+// Notifications panel
+.notif-panel {
+  position: fixed;
+  right: 16px;
+  top: calc(v.$header-height + 12px);
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius: v.$radius-lg;
+  width: min(360px, 92vw);
+  box-shadow: v.$shadow-heavy;
+  display:none;
+  z-index: v.$z-notif;
+}
+.notif-panel.show { display:block; }
+.notif-header { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #eee; }
+.notif-list { list-style:none; padding:10px 12px; }
+.notif-list li { padding:8px 0; border-bottom:1px solid #f1f3f5; }

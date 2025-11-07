@@ -553,7 +553,16 @@ body.role-staff .background-image { background-image: url('../images/bg_staff.sv
     border-radius: 50%; /* make the logo image itself rounded */
     object-fit: cover;   /* ensure circular crop if source isn't square */
     display: block;
-    transition: opacity 0.2s ease; /* smooth fade for role-based swaps */
+        transition: opacity 0.28s ease, transform 0.28s ease; /* smoother fade & scale */
+}
+
+/* Role swap animations (scoped) */
+.auth-welcome, #welcomeText { transition: opacity 0.25s ease, transform 0.25s ease; }
+.swap-anim-out { opacity: 0 !important; transform: scale(.94) translateY(4px); }
+.swap-anim-in { animation: fadeInUp .32s ease both; }
+@keyframes fadeInUp {
+    from { opacity:0; transform: translateY(6px) scale(.96); }
+    to { opacity:1; transform: translateY(0) scale(1); }
 }
 
 .auth-welcome { font-weight: 600; letter-spacing: 0.2px; font-size: clamp(1.1rem, 1.8vw, 1.4rem); }
@@ -704,6 +713,39 @@ body.role-staff .background-image { background-image: url('../images/bg_staff.sv
     color: var(--chmsu-dark-green);
     border-color: #fff;
     box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* Role button pulse when activated */
+.role-btn.active.role-pulse {
+    animation: roleBtnPulse .38s ease;
+}
+@keyframes roleBtnPulse {
+  0% { transform: scale(1); box-shadow:0 2px 6px rgba(0,0,0,0.06); }
+  50% { transform: scale(1.06); box-shadow:0 4px 10px rgba(0,0,0,0.12); }
+  100% { transform: scale(1); box-shadow:0 2px 6px rgba(0,0,0,0.06); }
+}
+
+/* Animated appearance for role-bound form sections */
+.form-section[data-role] {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .28s ease, transform .28s ease;
+}
+.form-section[data-role].active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Optional subtle stagger for multiple groups inside a section */
+.form-section.active .form-group {
+    animation: groupFadeIn .32s ease both;
+}
+.form-section.active .form-group:nth-child(2) { animation-delay: .04s; }
+.form-section.active .form-group:nth-child(3) { animation-delay: .08s; }
+.form-section.active .form-group:nth-child(4) { animation-delay: .12s; }
+@keyframes groupFadeIn {
+  from { opacity:0; transform:translateY(4px); }
+  to { opacity:1; transform:translateY(0); }
 }
 
 /* Show/hide role-bound form groups without affecting other groups */

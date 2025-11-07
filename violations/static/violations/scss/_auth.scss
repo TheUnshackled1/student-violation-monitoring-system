@@ -1,0 +1,43 @@
+@use 'variables' as v;
+@use 'mixins' as *;
+
+.auth-wrapper { width:100%; padding: clamp(12px, 1.5rem, 24px); display:grid; place-items:center; }
+
+.auth-card {
+  display:grid; grid-template-columns: 1.1fr 1.6fr; gap:0; background:transparent;
+  border-radius: 20px; overflow:hidden; @include shadow-level(heavy);
+  max-width: 980px; position: relative; width: min(980px, 92vw); min-width: 720px;
+}
+
+.auth-left {
+  background: linear-gradient(180deg, v.$chmsu-green 0%, v.$chmsu-dark-green 100%);
+  color:#fff; padding: clamp(24px, 2.5rem, 40px);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap: clamp(12px, 1.25rem, 20px);
+  position: relative;
+}
+
+.brand-logo-circle { width: clamp(80px, 8.5rem, 110px); height: clamp(80px, 8.5rem, 110px); border-radius:50%; background:#fff; display:grid; place-items:center; @include shadow-level(soft); }
+.brand-logo-circle img { width:78%; aspect-ratio: 1 / 1; height:auto; border-radius:50%; object-fit:cover; display:block; transition: opacity .28s ease, transform .28s ease; }
+
+.auth-welcome { font-weight:600; letter-spacing:.2px; font-size: clamp(1.1rem, 1.8vw, 1.4rem); }
+.auth-subtext { opacity:.9; font-size:.95rem; }
+.ghost-btn { color:#fff; border:1px solid rgba(255,255,255,.65); padding:8px 14px; border-radius:v.$radius-pill; text-decoration:none; font-weight:500; transition: background-color .2s ease, border-color .2s ease; }
+.ghost-btn:hover { background: rgba(255,255,255,.1); }
+
+.auth-right { background:#fff; padding: clamp(22px, 4.5vw, 40px); }
+
+@media (max-width: 860px) { .auth-left::after { display:none; } }
+
+// Buttons
+.auth-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.login-button { @include button-base(v.$chmsu-green, v.$text-light); &:focus, &:focus-visible { @include focus-ring(v.$chmsu-green); } }
+
+// Inputs focus
+input:focus, select:focus, textarea:focus,
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { @include focus-ring(v.$chmsu-green); }
+
+// Role selector
+.role-btn { @include button-base(transparent, #333, $border-color: transparent, $radius: v.$radius-pill, $pad-y: 8px, $pad-x: 14px); font-weight:600; border:2px solid #e0e0e0; &:focus, &:focus-visible { @include focus-ring(v.$chmsu-green, 2px, .22); } &.active { background:#fff; color:v.$chmsu-dark-green; border-color:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.06); } }
+.role-selector--segmented { @include segmented-group(); }
+
+@media (max-width: 700px) { .auth-card { grid-template-columns: 1fr; max-width: 640px; min-width:0; width:min(640px, 95vw); } .auth-left { padding:24px 20px; } .auth-right { padding:20px; } }

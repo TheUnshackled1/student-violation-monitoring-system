@@ -1,0 +1,45 @@
+@use 'mixins' as *;
+
+// Primary login / signup CTA button
+.login-button {
+  @include button-base($chmsu-green, $text-light);
+  &:focus, &:focus-visible { @include focus-ring($chmsu-green); }
+}
+
+// Secondary action buttons (table cards etc.)
+.action-btn {
+  @include button-base(#ffffff, #475467, $border-color: $gray-border);
+  i { width:16px; text-align:center; }
+  &:focus, &:focus-visible { @include focus-ring($chmsu-green); }
+
+  &.gray { // semantic variant; same base currently
+    @include button-base(#f9fafb, #475467, $border-color: $gray-border);
+    &:focus, &:focus-visible { @include focus-ring($chmsu-green); }
+  }
+  &[disabled] { // reinforce disabled color
+    color:#98a2b3;
+  }
+}
+
+// Role selector buttons
+.role-btn {
+  @include button-base(transparent, #333, $border-color: transparent, $radius: $radius-pill, $pad-y: 8px, $pad-x: 14px);
+  font-weight:600;
+  border:2px solid #e0e0e0;
+  &:focus, &:focus-visible { @include focus-ring($chmsu-green, 2px, .22); }
+  &.active { background:$chmsu-green; color:#fff; border-color:$chmsu-green; }
+}
+
+.role-selector--segmented .role-btn { background:transparent; color:#333; }
+.role-selector--segmented .role-btn.active { background:#fff; color:$chmsu-dark-green; border-color:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.06); }
+
+// Inputs focus styling
+input:focus,
+select:focus,
+textarea:focus {
+  @include focus-ring($chmsu-green);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { @include focus-ring($chmsu-green); }

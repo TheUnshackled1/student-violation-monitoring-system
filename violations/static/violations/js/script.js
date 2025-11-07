@@ -26,12 +26,22 @@ function togglePasswordVisibility(fieldId) {
 }
 
 // Role selection shared logic for login and signup
+// Debounce rapid role switching and add a slight delayed responsive animation
+let roleSwitchLock = false;
 function selectRole(role) {
+    if (roleSwitchLock || !role) return; // prevent spam clicks
+    roleSwitchLock = true;
     window.currentRole = role;
 
-    // Toggle active class on role buttons
+    // Toggle active class on role buttons with a subtle pulse on the selected one
     document.querySelectorAll('.role-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.role === role);
+        const isActive = btn.dataset.role === role;
+        btn.classList.toggle('active', isActive);
+        if (isActive) {
+            btn.classList.remove('role-pulse');
+            void btn.offsetWidth; // restart animation
+            btn.classList.add('role-pulse');
+        }
     });
 
     // Show/hide form groups matching role
@@ -39,9 +49,14 @@ function selectRole(role) {
         group.classList.toggle('active', group.dataset.role === role);
     });
 
-    // Show/hide entire sections if they carry data-role as well
+    // Animate entire sections if they carry data-role as well
     document.querySelectorAll('.form-section[data-role]').forEach(section => {
-        section.classList.toggle('active', section.dataset.role === role);
+        const shouldShow = section.dataset.role === role;
+        if (shouldShow) {
+            section.classList.add('active');
+        } else {
+            section.classList.remove('active');
+        }
     });
 
     // Update required attributes for form controls inside role groups
@@ -67,6 +82,13 @@ function selectRole(role) {
     const termsCheckbox = document.getElementById('termsCheckbox');
     if (termsCheckbox) termsCheckbox.style.display = role ? 'block' : 'none';
 
+    // Accessibility: move focus to first enabled field in the now-active section
+    const activeSection = document.querySelector('.form-section[data-role].active');
+    if (activeSection) {
+        const firstInput = activeSection.querySelector('input, select, textarea, button');
+        if (firstInput) setTimeout(() => firstInput.focus(), 120);
+    }
+
     // Swap left brand image + welcome text (works for both pages)
     const container = document.querySelector('.auth-card');
     const imgStudent = container?.dataset?.roleImgStudent;
@@ -77,9 +99,9 @@ function selectRole(role) {
     const welcomeText = document.getElementById('welcomeText') || document.querySelector('.auth-welcome');
 
     if (brandImg && welcomeText) {
-        // ensure a smooth fade even if CSS didn't load yet
-        if (!brandImg.style.transition) brandImg.style.transition = 'opacity 0.2s ease';
-        brandImg.style.opacity = 0;
+        // Add CSS classes for animation if not present (scoped swap animations)
+        brandImg.classList.add('swap-anim-out');
+        welcomeText.classList.add('swap-anim-out');
         setTimeout(() => {
             if (role === 'student' && imgStudent) {
                 brandImg.src = imgStudent;
@@ -94,8 +116,22 @@ function selectRole(role) {
                 brandImg.alt = 'Faculty Icon';
                 welcomeText.textContent = 'Welcome Faculty!';
             }
-            brandImg.style.opacity = 1;
-        }, 200);
+            brandImg.classList.remove('swap-anim-out');
+            welcomeText.classList.remove('swap-anim-out');
+            brandImg.classList.add('swap-anim-in');
+            welcomeText.classList.add('swap-anim-in');
+            // cleanup after animation ends
+            const cleanup = (el) => {
+                const endHandler = () => { el.classList.remove('swap-anim-in'); el.removeEventListener('animationend', endHandler); };
+                el.addEventListener('animationend', endHandler);
+            };
+            cleanup(brandImg); cleanup(welcomeText);
+            // release lock slightly after animation starts
+            setTimeout(() => { roleSwitchLock = false; }, 250);
+        }, 140); // slight delay before swap for responsiveness feel
+    } else {
+        // fallback if elements missing
+        roleSwitchLock = false;
     }
 
     // Reflect role into hidden field for backend submissions
@@ -131,6 +167,10 @@ function selectRole(role) {
             if (credentialsAction) loginForm.setAttribute('action', credentialsAction);
             loginForm.dataset.mode = 'credentials-backend';
         }
+    }
+    if (!brandImg || !welcomeText) {
+        // If animation elements not found, release lock immediately
+        roleSwitchLock = false;
     }
 }
 

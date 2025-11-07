@@ -1,0 +1,21 @@
+@use 'variables' as v;
+@use 'mixins' as *;
+
+// Inputs, selects, textareas focus styling
+input:focus,
+select:focus,
+textarea:focus,
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  @include focus-ring(v.$chmsu-green, v.$focus-ring-size, v.$focus-ring-alpha);
+}
+
+// File inputs
+.file-input-row input[type="file"] {
+  width: 100%;
+  border: 1px solid #dfe3e8;
+  border-radius: v.$radius-sm;
+  padding: 10px;
+  background: #fff;
+}

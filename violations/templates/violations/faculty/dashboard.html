@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Faculty Dashboard - CHMSU Student Violation Tracker</title>
     <link rel="stylesheet" href="{% static 'violations/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'violations/css/main.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -52,57 +53,35 @@
             </div>
         </section>
 
-                <!-- Quick Stats (mirroring staff dashboard structure) -->
-                <section class="dashboard-grid">
-                        <!-- Primary action shortcut -->
-                        <a href="{% url 'violations:faculty_report' %}" class="dash-card" style="display:flex; flex-direction:column; justify-content:space-between;">
-                                <div>
-                                    <div class="card-icon"><i class="fas fa-pen-to-square"></i></div>
-                                    <div class="card-title">Report New Violation</div>
-                                    <div class="card-desc">Shortcut to the violation form</div>
-                                </div>
-                                <div style="margin-top:8px;">
-                                    <span style="font-size:.75rem; color:#667085;">Click to start</span>
-                                </div>
-                        </a>
-                        <!-- Total reports filed by faculty user -->
-                        <div class="dash-card">
-                                <div class="card-icon"><i class="fas fa-list-check"></i></div>
-                                <div class="card-title">My Reported Violations</div>
-                                <div class="card-metric">{{ stats.total|default:'0' }}</div>
-                        </div>
-                        <!-- Pending reports awaiting review -->
-                        <div class="dash-card">
-                                <div class="card-icon"><i class="fas fa-bell"></i></div>
-                                <div class="card-title">Pending Review</div>
-                                <div class="card-metric">{{ stats.pending|default:'0' }}</div>
-                        </div>
-                        <!-- Resolved reports -->
-                        <div class="dash-card">
-                                <div class="card-icon"><i class="fas fa-check-circle"></i></div>
-                                <div class="card-title">Resolved</div>
-                                <div class="card-metric">{{ stats.resolved|default:'0' }}</div>
-                        </div>
-                        <!-- Composite card similar to staff "Resolved & Ongoing" pattern -->
-                        <div class="dash-card">
-                                <div class="card-icon"><i class="fas fa-clock-rotate-left"></i></div>
-                                <div class="card-title">Latest & Status</div>
-                                <div style="display:flex; gap:20px; align-items:flex-end; flex-wrap:wrap; margin-top:4px;">
-                                    <div class="metric-chip" style="display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:110px;">
-                                        <div class="card-desc" style="margin-bottom:0;">Latest</div>
-                                        <div class="card-desc" style="font-weight:500;">{% if stats.latest_created_at %}{{ stats.latest_created_at|date:"M d, Y H:i" }}{% else %}—{% endif %}</div>
-                                    </div>
-                                    <div class="metric-chip" style="display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:110px;">
-                                        <div class="card-desc" style="margin-bottom:0;">Pending</div>
-                                        <div class="card-metric" style="font-size:1.1rem;">{{ stats.pending|default:'0' }}</div>
-                                    </div>
-                                    <div class="metric-chip" style="display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:110px;">
-                                        <div class="card-desc" style="margin-bottom:0;">Resolved</div>
-                                        <div class="card-metric" style="font-size:1.1rem;">{{ stats.resolved|default:'0' }}</div>
-                                    </div>
-                                </div>
-                        </div>
-                </section>
+        <!-- Quick Stats -->
+        <section class="dashboard-grid">
+            <a href="{% url 'violations:faculty_report' %}" class="dash-card">
+                <div class="card-icon"><i class="fas fa-pen-to-square"></i></div>
+                <div class="card-title">Report New Violation</div>
+                <div class="card-desc">Shortcut to the violation form</div>
+            </a>
+            <a href="{% url 'violations:faculty_my_reports' %}" class="dash-card">
+                <div class="card-icon"><i class="fas fa-list-check"></i></div>
+                <div class="card-title">My Reported Violations</div>
+                <div class="card-metric">{{ stats.total|default:'0' }}</div>
+            </a>
+            <a href="{% url 'violations:faculty_my_reports' %}#pending" class="dash-card">
+                <div class="card-icon"><i class="fas fa-bell"></i></div>
+                <div class="card-title">Pending Review</div>
+                <div class="card-metric">{{ stats.pending|default:'0' }}</div>
+            </a>
+            <a href="{% url 'violations:faculty_my_reports' %}#resolved" class="dash-card">
+                <div class="card-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="card-title">Resolved</div>
+                <div class="card-metric">{{ stats.resolved|default:'0' }}</div>
+            </a>
+            <div class="dash-card">
+                <div class="card-icon"><i class="fas fa-clock-rotate-left"></i></div>
+                <div class="card-title">Latest Report</div>
+                <div class="card-desc">{% if stats.latest_created_at %}{{ stats.latest_created_at|date:"M d, Y H:i" }}{% else %}—{% endif %}</div>
+            </div>
+            
+        </section>
     </main>
 
     <!-- Login History Modal -->

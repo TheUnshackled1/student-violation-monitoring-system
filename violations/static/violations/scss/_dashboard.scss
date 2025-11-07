@@ -1,0 +1,53 @@
+@use 'variables' as v;
+@use 'mixins' as *;
+
+// Dashboard grid & cards
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.dash-card {
+  background: #fff;
+  border: 1px solid v.$gray-200;
+  border-radius: v.$radius-lg;
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: v.$shadow-soft;
+  transition: transform v.$dur-fast v.$ease-default, box-shadow v.$dur-fast v.$ease-default;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-card:hover {
+  transform: translateY(-2px);
+  box-shadow: v.$shadow-hover;
+}
+
+.dash-card .card-icon { font-size: 24px; color: v.$chmsu-green; margin-bottom: 6px; }
+.dash-card .card-title { font-weight: 600; margin-bottom: 4px; }
+.dash-card .card-desc { color: v.$gray-500; font-size: .9rem; }
+.dash-card .card-metric { font-size: 1.4rem; font-weight: 700; color: v.$chmsu-dark-green; }
+
+// Equal-height alignment by role (extends existing behavior)
+body.role-faculty .dashboard-grid .dash-card,
+body.role-staff .dashboard-grid .dash-card {
+  min-height: 160px;
+  justify-content: space-between;
+}
+
+.metric-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: v.$radius-sm;
+  background: v.$gray-50;
+  border: 1px solid v.$gray-200;
+  transition: background-color v.$dur-fast ease, border-color v.$dur-fast ease;
+
+  &:hover { background: v.$gray-100; }
+}

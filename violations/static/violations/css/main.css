@@ -1,0 +1,46 @@
+/* Compiled UI enhancements from SCSS (subset) */
+/* Buttons */
+.login-button,
+.action-btn,
+.role-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .15s ease;
+}
+
+.login-button {
+  background-color: #2e7d32;
+  color: #ffffff;
+  padding: clamp(10px, 2.6vw, 14px) clamp(14px, 3.4vw, 18px);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+.login-button:hover { background-color: color-mix(in srgb, #2e7d32 90%, black 10%); transform: translateY(-1px); }
+.login-button:active { transform: translateY(0); background-color: color-mix(in srgb, #2e7d32 85%, black 15%); }
+.login-button:focus, .login-button:focus-visible { outline: none; border-color: #2e7d32; box-shadow: 0 0 0 3px rgba(46, 125, 50, .25); }
+
+.action-btn { background: #ffffff; color: #475467; padding: clamp(10px, 2.6vw, 14px) clamp(14px, 3.4vw, 18px); border: 1px solid #d0d5dd; border-radius: 999px; }
+.action-btn:hover { background: #f2f4f7; border-color: color-mix(in srgb, #d0d5dd 90%, black 10%); transform: translateY(-1px); }
+.action-btn:active { background: #eaeef3; transform: translateY(0); }
+.action-btn:focus, .action-btn:focus-visible { outline: none; border-color: #2e7d32; box-shadow: 0 0 0 3px rgba(46, 125, 50, .25); }
+.action-btn.gray { background:#f9fafb; }
+.action-btn[disabled], .action-btn:disabled { opacity:.65; cursor:not-allowed; color:#98a2b3; border-color:#e4e7ec; }
+
+.role-btn { background: transparent; color: #333; padding: 8px 14px; border: 2px solid #e0e0e0; border-radius: 999px; }
+.role-btn.active { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+.role-btn:focus, .role-btn:focus-visible { outline: none; border-color: #2e7d32; box-shadow: 0 0 0 2px rgba(46, 125, 50, .22); }
+
+/* Inputs focus */
+input:focus, select:focus, textarea:focus,
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none; border-color: #2e7d32; box-shadow: 0 0 0 3px rgba(46, 125, 50, .25);
+}
+
+/* Dashboard chips */
+.metric-chip { display:inline-flex; flex-direction:column; gap:2px; cursor:pointer; padding:4px 8px; border-radius:6px; background:#f9fafb; border:1px solid #e5e7eb; transition: background-color .15s ease, border-color .15s ease; }
+.metric-chip:hover { background:#f2f4f7; }

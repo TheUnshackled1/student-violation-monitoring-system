@@ -1,0 +1,121 @@
+// Shared design tokens (mirrors existing CSS variables)
+$chmsu-green: #2e7d32;
+$chmsu-dark-green: #1b5e20;
+$text-dark: #333333;
+$text-light: #ffffff;
+$gray-border: #d0d5dd;
+$gray-hover-bg: #f2f4f7;
+$gray-disabled-border: #e4e7ec;
+
+$radius-pill: 999px;
+$radius-regular: 6px;
+
+// Mixin: Base button styles
+@mixin button-base(
+  $bg,
+  $text,
+  $border-color: null,
+  $radius: $radius-pill,
+  $pad-y: clamp(10px, 2.6vw, 14px),
+  $pad-x: clamp(14px, 3.4vw, 18px)
+) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background-color: $bg;
+  color: $text;
+  padding: $pad-y $pad-x;
+  border: if($border-color != null, 1px solid $border-color, 1px solid transparent);
+  border-radius: $radius;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color .2s ease,
+    color .2s ease,
+    border-color .2s ease,
+    box-shadow .2s ease,
+    transform .15s ease;
+
+  &:hover {
+    @if $bg != transparent {
+      background-color: color-mix(in srgb, $bg 90%, black 10%);
+    } @else {
+      background-color: $gray-hover-bg;
+      border-color: if($border-color != null, color-mix(in srgb, $border-color 90%, black 10%), $gray-border);
+    }
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    @if $bg != transparent {
+      background-color: color-mix(in srgb, $bg 85%, black 15%);
+    } @else {
+      background-color: darken($gray-hover-bg, 4%);
+    }
+  }
+
+  &:disabled,
+  &[disabled] {
+    opacity: .65;
+    cursor: not-allowed;
+    background-color: if($bg != transparent, color-mix(in srgb, $bg 92%, white 8%), $gray-hover-bg);
+    color: #98a2b3;
+    border-color: if($border-color != null, $gray-disabled-border, currentColor);
+    transform: none;
+  }
+}
+
+// Mixin: Accessible focus ring
+@mixin focus-ring($color, $ring-size: 3px, $ring-alpha: .25) {
+  outline: none;
+  border-color: $color;
+  box-shadow: 0 0 0 $ring-size rgba($color, $ring-alpha);
+}
+
+// Utility: responsive padding helper
+@mixin responsive-padding($y-min, $y-max, $x-min, $x-max) {
+  padding: clamp($y-min, 2.6vw, $y-max) clamp($x-min, 3.4vw, $x-max);
+}
+
+// Utility: shadow level
+@mixin shadow-level($level: soft) {
+  @if $level == soft { box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+  @else if $level == hover { box-shadow: 0 10px 24px rgba(0,0,0,0.12); }
+  @else if $level == modal { box-shadow: 0 16px 36px rgba(0,0,0,0.20); }
+  @else if $level == heavy { box-shadow: 0 12px 30px rgba(0,0,0,0.15); }
+}
+
+// Utility: chip base (for small metric/badge chips)
+@mixin chip-base($bg, $border, $radius: $radius-regular, $pad-y: 4px, $pad-x: 8px) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: $bg;
+  border: 1px solid $border;
+  border-radius: $radius;
+  padding: $pad-y $pad-x;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+// Utility: badge base (rounded label)
+@mixin badge-base($bg, $text, $pad-y: 4px, $pad-x: 8px) {
+  display: inline-block;
+  background: $bg;
+  color: $text;
+  padding: $pad-y $pad-x;
+  border-radius: $radius-pill;
+  font-size: .8rem;
+}
+
+// Utility: segmented control group (for role selector)
+@mixin segmented-group() {
+  background: #f4f6f8;
+  border: 1px solid #e5e7eb;
+  padding: 6px;
+  border-radius: $radius-pill;
+  display: inline-flex;
+  gap: 6px;
+}

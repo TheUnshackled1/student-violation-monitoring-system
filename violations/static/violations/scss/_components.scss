@@ -1,0 +1,28 @@
+@use 'variables' as v;
+@use 'mixins' as *;
+
+// Chips
+.metric-chip {
+  @include chip-base(v.$gray-50, v.$gray-200, v.$radius-sm, 4px, 8px);
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  &:hover { background: v.$gray-100; }
+}
+
+// Badges
+.badge { @include badge-base(#fff3cd, #856404); }
+.badge-warning { @include badge-base(#fff3cd, #856404); }
+.badge-success { @include badge-base(#d4edda, #155724); }
+
+// Actions group in tables
+.actions-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  .action-btn { flex: 1 1 0; justify-content: center; min-width: 110px; }
+  .action-btn i { width:16px; text-align:center; }
+}
+
+// Segmented role selector
+.role-selector--segmented { @include segmented-group(); }
