@@ -70,8 +70,41 @@
       </div>
     </section>
 
+    <!-- Violation Summary Stats -->
+    <section class="dashboard-grid" style="margin-bottom: 16px;">
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-list-check"></i></div>
+        <div class="card-title">Total Violations</div>
+        <div class="card-metric">{{ vstats.total|default:'0' }}</div>
+      </div>
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-bell"></i></div>
+        <div class="card-title">Pending</div>
+        <div class="card-metric">{{ vstats.pending|default:'0' }}</div>
+      </div>
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="card-title">Resolved</div>
+        <div class="card-metric">{{ vstats.resolved|default:'0' }}</div>
+      </div>
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-circle-xmark"></i></div>
+        <div class="card-title">Dismissed</div>
+        <div class="card-metric">{{ vstats.dismissed|default:'0' }}</div>
+      </div>
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-clock-rotate-left"></i></div>
+        <div class="card-title">Latest Incident</div>
+        <div class="card-desc">{% if vstats.latest_incident %}{{ vstats.latest_incident|date:"M d, Y H:i" }}{% else %}—{% endif %}</div>
+      </div>
+    </section>
+
     <section class="card" id="violations">
       <h3 style="margin-bottom:12px;">Violations</h3>
+      <div class="searchbar" style="max-width:320px; width:100%; margin-bottom:10px;">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Filter by type, status, location…" oninput="filterViolations(this.value)" />
+      </div>
       <div class="table-responsive">
         <table class="table">
           <thead>
@@ -118,5 +151,15 @@
   </aside>
 
   <script src="{% static 'violations/js/script.js' %}"></script>
+  <script>
+    // Filter violations table rows by text match
+    function filterViolations(query){
+      const q = (query||'').toLowerCase();
+      document.querySelectorAll('#violations table tbody tr').forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+      });
+    }
+  </script>
 </body>
 </html>

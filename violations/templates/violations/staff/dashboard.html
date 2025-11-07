@@ -41,26 +41,35 @@
 
   <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
     <section class="dashboard-grid">
-      <a href="#" class="dash-card">
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-users"></i></div>
+        <div class="card-title">Total Students</div>
+        <div class="card-metric">{{ total_students|default:'0' }}</div>
+      </div>
+      <div class="dash-card">
         <div class="card-icon"><i class="fas fa-user-graduate"></i></div>
-        <div class="card-title">Total Students with Violations</div>
-        <div class="card-metric">245</div>
-      </a>
-      <a href="#" class="dash-card">
+        <div class="card-title">Students with Violations</div>
+        <div class="card-metric">{{ students_with_violations|default:'0' }}</div>
+      </div>
+      <div class="dash-card">
         <div class="card-icon"><i class="fas fa-triangle-exclamation"></i></div>
         <div class="card-title">Pending Violations</div>
-        <div class="card-metric">18</div>
-      </a>
-      <a href="#" class="dash-card">
-        <div class="card-icon"><i class="fas fa-check"></i></div>
-        <div class="card-title">Resolved Violations</div>
-        <div class="card-metric">512</div>
-      </a>
-      <a href="#" class="dash-card">
-        <div class="card-icon"><i class="fas fa-hourglass-half"></i></div>
-        <div class="card-title">Ongoing Sanctions</div>
-        <div class="card-metric">37</div>
-      </a>
+        <div class="card-metric">{{ pending_violations|default:'0' }}</div>
+      </div>
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-clipboard-check"></i></div>
+        <div class="card-title">Resolved & Ongoing</div>
+        <div style="display:flex; gap:20px; align-items:flex-end; flex-wrap:wrap;">
+          <div>
+            <div class="card-desc" style="margin-bottom:4px;">Resolved</div>
+            <div class="card-metric">{{ resolved_violations|default:'0' }}</div>
+          </div>
+          <div>
+            <div class="card-desc" style="margin-bottom:4px;">Ongoing</div>
+            <div class="card-metric">{{ ongoing_sanctions|default:'0' }}</div>
+          </div>
+        </div>
+      </div>
     </section>
 
     

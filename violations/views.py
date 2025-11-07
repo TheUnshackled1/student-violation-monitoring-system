@@ -374,8 +374,25 @@ def staff_dashboard_view(request):
 	from .models import Student as StudentModel
 	# Fetch students with related user for names; keep it simple (no pagination yet)
 	students = StudentModel.objects.select_related("user").order_by("user__first_name", "user__last_name", "student_id")
+	# Violation-based metrics
+	violation_qs = Violation.objects.all()
+	# Total students (separate card)
+	total_students = StudentModel.objects.count()
+	# Distinct students that have at least one violation
+	students_with_violations = StudentModel.objects.filter(violations__isnull=False).distinct().count()
+	# Pending = newly reported + under review
+	pending_violations = violation_qs.filter(status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW]).count()
+	# Resolved
+	resolved_violations = violation_qs.filter(status=Violation.Status.RESOLVED).count()
+	# Ongoing sanctions (approximation: under_review status)
+	ongoing_sanctions = violation_qs.filter(status=Violation.Status.UNDER_REVIEW).count()
 	ctx = {
 		"students": students,
+		"total_students": total_students,
+		"students_with_violations": students_with_violations,
+		"pending_violations": pending_violations,
+		"resolved_violations": resolved_violations,
+		"ongoing_sanctions": ongoing_sanctions,
 	}
 	return render(request, "violations/staff/dashboard.html", ctx)
 
@@ -391,9 +408,21 @@ def staff_student_detail_view(request, student_id: str):
 
 	# Fetch violations for this student
 	vqs = Violation.objects.select_related("reported_by").filter(student=student).order_by("-created_at")
+	total_v = vqs.count()
+	pending_v = vqs.filter(status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW]).count()
+	resolved_v = vqs.filter(status=Violation.Status.RESOLVED).count()
+	dismissed_v = vqs.filter(status=Violation.Status.DISMISSED).count()
+	latest_incident = vqs.first().incident_at if total_v else None
 	ctx = {
 		"student": student,
 		"violations": vqs,
+		"vstats": {
+			"total": total_v,
+			"pending": pending_v,
+			"resolved": resolved_v,
+			"dismissed": dismissed_v,
+			"latest_incident": latest_incident,
+		}
 	}
 	return render(request, "violations/staff/student_detail.html", ctx)
 
