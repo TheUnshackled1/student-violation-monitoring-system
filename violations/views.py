@@ -10,7 +10,7 @@ from .models import Student as StudentModel
 from .models import TemporaryAccessRequest
 from django.utils import timezone
 from django.db import models
-from .models import Violation
+from .models import Violation, LoginActivity
 
 
 ############################################
@@ -259,9 +259,12 @@ def student_dashboard_view(request):
 	student = getattr(request.user, "student_profile", None)
 	# Fetch real violations for this student
 	violations = Violation.objects.select_related("reported_by", "student").filter(student=student).order_by("-created_at") if student else []
+	# Login history for current user
+	login_history = LoginActivity.objects.filter(user=request.user).order_by("-timestamp")[:20]
 	ctx = {
 		"student": student,
 		"violations": violations,
+		"login_history": login_history,
 	}
 	return render(request, "violations/student/dashboard.html", ctx)
 
@@ -282,6 +285,8 @@ def faculty_dashboard_view(request):
 	pending_count = reported_count + under_review_count
 	latest = my_reports_qs.order_by("-created_at").first()
 
+	# include login history for modal
+	login_history = LoginActivity.objects.filter(user=request.user).order_by("-timestamp")[:20]
 	ctx = {
 		"stats": {
 			"total": total_reports,
@@ -290,7 +295,8 @@ def faculty_dashboard_view(request):
 			"under_review": under_review_count,
 			"resolved": resolved_count,
 			"latest_created_at": latest.created_at if latest else None,
-		}
+		},
+		"login_history": login_history,
 	}
 	return render(request, "violations/faculty/dashboard.html", ctx)
 
@@ -414,6 +420,8 @@ def staff_dashboard_view(request):
 	resolved_violations = violation_qs.filter(status=Violation.Status.RESOLVED).count()
 	# Ongoing sanctions (approximation: under_review status)
 	ongoing_sanctions = violation_qs.filter(status=Violation.Status.UNDER_REVIEW).count()
+	# include login history for modal
+	login_history = LoginActivity.objects.filter(user=request.user).order_by("-timestamp")[:20]
 	ctx = {
 		"students": students,
 		"total_students": total_students,
@@ -421,6 +429,7 @@ def staff_dashboard_view(request):
 		"pending_violations": pending_violations,
 		"resolved_violations": resolved_violations,
 		"ongoing_sanctions": ongoing_sanctions,
+		"login_history": login_history,
 	}
 	return render(request, "violations/staff/dashboard.html", ctx)
 

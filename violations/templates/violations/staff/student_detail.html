@@ -41,7 +41,11 @@
     <section class="card" style="margin-bottom: 16px;">
       <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
         <div class="brand-logo-circle" style="width:64px; height:64px; flex:0 0 auto;">
-          <img src="{% static 'violations/images/user_avatar.png' %}" alt="User" />
+          {% if student.profile_image %}
+            <img src="{{ student.profile_image.url }}" alt="{{ student.user.get_full_name|default:student.user.username }}" />
+          {% else %}
+            <img src="{% static 'violations/images/user_avatar.png' %}" alt="{{ student.user.get_full_name|default:student.user.username }}" />
+          {% endif %}
         </div>
         <div style="flex:1 1 auto; min-width:240px;">
           <h2 style="margin:0 0 6px;">{{ student.user.get_full_name|default:student.user.username }}</h2>

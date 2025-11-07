@@ -180,7 +180,35 @@
             <div class="modal-body">
                 <p><strong>Last login:</strong> {% if request.user.last_login %}{{ request.user.last_login|date:"M d, Y H:i" }}{% else %}—{% endif %}</p>
                 <p><strong>Account created:</strong> {{ request.user.date_joined|date:"M d, Y H:i" }}</p>
-                <p style="color:#667085; margin-top:8px;">Full login history can be enabled in a future update.</p>
+                <div style="margin-top:10px;">
+                    <h4 style="margin:6px 0 8px;">Your Login History</h4>
+                    {% if login_history %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width:140px;">Time</th>
+                                        <th>Event</th>
+                                        <th>IP</th>
+                                        <th>User Agent</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in login_history %}
+                                    <tr>
+                                        <td>{{ entry.timestamp|date:"M d, Y H:i" }}</td>
+                                        <td>{{ entry.get_event_type_display }}</td>
+                                        <td>{{ entry.ip_address|default:'—' }}</td>
+                                        <td style="max-width:360px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ entry.user_agent|default:'—' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p style="color:#667085;">No login events recorded yet.</p>
+                    {% endif %}
+                </div>
             </div>
             <div class="modal-actions">
                 <button class="login-button" id="loginHistCloseBtn">Close</button>
@@ -188,6 +216,24 @@
         </div>
     </div>
 
-    <script src="{% static 'violations/js/script.js' %}"></script>
+        <script src="{% static 'violations/js/script.js' %}"></script>
+        <script>
+            (function(){
+                const card = document.getElementById('loginHistoryCard');
+                const modal = document.getElementById('loginHistoryModal');
+                const btnClose = document.getElementById('loginHistClose');
+                const btnClose2 = document.getElementById('loginHistCloseBtn');
+                function open(){ if(modal) modal.classList.add('show'); }
+                function close(){ if(modal) modal.classList.remove('show'); }
+                if(card){
+                    card.addEventListener('click', open);
+                    card.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); open(); } });
+                }
+                if(btnClose) btnClose.addEventListener('click', close);
+                if(btnClose2) btnClose2.addEventListener('click', close);
+                if(modal) modal.addEventListener('click', (e)=>{ if(e.target===modal) close(); });
+                document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+            })();
+        </script>
 </body>
 </html>

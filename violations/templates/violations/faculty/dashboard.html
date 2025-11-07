@@ -78,8 +78,57 @@
                 <div class="card-title">Latest Report</div>
                 <div class="card-desc">{% if stats.latest_created_at %}{{ stats.latest_created_at|date:"M d, Y H:i" }}{% else %}—{% endif %}</div>
             </div>
+            <div class="dash-card clickable" id="loginHistoryCard" role="button" tabindex="0" title="View login history">
+                <div class="card-icon"><i class="fas fa-right-to-bracket"></i></div>
+                <div class="card-title">My Login History</div>
+                <div class="card-desc">Last login: {% if request.user.last_login %}{{ request.user.last_login|date:"M d, Y H:i" }}{% else %}—{% endif %}</div>
+            </div>
         </section>
     </main>
+
+    <!-- Login History Modal -->
+    <div class="modal" id="loginHistoryModal" aria-hidden="true">
+        <div class="modal-card" style="max-width:800px;">
+            <div class="modal-header">
+                <h3>My Login History</h3>
+                <button class="icon-btn" id="loginHistClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Account created:</strong> {{ request.user.date_joined|date:"M d, Y H:i" }}</p>
+                <div style="margin-top:10px;">
+                    {% if login_history %}
+                    <div class="table-responsive" style="max-height:360px; overflow:auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="min-width:140px;">Time</th>
+                                    <th>Event</th>
+                                    <th>IP</th>
+                                    <th>User Agent</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in login_history %}
+                                <tr>
+                                    <td>{{ entry.timestamp|date:"M d, Y H:i" }}</td>
+                                    <td>{{ entry.get_event_type_display }}</td>
+                                    <td>{{ entry.ip_address|default:'—' }}</td>
+                                    <td style="max-width:360px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ entry.user_agent|default:'—' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                        <p style="color:#667085;">No login events recorded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="login-button" id="loginHistCloseBtn">Close</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Notifications Panel (placeholder) -->
     <aside class="notif-panel" id="notifPanel" aria-hidden="true">
@@ -93,6 +142,24 @@
         </ul>
     </aside>
 
-    <script src="{% static 'violations/js/script.js' %}"></script>
+        <script src="{% static 'violations/js/script.js' %}"></script>
+        <script>
+            (function(){
+                const card = document.getElementById('loginHistoryCard');
+                const modal = document.getElementById('loginHistoryModal');
+                const btnClose = document.getElementById('loginHistClose');
+                const btnClose2 = document.getElementById('loginHistCloseBtn');
+                function open(){ if(modal) modal.classList.add('show'); }
+                function close(){ if(modal) modal.classList.remove('show'); }
+                if(card){
+                    card.addEventListener('click', open);
+                    card.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); open(); } });
+                }
+                if(btnClose) btnClose.addEventListener('click', close);
+                if(btnClose2) btnClose2.addEventListener('click', close);
+                if(modal) modal.addEventListener('click', (e)=>{ if(e.target===modal) close(); });
+                document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+            })();
+        </script>
 </body>
 </html>

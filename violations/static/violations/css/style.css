@@ -592,7 +592,7 @@ body.role-staff .background-image { background-image: url('../images/bg_staff.sv
     color: #475467;
     border: 1px solid #d0d5dd;
     background: #ffffff;
-    padding: 8px 12px;
+    padding: 8px 14px;
     border-radius: 999px;
     text-decoration: none;
     font-weight: 500;
@@ -604,6 +604,19 @@ body.role-staff .background-image { background-image: url('../images/bg_staff.sv
 .action-btn:hover { background: #f2f4f7; }
 .action-btn.gray { background: #f9fafb; border-color: #d0d5dd; color: #475467; }
 .action-btn[disabled], .action-btn:disabled { opacity: .65; cursor: not-allowed; background: #f2f4f7; color: #98a2b3; border-color: #e4e7ec; }
+
+/* Equal width alignment for action button group inside tables */
+.actions-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+.actions-group .action-btn {
+    flex: 1 1 0;
+    justify-content: center;
+    min-width: 110px; /* ensures consistent baseline size */
+}
+.actions-group .action-btn i { width: 16px; text-align: center; }
 
 .auth-title {
     font-size: clamp(1.2rem, 2.2vw, 1.6rem);

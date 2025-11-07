@@ -30,6 +30,7 @@
         <div class="dropdown" id="profileDropdown">
           <a href="#">View Profile</a>
           <a href="#">Request Temporary Access</a>
+          <a href="#" id="headerLoginHistoryLink">Login History</a>
           <a href="{% url 'violations:auth_logout' %}">Logout</a>
         </div>
       </div>
@@ -71,6 +72,8 @@
         </div>
       </div>
     </section>
+
+    
 
     
 
@@ -129,9 +132,8 @@
                 <td>{{ s.enrollment_status }}</td>
                 <td>{{ s.contact_number|default:'—' }}</td>
                 <td>
-                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <div class="actions-group">
                     <a class="action-btn gray" href="{% url 'violations:staff_student_detail' s.student_id %}"><i class="fas fa-id-card"></i> View</a>
-                    {# Removed Violations button per request #}
                     {% if s.user.email %}
                       <a class="action-btn gray" href="mailto:{{ s.user.email }}"><i class="fas fa-envelope"></i> Contact</a>
                     {% elif s.contact_number %}
@@ -153,6 +155,50 @@
       </div>
     </section>
   </main>
+
+  <!-- Login History Modal -->
+  <div class="modal" id="loginHistoryModal" aria-hidden="true">
+    <div class="modal-card" style="max-width:800px;">
+      <div class="modal-header">
+        <h3>My Login History</h3>
+        <button class="icon-btn" id="loginHistClose"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Account created:</strong> {{ request.user.date_joined|date:"M d, Y H:i" }}</p>
+        <div style="margin-top:10px;">
+          {% if login_history %}
+          <div class="table-responsive" style="max-height:360px; overflow:auto;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="min-width:140px;">Time</th>
+                  <th>Event</th>
+                  <th>IP</th>
+                  <th>User Agent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for entry in login_history %}
+                <tr>
+                  <td>{{ entry.timestamp|date:"M d, Y H:i" }}</td>
+                  <td>{{ entry.get_event_type_display }}</td>
+                  <td>{{ entry.ip_address|default:'—' }}</td>
+                  <td style="max-width:360px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ entry.user_agent|default:'—' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <p style="color:#667085;">No login events recorded yet.</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="login-button" id="loginHistCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Student Detail Modal -->
   <div class="modal" id="studentDetailModal" aria-hidden="true">
@@ -211,6 +257,29 @@
   </aside>
 
   <script src="{% static 'violations/js/script.js' %}"></script>
+  <script>
+    // Login history modal control
+    (function(){
+      const card = document.getElementById('loginHistoryCard');
+      const modal = document.getElementById('loginHistoryModal');
+      const btnClose = document.getElementById('loginHistClose');
+      const btnClose2 = document.getElementById('loginHistCloseBtn');
+      const headerLink = document.getElementById('headerLoginHistoryLink');
+      function open(){ if(modal) modal.classList.add('show'); }
+      function close(){ if(modal) modal.classList.remove('show'); }
+      if(card){
+        card.addEventListener('click', open);
+        card.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); open(); } });
+      }
+      if(headerLink){
+        headerLink.addEventListener('click', (e)=>{ e.preventDefault(); open(); });
+      }
+      if(btnClose) btnClose.addEventListener('click', close);
+      if(btnClose2) btnClose2.addEventListener('click', close);
+      if(modal) modal.addEventListener('click', (e)=>{ if(e.target===modal) close(); });
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+    })();
+  </script>
   <script>
     // Lightweight client-side filter for the student table
     function filterStudentTable(query) {

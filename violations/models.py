@@ -155,3 +155,22 @@ class Violation(models.Model):
 	def __str__(self) -> str:  # pragma: no cover
 		return f"{self.get_type_display()} violation for {self.student} on {self.incident_at:%Y-%m-%d}"
 
+
+class LoginActivity(models.Model):
+	class EventType(models.TextChoices):
+		ACCOUNT_CREATED = "account_created", "Account Created"
+		LOGIN = "login", "Login"
+		LOGOUT = "logout", "Logout"
+
+	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="login_activities")
+	event_type = models.CharField(max_length=32, choices=EventType.choices)
+	timestamp = models.DateTimeField(auto_now_add=True)
+	ip_address = models.CharField(max_length=45, blank=True)  # IPv4/IPv6 max length
+	user_agent = models.TextField(blank=True)
+
+	class Meta:
+		ordering = ["-timestamp"]
+
+	def __str__(self) -> str:  # pragma: no cover
+		return f"LoginActivity({self.user.username} {self.event_type} at {self.timestamp:%Y-%m-%d %H:%M:%S})"
+
