@@ -11,6 +11,7 @@ from .models import TemporaryAccessRequest
 from django.utils import timezone
 from django.db import models
 from .models import Violation, LoginActivity
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
 ############################################
@@ -286,6 +287,53 @@ def faculty_dashboard_view(request):
 	latest = my_reports_qs.order_by("-created_at").first()
 
 	# include login history for modal
+	# Annotated student directory (violation counts per student)
+	from django.db.models import Count, Sum, Case, When, IntegerField
+	students_qs = (
+		StudentModel.objects.select_related("user")
+		.annotate(
+			violations_count=Count("violations", distinct=True),
+			minor_count=Sum(
+				Case(
+					When(violations__type=Violation.Severity.MINOR, then=1),
+					default=0,
+					output_field=IntegerField(),
+				)
+			),
+			major_count=Sum(
+				Case(
+					When(violations__type=Violation.Severity.MAJOR, then=1),
+					default=0,
+					output_field=IntegerField(),
+				)
+			),
+			pending_count=Sum(
+				Case(
+					When(violations__status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW], then=1),
+					default=0,
+					output_field=IntegerField(),
+				)
+			),
+			resolved_count=Sum(
+				Case(
+					When(violations__status=Violation.Status.RESOLVED, then=1),
+					default=0,
+					output_field=IntegerField(),
+				)
+			),
+		)
+		.order_by("user__first_name", "user__last_name", "student_id")
+	)
+
+	# Server-side pagination
+	page = request.GET.get("page", 1)
+	paginator = Paginator(students_qs, 25)  # 25 per page
+	try:
+		students_page = paginator.page(page)
+	except PageNotAnInteger:
+		students_page = paginator.page(1)
+	except EmptyPage:
+		students_page = paginator.page(paginator.num_pages)
 	login_history = LoginActivity.objects.filter(user=request.user).order_by("-timestamp")[:20]
 	ctx = {
 		"stats": {
@@ -297,8 +345,37 @@ def faculty_dashboard_view(request):
 			"latest_created_at": latest.created_at if latest else None,
 		},
 		"login_history": login_history,
+		"students": students_page,  # page object
+		"paginator": paginator,
 	}
 	return render(request, "violations/faculty/dashboard.html", ctx)
+
+
+@role_required({User.Role.FACULTY_ADMIN})
+def faculty_student_detail_view(request, student_id: str):
+	"""Faculty: View a student's profile details and violations by student_id (mirrors staff detail)."""
+	student = StudentModel.objects.select_related("user").filter(student_id__iexact=student_id).first()
+	if not student:
+		messages.error(request, "Student not found.")
+		return redirect("violations:faculty_dashboard")
+	vqs = Violation.objects.select_related("reported_by").filter(student=student).order_by("-created_at")
+	total_v = vqs.count()
+	pending_v = vqs.filter(status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW]).count()
+	resolved_v = vqs.filter(status=Violation.Status.RESOLVED).count()
+	dismissed_v = vqs.filter(status=Violation.Status.DISMISSED).count()
+	latest_incident = vqs.first().incident_at if total_v else None
+	ctx = {
+		"student": student,
+		"violations": vqs,
+		"vstats": {
+			"total": total_v,
+			"pending": pending_v,
+			"resolved": resolved_v,
+			"dismissed": dismissed_v,
+			"latest_incident": latest_incident,
+		}
+	}
+	return render(request, "violations/staff/student_detail.html", ctx)
 
 
 @role_required({User.Role.FACULTY_ADMIN})

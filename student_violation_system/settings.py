@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "channels",  # WebSocket support for realtime features
     "violations",  # Add the violations app
 ]
 
@@ -68,6 +69,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "student_violation_system.wsgi.application"
+ASGI_APPLICATION = "student_violation_system.asgi.application"
 
 
 # Database
@@ -135,3 +137,10 @@ LOGOUT_REDIRECT_URL = 'violations:auth_login'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Channels (development: in-memory layer; for production use Redis)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    }
+}

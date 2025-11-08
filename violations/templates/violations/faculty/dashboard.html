@@ -17,6 +17,9 @@
             <span class="header-title">Faculty Dashboard</span>
         </div>
         <div class="top-right">
+            <button class="icon-btn" id="chatHeaderBtn" aria-label="Team Chat">
+                <i class="fas fa-comments"></i>
+            </button>
             <button class="icon-btn" id="notifBtn" aria-label="Notifications">
                 <i class="fas fa-bell"></i>
             </button>
@@ -82,7 +85,106 @@
             </div>
             
         </section>
+
+        <!-- Students Directory -->
+        <section class="card" style="margin-top:16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+                <h3 style="margin:0;">Students</h3>
+                <div class="table-toolbar" style="display:flex; gap:8px; align-items:center;">
+                    <div class="input-with-icon">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="studentSearchInput" placeholder="Search by name or ID" aria-label="Search students" style="padding-left:34px;">
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive" style="max-height: 420px; overflow: auto;">
+                <table class="table" id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th style="min-width:120px;">Student ID</th>
+                            <th style="min-width:180px;">Name</th>
+                            <th>Program</th>
+                            <th>Year</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Minor</th>
+                            <th>Pending</th>
+                            <th>Resolved</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if students %}
+                            {% for s in students %}
+                            <tr class="student-row" data-href="{% url 'violations:faculty_student_detail' s.student_id %}" style="cursor:pointer;">
+                                <td>{{ s.student_id }}</td>
+                                <td>{{ s.user.get_full_name|default:s.user.username }}</td>
+                                <td>{{ s.program|default:'—' }}</td>
+                                <td>{{ s.year_level }}</td>
+                                <td>{{ s.department|default:'—' }}</td>
+                                <td>
+                                    {% if s.enrollment_status == 'Active' %}
+                                        <span class="badge badge-success">Active</span>
+                                    {% elif s.enrollment_status == 'Suspended' %}
+                                        <span class="badge badge-warning">Suspended</span>
+                                    {% else %}
+                                        <span class="badge">{{ s.enrollment_status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ s.minor_count|default:0 }}</td>
+                                <td>{{ s.pending_count|default:0 }}</td>
+                                <td>{{ s.resolved_count|default:0 }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" style="text-align:center; color:#667085;">No students found.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            {% if students and students.paginator %}
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px;">
+                <div style="color:#667085; font-size:.9rem;">
+                    Page {{ students.number }} of {{ students.paginator.num_pages }}
+                </div>
+                <div class="actions-group" style="flex-wrap:wrap; justify-content:flex-end;">
+                    {% if students.has_previous %}
+                        <a class="action-btn" href="?page=1">First</a>
+                        <a class="action-btn" href="?page={{ students.previous_page_number }}">Prev</a>
+                    {% else %}
+                        <button class="action-btn" disabled>First</button>
+                        <button class="action-btn" disabled>Prev</button>
+                    {% endif %}
+                    {% if students.has_next %}
+                        <a class="action-btn" href="?page={{ students.next_page_number }}">Next</a>
+                        <a class="action-btn" href="?page={{ students.paginator.num_pages }}">Last</a>
+                    {% else %}
+                        <button class="action-btn" disabled>Next</button>
+                        <button class="action-btn" disabled>Last</button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </section>
     </main>
+
+    <!-- Realtime Chat Panel (Staff ↔ Faculty) -->
+    <aside class="notif-panel" id="chatPanel" aria-hidden="true" style="right: 16px; bottom: 16px; top: auto; width: min(420px, 95vw);">
+        <div class="notif-header">
+            <h3 style="display:flex; align-items:center; gap:8px;"><i class="fas fa-comments"></i> Team Chat</h3>
+            <button class="icon-btn" onclick="document.getElementById('chatPanel').classList.remove('show')"><i class="fas fa-times"></i></button>
+        </div>
+        <div style="display:flex; flex-direction:column; height: 360px;">
+            <ul id="chatFeed" style="list-style:none; margin:0; padding:10px 12px; flex:1 1 auto; overflow:auto;">
+                <!-- messages injected here -->
+            </ul>
+            <form id="chatForm" style="display:flex; gap:8px; padding:10px 12px; border-top:1px solid #eee;">
+                <input id="chatInput" type="text" placeholder="Message staff and faculty…" style="flex:1 1 auto;">
+                <button class="login-button" type="submit" style="padding:10px 14px;">Send</button>
+            </form>
+        </div>
+    </aside>
 
     <!-- Login History Modal -->
     <div class="modal" id="loginHistoryModal" aria-hidden="true">
@@ -141,6 +243,8 @@
     </aside>
 
         <script src="{% static 'violations/js/script.js' %}"></script>
+        <script src="{% static 'violations/js/faculty_dashboard.js' %}"></script>
+        <script src="{% static 'violations/js/chat.js' %}"></script>
         <script>
             (function(){
                 const modal = document.getElementById('loginHistoryModal');
@@ -154,6 +258,14 @@
                 if(btnClose2) btnClose2.addEventListener('click', close);
                 if(modal) modal.addEventListener('click', (e)=>{ if(e.target===modal) close(); });
                 document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+            })();
+        </script>
+        <script>
+            // Header chat button toggles chat panel
+            (function(){
+                const btn = document.getElementById('chatHeaderBtn');
+                const panel = document.getElementById('chatPanel');
+                if(btn && panel){ btn.addEventListener('click', () => { panel.classList.toggle('show'); }); }
             })();
         </script>
 </body>

@@ -17,6 +17,7 @@
       <span class="header-title">OSA Staff Dashboard</span>
     </div>
     <div class="top-right">
+      <button class="icon-btn" id="chatHeaderBtn" aria-label="Team Chat"><i class="fas fa-comments"></i></button>
       <div class="searchbar">
         <i class="fas fa-search"></i>
         <input type="text" placeholder="Search student..." />
@@ -157,6 +158,21 @@
     </section>
   </main>
 
+  <!-- Realtime Chat Panel (Staff ↔ Faculty) -->
+  <aside class="notif-panel" id="chatPanel" aria-hidden="true" style="right: 16px; bottom: 16px; top: auto; width: min(420px, 95vw);">
+    <div class="notif-header">
+      <h3 style="display:flex; align-items:center; gap:8px;"><i class="fas fa-comments"></i> Team Chat</h3>
+      <button class="icon-btn" onclick="document.getElementById('chatPanel').classList.remove('show')"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="display:flex; flex-direction:column; height: 360px;">
+      <ul id="chatFeed" style="list-style:none; margin:0; padding:10px 12px; flex:1 1 auto; overflow:auto;"></ul>
+      <form id="chatForm" style="display:flex; gap:8px; padding:10px 12px; border-top:1px solid #eee;">
+        <input id="chatInput" type="text" placeholder="Message staff and faculty…" style="flex:1 1 auto;">
+        <button class="login-button" type="submit" style="padding:10px 14px;">Send</button>
+      </form>
+    </div>
+  </aside>
+
   <!-- Login History Modal -->
   <div class="modal" id="loginHistoryModal" aria-hidden="true">
     <div class="modal-card" style="max-width:800px;">
@@ -258,6 +274,15 @@
   </aside>
 
   <script src="{% static 'violations/js/script.js' %}"></script>
+  <script src="{% static 'violations/js/chat.js' %}"></script>
+  <script>
+    // Header chat button toggles chat panel
+    (function(){
+      const btn = document.getElementById('chatHeaderBtn');
+      const panel = document.getElementById('chatPanel');
+      if(btn && panel){ btn.addEventListener('click', () => { panel.classList.toggle('show'); }); }
+    })();
+  </script>
   <script>
     // Login history modal control
     (function(){

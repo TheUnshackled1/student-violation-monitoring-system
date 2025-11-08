@@ -29,6 +29,7 @@ urlpatterns = [
     path('faculty/dashboard/', views.faculty_dashboard_view, name='faculty_dashboard'),
     path('faculty/report/', views.faculty_report_view, name='faculty_report'),
     path('faculty/my-reports/', views.faculty_my_reports_view, name='faculty_my_reports'),
+    path('faculty/students/<str:student_id>/', views.faculty_student_detail_view, name='faculty_student_detail'),
 
     # OSA Staff
     path('staff/dashboard/', views.staff_dashboard_view, name='staff_dashboard'),
