@@ -49,6 +49,9 @@
       try { var data = JSON.parse(ev.data); } catch { return; }
       if(data.kind === 'system') {
         appendSystem(data.message);
+      } else if (data.kind === 'history') {
+        // array of {user, message, ts}
+        (data.messages || []).forEach(m => appendMessage(m.user, m.message, null, m.ts));
       } else if (data.kind === 'message') {
         appendMessage(data.user, data.message, data.role, data.ts);
         if(!chatPanel.classList.contains('show')){ unreadCount++; updateBadge(); }
@@ -78,7 +81,10 @@
     li.className = 'msg';
     const meta = document.createElement('div');
     meta.className = 'meta';
-    meta.textContent = `${user}${role ? ' • ' + role.replace('_',' ') : ''}`;
+    // include timestamp if available
+    let timeText = '';
+    try { if(ts) timeText = ' · ' + new Date(ts).toLocaleTimeString(); } catch(e) { timeText = ''; }
+    meta.textContent = `${user}${role ? ' • ' + role.replace('_',' ') : ''}${timeText}`;
     const body = document.createElement('div');
     body.className = 'body';
     body.textContent = text;

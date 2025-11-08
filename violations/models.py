@@ -125,6 +125,23 @@ class Message(models.Model):
 		return f"Msg from {self.sender} to {self.receiver} at {self.created_at:%Y-%m-%d %H:%M}"
 
 
+class ChatMessage(models.Model):
+	"""Room-based chat messages persisted for the staff↔faculty room.
+
+	Used by the realtime chat consumer to provide history and persistence.
+	"""
+	sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_messages")
+	room = models.CharField(max_length=100, default="staff-faculty")
+	content = models.TextField()
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ["created_at"]
+
+	def __str__(self) -> str:  # pragma: no cover
+		return f"ChatMessage({self.sender.username}@{self.room} {self.created_at:%Y-%m-%d %H:%M})"
+
+
 class Violation(models.Model):
 	class Severity(models.TextChoices):
 		MINOR = "minor", "Minor"

@@ -1,6 +1,8 @@
 import json
+from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.utils import timezone
+from .models import ChatMessage
 
 
 """Realtime chat consumer.
@@ -27,9 +29,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
         room_name = self.scope["url_route"]["kwargs"].get("room_name") or ROOM_NAME
-        self.room_group_name = f"chat_{room_name}"
+    self.room_name = room_name
+    self.room_group_name = f"chat_{room_name}"
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
+        # Send recent history (last 50 messages) directly to the connecting socket
+        try:
+            msgs = await sync_to_async(list)(
+                ChatMessage.objects.filter(room=room_name).order_by('created_at').values('sender__username', 'content', 'created_at')[:50]
+            )
+            history = [
+                {"user": m['sender__username'], "message": m['content'], "ts": m['created_at'].isoformat()}
+                for m in msgs
+            ]
+            await self.send(text_data=json.dumps({"kind": "history", "messages": history}))
+        except Exception:
+            # Non-fatal: if DB access fails, continue without history
+            pass
+
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -75,6 +92,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "ts": timezone.now().isoformat(),
             },
         )
+
+        # Persist message to DB (best-effort)
+        try:
+            await sync_to_async(ChatMessage.objects.create)(sender=user, room=self.room_name, content=content)
+        except Exception:
+            # Don't block delivery if DB write fails
+            pass
 
     async def chat_message(self, event):  # type: ignore
         await self.send(text_data=json.dumps({
