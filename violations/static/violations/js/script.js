@@ -433,83 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Toast helper for lightweight notices
-    const showToast = (msg) => {
-        try {
-            const t = document.createElement('div');
-            t.textContent = msg;
-            t.style.position = 'fixed';
-            t.style.right = '16px';
-            t.style.bottom = '16px';
-            t.style.zIndex = '9999';
-            t.style.background = 'rgba(0,0,0,0.85)';
-            t.style.color = '#fff';
-            t.style.padding = '10px 14px';
-            t.style.borderRadius = '8px';
-            t.style.fontSize = '14px';
-            t.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)';
-            document.body.appendChild(t);
-            setTimeout(() => { try { t.remove(); } catch(e){} }, 3500);
-        } catch (e) {}
-    };
-
-    // Client-side fallback: speak with a professional female voice if server audio fails
-    const speakWelcomeFallback = (text) => {
-        if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-        try { window.speechSynthesis.cancel(); } catch(e) {}
-        const pickProfessionalFemaleVoice = (voices) => {
-            if (!voices || !voices.length) return null;
-            const prefer = ['Google UK English Female','Google US English','Microsoft Zira','Microsoft Aria','Samantha','Victoria','Karen','Tessa','Serena'].map(s => s.toLowerCase());
-            const isEnglish = v => (v.lang||'').toLowerCase().startsWith('en');
-            const femaleHint = v => {
-                const n = (v.name||'').toLowerCase();
-                return n.includes('female') || n.includes('zira') || n.includes('aria') || n.includes('samantha') || n.includes('victoria') || n.includes('karen') || n.includes('tessa') || n.includes('serena');
-            };
-            const voices = window.speechSynthesis.getVoices();
-            const exact = voices.find(v => isEnglish(v) && prefer.some(p => (v.name||'').toLowerCase().includes(p)));
-            if (exact) return exact;
-            const hinted = voices.find(v => isEnglish(v) && femaleHint(v));
-            if (hinted) return hinted;
-            const en = voices.find(v => isEnglish(v));
-            if (en) return en;
-            return voices[0];
-        };
-        const doSpeak = () => {
-            const u = new SpeechSynthesisUtterance(text);
-            const v = pickProfessionalFemaleVoice(window.speechSynthesis.getVoices());
-            if (v) u.voice = v;
-            u.rate = 0.98; u.pitch = 1.1; u.volume = 1.0;
-            try { window.speechSynthesis.speak(u); } catch(e) {}
-        };
-        const voicesNow = window.speechSynthesis.getVoices();
-        if (!voicesNow || voicesNow.length === 0) {
-            const once = () => { window.speechSynthesis.removeEventListener('voiceschanged', once); doSpeak(); };
-            window.speechSynthesis.addEventListener('voiceschanged', once);
-            setTimeout(() => { try { const tmp = new SpeechSynthesisUtterance(''); window.speechSynthesis.speak(tmp); window.speechSynthesis.cancel(); } catch(e){} }, 50);
-        } else {
-            doSpeak();
-        }
-    };
-
-    // If server-side welcome audio fails, notify and fall back to client TTS
-    const welcomeAudioEl = document.getElementById('welcomeAudio');
-    if (welcomeAudioEl) {
-        welcomeAudioEl.addEventListener('error', () => {
-            if (ttsMuted) return;
-            // Build the same welcome text from DOM
-            const nameEl = document.querySelector('.profile-menu .name') || document.querySelector('.top-right .name');
-            const userName = (nameEl && nameEl.textContent && nameEl.textContent.trim()) ? nameEl.textContent.trim() : 'there';
-            const body = document.body || document.querySelector('body');
-            const isStudent = body && body.classList.contains('role-student');
-            const isStaff = body && body.classList.contains('role-staff');
-            const isFaculty = body && body.classList.contains('role-faculty');
-            const roleLabel = isFaculty ? 'Faculty' : (isStaff ? 'Staff' : 'Student');
-            const text = `Welcome back, ${userName}. You are now on your ${roleLabel} dashboard.`;
-            showToast('Voice unavailable on server. Using browser voice.');
-            speakWelcomeFallback(text);
-        });
-    }
-
     // ==========================
     // Login History Modal Toggle
     // ==========================
@@ -615,71 +538,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initCollapsibles();
 
-    // Dashboard welcome speech (professional female voice)
+    // Simple dashboard welcome speech: one short line after load
     try {
-        if (ttsMuted) {
-            const audioEl = document.getElementById('welcomeAudio');
-            if (audioEl) { try { audioEl.pause(); audioEl.remove(); } catch(e){} }
-            return;
-        }
-        const body = document.body || document.querySelector('body');
-        const isStudent = body && body.classList.contains('role-student');
-        const isStaff = body && body.classList.contains('role-staff');
-        const isFaculty = body && body.classList.contains('role-faculty');
-        const role = isStudent ? 'student' : (isStaff ? 'staff' : (isFaculty ? 'faculty' : ''));
-        // If an audio element is present (server-side TTS), skip client speech
-        const audioExisting = document.getElementById('welcomeAudio');
-        if (role && audioExisting) return;
-
-        if (role && typeof window !== 'undefined' && 'speechSynthesis' in window) {
-            const nameEl = document.querySelector('.profile-menu .name') || document.querySelector('.top-right .name');
-            const userName = (nameEl && nameEl.textContent && nameEl.textContent.trim()) ? nameEl.textContent.trim() : 'there';
-            const roleLabel = role === 'faculty' ? 'Faculty' : role === 'staff' ? 'Staff' : 'Student';
-            const speakText = `Welcome back, ${userName}. You are now on your ${roleLabel} dashboard.`;
-            const key = `welcome_tts:${roleLabel}:${userName}`;
-
-            const pickProfessionalFemaleVoice = (voices) => {
-                if (!voices || !voices.length) return null;
-                const preferNames = ['Google UK English Female','Google US English','Microsoft Zira','Microsoft Aria','Samantha','Victoria','Karen','Tessa','Serena'].map(n => n.toLowerCase());
-                const isEnglish = v => (v.lang || '').toLowerCase().startsWith('en');
-                const femaleHint = v => {
-                    const nm = (v.name || '').toLowerCase();
-                    return nm.includes('female') || nm.includes('zira') || nm.includes('aria') || nm.includes('samantha') || nm.includes('victoria') || nm.includes('karen') || nm.includes('tessa') || nm.includes('serena');
-                };
-                const exact = voices.find(v => isEnglish(v) && preferNames.some(p => (v.name || '').toLowerCase().includes(p)));
-                if (exact) return exact;
-                const hinted = voices.find(v => isEnglish(v) && femaleHint(v));
-                if (hinted) return hinted;
-                const english = voices.find(v => isEnglish(v));
-                if (english) return english;
-                return voices[0];
-            };
-
-            const speak = () => {
-                const utter = new SpeechSynthesisUtterance(speakText);
-                const voices = window.speechSynthesis.getVoices();
-                const v = pickProfessionalFemaleVoice(voices);
-                if (v) utter.voice = v;
-                utter.rate = 0.98;
-                utter.pitch = 1.1;
-                utter.volume = 1.0;
-                try { window.speechSynthesis.speak(utter); } catch (e) {}
-            };
-
-            if (!sessionStorage.getItem(key)) {
-                const voicesNow = window.speechSynthesis.getVoices();
-                if (!voicesNow || voicesNow.length === 0) {
-                    const once = () => { window.speechSynthesis.removeEventListener('voiceschanged', once); speak(); };
-                    window.speechSynthesis.addEventListener('voiceschanged', once);
-                    // nudge some browsers to populate voices
-                    setTimeout(() => {
-                        try { const tmp = new SpeechSynthesisUtterance(''); window.speechSynthesis.speak(tmp); window.speechSynthesis.cancel(); } catch (e) {}
-                    }, 50);
-                } else {
-                    speak();
-                }
-                sessionStorage.setItem(key, '1');
-            }
-        }
+        if (ttsMuted) return;
+        if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+        const body = document.body;
+        if (!body) return;
+        const isDashboard = body.classList.contains('role-student') || body.classList.contains('role-staff') || body.classList.contains('role-faculty');
+        if (!isDashboard) return;
+        const nameEl = document.querySelector('.profile-menu .name') || document.querySelector('.top-right .name');
+        const userName = (nameEl && nameEl.textContent && nameEl.textContent.trim()) ? nameEl.textContent.trim() : 'there';
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+        const u = new SpeechSynthesisUtterance(`Welcome back, ${userName}.`);
+        window.speechSynthesis.speak(u);
     } catch (e) {}
 });

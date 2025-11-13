@@ -243,7 +243,6 @@
     </aside>
 
         <script src="{% static 'violations/js/script.js' %}"></script>
-        <audio id="welcomeAudio" autoplay hidden src="{% url 'violations:welcome_tts' %}?role=faculty&name={{ request.user.first_name|default:request.user.username|urlencode }}"></audio>
         <script src="{% static 'violations/js/faculty_dashboard.js' %}"></script>
         <script src="{% static 'violations/js/chat.js' %}"></script>
         <script>
