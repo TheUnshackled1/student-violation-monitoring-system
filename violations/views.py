@@ -12,6 +12,95 @@ from django.utils import timezone
 from django.db import models
 from .models import Violation, LoginActivity
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import HttpResponse, JsonResponse
+from io import BytesIO
+import tempfile
+import os
+
+
+############################################
+# Welcome TTS (server-side via Python library)
+############################################
+
+def welcome_tts_view(request):
+	"""Generate welcome audio using a Python TTS library and return it as audio.
+
+	Priority: gTTS -> pyttsx3. Returns MP3 if gTTS available, else WAV.
+	Query params:
+	  - text: optional explicit text to synthesize
+	  - name: optional user name to include (used if text missing)
+	  - role: optional role label (Student/Staff/Faculty) used for default text
+	"""
+	# Build text
+	text = (request.GET.get("text") or "").strip()
+	if not text:
+		name = (request.GET.get("name") or getattr(request.user, "first_name", "") or getattr(request.user, "username", "") or "there").strip() or "there"
+		role_raw = (request.GET.get("role") or getattr(getattr(request.user, "role", None), "lower", lambda: str(getattr(request.user, "role", "")))() or "").lower()
+		if role_raw in {"faculty_admin", "faculty"}:
+			role_label = "Faculty"
+		elif role_raw == "staff":
+			role_label = "Staff"
+		else:
+			role_label = "Student"
+		text = f"Welcome back, {name}. You are now on your {role_label} dashboard."
+
+	# Try gTTS first (MP3)
+	try:
+		from gtts import gTTS  # type: ignore
+		mp3_bytes = BytesIO()
+		tts = gTTS(text=text, lang='en')
+		tts.write_to_fp(mp3_bytes)
+		mp3_bytes.seek(0)
+		return HttpResponse(mp3_bytes.getvalue(), content_type='audio/mpeg')
+	except ImportError:
+		pass
+	except Exception:
+		# Fall through to next engine
+		pass
+
+	# Fallback: pyttsx3 (WAV via SAPI5 on Windows)
+	try:
+		import pyttsx3  # type: ignore
+		fd, tmp_path = tempfile.mkstemp(suffix='.wav')
+		os.close(fd)
+		try:
+			engine = pyttsx3.init()
+			# Try pick a professional female voice
+			target = None
+			for v in engine.getProperty('voices'):
+				n = (getattr(v, 'name', '') or '').lower()
+				if any(k in n for k in ['female', 'zira', 'aria', 'samantha', 'victoria', 'karen', 'tessa', 'serena']):
+					target = v.id
+					break
+			if target:
+				engine.setProperty('voice', target)
+			# Calm pace
+			try:
+				rate = engine.getProperty('rate')
+				if isinstance(rate, int):
+					engine.setProperty('rate', max(120, min(190, int(rate * 0.95))))
+			except Exception:
+				pass
+			engine.setProperty('volume', 1.0)
+			engine.save_to_file(text, tmp_path)
+			engine.runAndWait()
+			with open(tmp_path, 'rb') as f:
+				data = f.read()
+			return HttpResponse(data, content_type='audio/wav')
+		finally:
+			try:
+				os.remove(tmp_path)
+			except Exception:
+				pass
+	except ImportError:
+		pass
+	except Exception:
+		pass
+
+	return JsonResponse({
+		"error": "No Python TTS engine available",
+		"hint": "Install one of: gTTS (pip install gTTS) or pyttsx3 (pip install pyttsx3)."
+	}, status=501)
 
 
 ############################################

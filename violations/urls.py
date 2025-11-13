@@ -10,7 +10,8 @@ urlpatterns = [
     # Home → redirect to the explicit login path (avoid duplicate URL names)
     path('', RedirectView.as_view(pattern_name='violations:login', permanent=False), name='home'),
     
-    # Text-to-Speech API (ElevenLabs / Jarvis voice)
+    # Text-to-Speech API (Python-based welcome voice)
+    path('api/welcome-tts/', views.welcome_tts_view, name='welcome_tts'),
     path('login/', views.login_view, name='login'),           # Explicit login path (renders login page)
     path('login/student/', views.student_login_auth, name='student_login'),  # Student login (by ID)
     path('login/credentials/', views.credentials_login_auth, name='credentials_login'),  # Staff/Faculty login (email+password)
