@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All Violations - OSA Staff</title>
+  <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+<body class="role-staff">
+  <header class="top-nav">
+    <div class="top-left">
+      <a href="{% url 'violations:staff_dashboard' %}" style="display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;">
+        <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
+        <span class="header-title">OSA Staff - Violations</span>
+      </a>
+    </div>
+    <div class="top-right">
+      <a href="{% url 'violations:staff_dashboard' %}" class="icon-btn"><i class="fas fa-home"></i></a>
+      <a href="{% url 'violations:staff_violation_create' %}" class="login-button"><i class="fas fa-plus"></i> New Violation</a>
+    </div>
+  </header>
+
+  <div class="background-overlay"></div>
+  <div class="background-image"></div>
+
+  <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
+    <!-- Quick Stats -->
+    <section class="dashboard-grid" style="margin-bottom:20px;">
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="card-title">All Violations</div>
+        <div class="card-metric">{{ violations.paginator.count|default:'0' }}</div>
+      </div>
+    </section>
+
+    <!-- Filter Form -->
+    <section class="card" style="margin-bottom:20px;">
+      <form method="get" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div style="flex:1 1 200px;">
+          <label style="display:block; margin-bottom:4px; font-weight:500;">Search</label>
+          <input type="text" name="search" value="{{ search_query }}" placeholder="Student ID, name, or description..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+        </div>
+        <div style="flex:0 0 150px;">
+          <label style="display:block; margin-bottom:4px; font-weight:500;">Status</label>
+          <select name="status" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+            <option value="">All Status</option>
+            {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="flex:0 0 150px;">
+          <label style="display:block; margin-bottom:4px; font-weight:500;">Type</label>
+          <select name="type" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+            <option value="">All Types</option>
+            {% for val, label in type_choices %}
+            <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="login-button"><i class="fas fa-filter"></i> Filter</button>
+        <a href="{% url 'violations:staff_violations_list' %}" class="ghost-btn">Clear</a>
+      </form>
+    </section>
+
+    <!-- Violations Table -->
+    <section class="card">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Student</th>
+              <th>Description</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Incident Date</th>
+              <th>Reported By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in violations %}
+            <tr>
+              <td>#{{ v.id }}</td>
+              <td>
+                <a href="{% url 'violations:staff_student_detail' v.student.student_id %}" style="color:var(--chmsu-dark-green);">
+                  {{ v.student.user.get_full_name|default:v.student.student_id }}
+                </a>
+                <div style="font-size:12px; color:#667085;">{{ v.student.student_id }}</div>
+              </td>
+              <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ v.description|truncatewords:15 }}</td>
+              <td>
+                <span class="badge {% if v.type == 'major' %}badge-danger{% else %}badge-warning{% endif %}">
+                  {{ v.get_type_display }}
+                </span>
+              </td>
+              <td>
+                <span class="badge 
+                  {% if v.status == 'reported' %}badge-info
+                  {% elif v.status == 'under_review' %}badge-warning
+                  {% elif v.status == 'resolved' %}badge-success
+                  {% else %}badge-secondary{% endif %}">
+                  {{ v.get_status_display }}
+                </span>
+              </td>
+              <td>{{ v.incident_at|date:"M d, Y H:i" }}</td>
+              <td>{{ v.reported_by.get_full_name|default:'—' }}</td>
+              <td>
+                <div class="actions-group">
+                  <a class="action-btn gray" href="{% url 'violations:staff_violation_detail' v.id %}"><i class="fas fa-eye"></i></a>
+                  <a class="action-btn gray" href="{% url 'violations:staff_violation_edit' v.id %}"><i class="fas fa-edit"></i></a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" style="text-align:center; color:#667085;">No violations found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      {% if violations.has_other_pages %}
+      <div style="display:flex; justify-content:center; gap:8px; margin-top:20px;">
+        {% if violations.has_previous %}
+        <a href="?page={{ violations.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}&type={{ type_filter }}" class="ghost-btn">&laquo; Prev</a>
+        {% endif %}
+        <span style="padding:10px 16px;">Page {{ violations.number }} of {{ violations.paginator.num_pages }}</span>
+        {% if violations.has_next %}
+        <a href="?page={{ violations.next_page_number }}&search={{ search_query }}&status={{ status_filter }}&type={{ type_filter }}" class="ghost-btn">Next &raquo;</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <script src="{% static 'violations/js/script.js' %}"></script>
+  <style>
+    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; text-transform: uppercase; }
+    .badge-danger { background: #fee2e2; color: #dc2626; }
+    .badge-warning { background: #fef3c7; color: #d97706; }
+    .badge-success { background: #d1fae5; color: #059669; }
+    .badge-info { background: #dbeafe; color: #2563eb; }
+    .badge-secondary { background: #f3f4f6; color: #6b7280; }
+  </style>
+</body>
+</html>

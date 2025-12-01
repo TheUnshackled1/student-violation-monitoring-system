@@ -1,0 +1,163 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Clearances - OSA Staff</title>
+  <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+<body class="role-staff">
+  <header class="top-nav">
+    <div class="top-left">
+      <a href="{% url 'violations:staff_dashboard' %}" style="display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;">
+        <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
+        <span class="header-title">Student Clearances</span>
+      </a>
+    </div>
+    <div class="top-right">
+      <a href="{% url 'violations:staff_dashboard' %}" class="icon-btn"><i class="fas fa-home"></i></a>
+      <a href="{% url 'violations:staff_create_clearance' %}" class="login-button"><i class="fas fa-plus"></i> New Clearance</a>
+    </div>
+  </header>
+
+  <div class="background-overlay"></div>
+  <div class="background-image"></div>
+
+  <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
+    <!-- Stats Cards -->
+    <section class="dashboard-grid" style="margin-bottom:20px;">
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-clock"></i></div>
+        <div class="card-title">Pending</div>
+        <div class="card-metric" style="color:#d97706;">{{ pending_count }}</div>
+      </div>
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="card-title">Cleared</div>
+        <div class="card-metric" style="color:#059669;">{{ cleared_count }}</div>
+      </div>
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-ban"></i></div>
+        <div class="card-title">Withheld</div>
+        <div class="card-metric" style="color:#dc2626;">{{ withheld_count }}</div>
+      </div>
+    </section>
+
+    <!-- Filter Form -->
+    <section class="card" style="margin-bottom:20px;">
+      <form method="get" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div style="flex:1 1 200px;">
+          <label style="display:block; margin-bottom:4px; font-weight:500;">Search Student</label>
+          <input type="text" name="search" value="{{ search_query }}" placeholder="Student ID or name..." 
+                 style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+        </div>
+        <div style="flex:0 0 150px;">
+          <label style="display:block; margin-bottom:4px; font-weight:500;">Status</label>
+          <select name="status" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+            <option value="">All Status</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="cleared" {% if status_filter == 'cleared' %}selected{% endif %}>Cleared</option>
+            <option value="withheld" {% if status_filter == 'withheld' %}selected{% endif %}>Withheld</option>
+          </select>
+        </div>
+        <button type="submit" class="login-button"><i class="fas fa-filter"></i> Filter</button>
+        <a href="{% url 'violations:staff_clearances' %}" class="ghost-btn">Clear</a>
+      </form>
+    </section>
+
+    <!-- Clearances Table -->
+    <section class="card">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Academic Year</th>
+              <th>Semester</th>
+              <th>Status</th>
+              <th>Requirements</th>
+              <th>Cleared By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in clearances %}
+            <tr>
+              <td>
+                <a href="{% url 'violations:staff_student_detail' c.student.student_id %}" style="color:var(--chmsu-dark-green);">
+                  {{ c.student.user.get_full_name|default:c.student.student_id }}
+                </a>
+                <div style="font-size:12px; color:#667085;">{{ c.student.student_id }}</div>
+              </td>
+              <td>{{ c.academic_year }}</td>
+              <td>{{ c.semester }}</td>
+              <td>
+                <span class="badge 
+                  {% if c.status == 'cleared' %}badge-success
+                  {% elif c.status == 'withheld' %}badge-danger
+                  {% else %}badge-warning{% endif %}">
+                  {{ c.status|upper }}
+                </span>
+              </td>
+              <td>
+                {% if c.requirements_met %}
+                <span style="color:#059669;"><i class="fas fa-check"></i> Met</span>
+                {% else %}
+                <span style="color:#dc2626;"><i class="fas fa-times"></i> Not Met</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if c.cleared_by %}
+                {{ c.cleared_by.get_full_name }}
+                <div style="font-size:12px; color:#667085;">{{ c.cleared_at|date:"M d, Y" }}</div>
+                {% else %}
+                —
+                {% endif %}
+              </td>
+              <td>
+                {% if c.status != 'cleared' %}
+                <a class="action-btn gray" href="{% url 'violations:staff_update_clearance' c.id %}">
+                  <i class="fas fa-edit"></i> Update
+                </a>
+                {% else %}
+                <span style="color:#667085;">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" style="text-align:center; color:#667085;">No clearance records found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      {% if clearances.has_other_pages %}
+      <div style="display:flex; justify-content:center; gap:8px; margin-top:20px;">
+        {% if clearances.has_previous %}
+        <a href="?page={{ clearances.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}" class="ghost-btn">&laquo; Prev</a>
+        {% endif %}
+        <span style="padding:10px 16px;">Page {{ clearances.number }} of {{ clearances.paginator.num_pages }}</span>
+        {% if clearances.has_next %}
+        <a href="?page={{ clearances.next_page_number }}&search={{ search_query }}&status={{ status_filter }}" class="ghost-btn">Next &raquo;</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <script src="{% static 'violations/js/script.js' %}"></script>
+  <style>
+    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .badge-success { background: #d1fae5; color: #059669; }
+    .badge-warning { background: #fef3c7; color: #d97706; }
+    .badge-danger { background: #fee2e2; color: #dc2626; }
+  </style>
+</body>
+</html>

@@ -1,0 +1,86 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confiscate Student ID - OSA Staff</title>
+  <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+<body class="role-staff">
+  <header class="top-nav">
+    <div class="top-left">
+      <a href="{% url 'violations:staff_dashboard' %}" style="display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;">
+        <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
+        <span class="header-title">Confiscate Student ID</span>
+      </a>
+    </div>
+    <div class="top-right">
+      <a href="{% url 'violations:staff_id_confiscation' %}" class="ghost-btn"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+  </header>
+
+  <div class="background-overlay"></div>
+  <div class="background-image"></div>
+
+  <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
+    <section class="card" style="max-width:600px; margin:0 auto;">
+      <h2 style="margin-bottom:20px;"><i class="fas fa-id-card"></i> Record ID Confiscation</h2>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Student ID <span style="color:red;">*</span></label>
+          <input type="text" name="student_id" list="studentList" required 
+                 value="{{ request.GET.student }}"
+                 placeholder="Enter or select student ID" 
+                 style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+          <datalist id="studentList">
+            {% for s in students %}
+            <option value="{{ s.student_id }}">{{ s.user.get_full_name|default:s.student_id }}</option>
+            {% endfor %}
+          </datalist>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Related Violation (Optional)</label>
+          <select name="violation_id" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+            <option value="">No related violation</option>
+            {% for v in violations %}
+            <option value="{{ v.id }}" {% if request.GET.violation == v.id|stringformat:"s" %}selected{% endif %}>
+              #{{ v.id }} - {{ v.student.student_id }} - {{ v.description|truncatewords:10 }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Reason for Confiscation <span style="color:red;">*</span></label>
+          <textarea name="reason" rows="4" required placeholder="Enter reason for confiscating the student's ID..."
+                    style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;"></textarea>
+        </div>
+
+        <div style="background:#fef3c7; padding:12px; border-radius:8px; margin-bottom:20px;">
+          <p style="margin:0; color:#d97706; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Note:</strong> Make sure to physically secure the confiscated ID.
+          </p>
+        </div>
+
+        <div style="display:flex; gap:12px;">
+          <button type="submit" class="login-button">
+            <i class="fas fa-save"></i> Record Confiscation
+          </button>
+          <a href="{% url 'violations:staff_id_confiscation' %}" class="ghost-btn">Cancel</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="{% static 'violations/js/script.js' %}"></script>
+</body>
+</html>

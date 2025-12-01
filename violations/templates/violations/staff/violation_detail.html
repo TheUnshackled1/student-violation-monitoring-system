@@ -1,0 +1,306 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Violation #{{ violation.id }} - OSA Staff</title>
+  <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+<body class="role-staff">
+  <header class="top-nav">
+    <div class="top-left">
+      <a href="{% url 'violations:staff_dashboard' %}" style="display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;">
+        <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
+        <span class="header-title">Violation Details</span>
+      </a>
+    </div>
+    <div class="top-right">
+      <a href="{% url 'violations:staff_violations_list' %}" class="ghost-btn"><i class="fas fa-arrow-left"></i> Back</a>
+      <a href="{% url 'violations:staff_violation_edit' violation.id %}" class="login-button"><i class="fas fa-edit"></i> Edit</a>
+    </div>
+  </header>
+
+  <div class="background-overlay"></div>
+  <div class="background-image"></div>
+
+  <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
+    <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px;">
+      <!-- Main Content -->
+      <div>
+        <!-- Violation Info Card -->
+        <section class="card" style="margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+            <div>
+              <h2 style="margin:0;">Violation #{{ violation.id }}</h2>
+              <p style="color:#667085; margin:4px 0 0;">
+                Reported on {{ violation.created_at|date:"F d, Y \a\t H:i" }}
+              </p>
+            </div>
+            <div>
+              <span class="badge badge-lg 
+                {% if violation.type == 'major' %}badge-danger{% else %}badge-warning{% endif %}">
+                {{ violation.get_type_display }}
+              </span>
+              <span class="badge badge-lg 
+                {% if violation.status == 'reported' %}badge-info
+                {% elif violation.status == 'under_review' %}badge-warning
+                {% elif violation.status == 'resolved' %}badge-success
+                {% else %}badge-secondary{% endif %}">
+                {{ violation.get_status_display }}
+              </span>
+            </div>
+          </div>
+
+          <div style="background:#f9fafb; padding:16px; border-radius:8px; margin-bottom:16px;">
+            <h4 style="margin:0 0 8px;"><i class="fas fa-user-graduate"></i> Student Information</h4>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div>
+                <span style="color:#667085;">Name:</span>
+                <strong>{{ violation.student.user.get_full_name|default:violation.student.student_id }}</strong>
+              </div>
+              <div>
+                <span style="color:#667085;">Student ID:</span>
+                <strong>{{ violation.student.student_id }}</strong>
+              </div>
+              <div>
+                <span style="color:#667085;">Program:</span>
+                <strong>{{ violation.student.program|default:'—' }}</strong>
+              </div>
+              <div>
+                <span style="color:#667085;">Year Level:</span>
+                <strong>{{ violation.student.year_level }}</strong>
+              </div>
+            </div>
+            <div style="margin-top:12px;">
+              <span class="badge badge-info">Offense #{{ offense_number }} of {{ total_offenses }}</span>
+              <a href="{% url 'violations:staff_student_detail' violation.student.student_id %}" class="ghost-btn" style="margin-left:8px;">
+                View Full Profile
+              </a>
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <h4 style="margin:0 0 8px;"><i class="fas fa-calendar-alt"></i> Incident Details</h4>
+            <p><strong>Date & Time:</strong> {{ violation.incident_at|date:"F d, Y \a\t H:i" }}</p>
+            <p><strong>Location:</strong> {{ violation.location|default:'Not specified' }}</p>
+            <p><strong>Description:</strong></p>
+            <div style="background:#fff; padding:12px; border:1px solid #e5e7eb; border-radius:6px;">
+              {{ violation.description|linebreaks }}
+            </div>
+          </div>
+
+          <div>
+            <h4 style="margin:0 0 8px;"><i class="fas fa-user-tie"></i> Reported By</h4>
+            <p>{{ violation.reported_by.get_full_name|default:'Unknown' }} 
+               {% if violation.reported_by.email %}({{ violation.reported_by.email }}){% endif %}
+            </p>
+          </div>
+        </section>
+
+        <!-- Documents -->
+        <section class="card" style="margin-bottom:20px;">
+          <h3 style="margin:0 0 16px;"><i class="fas fa-folder-open"></i> Evidence & Documents ({{ documents|length }})</h3>
+          {% if documents %}
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Uploaded By</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for doc in documents %}
+                <tr>
+                  <td>
+                    <a href="{{ doc.document.url }}" target="_blank" style="color:var(--chmsu-dark-green);">
+                      <i class="fas fa-file"></i> {{ doc.document.name|slice:"-30:" }}
+                    </a>
+                  </td>
+                  <td>{{ doc.get_document_type_display }}</td>
+                  <td>
+                    <span class="badge {% if doc.is_verified %}badge-success{% else %}badge-warning{% endif %}">
+                      {{ doc.is_verified|yesno:'Verified,Pending' }}
+                    </span>
+                  </td>
+                  <td>{{ doc.uploaded_by.get_full_name|default:'—' }}</td>
+                  <td>{{ doc.created_at|date:"M d, Y" }}</td>
+                  <td>
+                    <form method="post" action="{% url 'violations:staff_delete_document' doc.id %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="action-btn gray" onclick="return confirm('Delete this document?');">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p style="color:#667085; text-align:center;">No documents attached to this violation.</p>
+          {% endif %}
+        </section>
+
+        <!-- Verification History -->
+        <section class="card">
+          <h3 style="margin:0 0 16px;"><i class="fas fa-clipboard-check"></i> Verification History</h3>
+          {% if verifications %}
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>Verified By</th>
+                  <th>Notes</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for v in verifications %}
+                <tr>
+                  <td>
+                    <span class="badge 
+                      {% if v.action == 'verified' %}badge-success
+                      {% elif v.action == 'correction_needed' %}badge-warning
+                      {% else %}badge-info{% endif %}">
+                      {{ v.get_action_display }}
+                    </span>
+                  </td>
+                  <td>{{ v.verified_by.get_full_name|default:'—' }}</td>
+                  <td>{{ v.notes|default:'—' }}</td>
+                  <td>{{ v.verified_at|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p style="color:#667085; text-align:center;">No verification actions recorded yet.</p>
+          {% endif %}
+        </section>
+      </div>
+
+      <!-- Sidebar -->
+      <div>
+        <!-- Quick Actions -->
+        <section class="card" style="margin-bottom:20px;">
+          <h3 style="margin:0 0 16px;"><i class="fas fa-bolt"></i> Quick Actions</h3>
+          
+          <!-- Verify Form -->
+          <form method="post" action="{% url 'violations:staff_verify_violation' violation.id %}">
+            {% csrf_token %}
+            <div style="margin-bottom:12px;">
+              <label style="display:block; margin-bottom:6px; font-weight:500;">Verification Action</label>
+              <select name="action" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                <option value="verified">✓ Verified - Information Correct</option>
+                <option value="correction_needed">⚠ Correction Needed</option>
+                <option value="escalated">↑ Escalate to Supervisor</option>
+              </select>
+            </div>
+            <div style="margin-bottom:12px;">
+              <label style="display:block; margin-bottom:6px; font-weight:500;">Notes</label>
+              <textarea name="notes" rows="3" placeholder="Add verification notes..."
+                        style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;"></textarea>
+            </div>
+            <button type="submit" class="login-button" style="width:100%;">
+              <i class="fas fa-check-circle"></i> Submit Verification
+            </button>
+          </form>
+        </section>
+
+        <!-- ID Confiscation Status -->
+        <section class="card" style="margin-bottom:20px;">
+          <h3 style="margin:0 0 16px;"><i class="fas fa-id-card"></i> ID Status</h3>
+          {% if id_confiscation %}
+          <div style="text-align:center; padding:12px;">
+            <span class="badge badge-lg {% if id_confiscation.status == 'confiscated' %}badge-danger{% else %}badge-success{% endif %}">
+              {{ id_confiscation.status|upper }}
+            </span>
+            <p style="margin:12px 0 0; color:#667085;">
+              {% if id_confiscation.status == 'confiscated' %}
+              Confiscated on {{ id_confiscation.confiscated_at|date:"M d, Y" }}
+              {% else %}
+              Released on {{ id_confiscation.released_at|date:"M d, Y" }}
+              {% endif %}
+            </p>
+          </div>
+          {% else %}
+          <p style="color:#667085; text-align:center;">No ID confiscation for this violation.</p>
+          <a href="{% url 'violations:staff_confiscate_id' %}?violation={{ violation.id }}&student={{ violation.student.student_id }}" 
+             class="ghost-btn" style="width:100%; text-align:center;">
+            <i class="fas fa-id-card"></i> Confiscate ID
+          </a>
+          {% endif %}
+        </section>
+
+        <!-- Apology Letters -->
+        <section class="card" style="margin-bottom:20px;">
+          <h3 style="margin:0 0 16px;"><i class="fas fa-envelope-open-text"></i> Apology Letters</h3>
+          {% if apology_letters %}
+          {% for letter in apology_letters %}
+          <div style="padding:12px; background:#f9fafb; border-radius:6px; margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <a href="{{ letter.letter_file.url }}" target="_blank" style="color:var(--chmsu-dark-green);">
+                <i class="fas fa-file-alt"></i> View Letter
+              </a>
+              <span class="badge 
+                {% if letter.status == 'verified' %}badge-success
+                {% elif letter.status == 'rejected' %}badge-danger
+                {% else %}badge-warning{% endif %}">
+                {{ letter.status|upper }}
+              </span>
+            </div>
+            <small style="color:#667085;">Submitted: {{ letter.submitted_at|date:"M d, Y" }}</small>
+          </div>
+          {% endfor %}
+          {% else %}
+          <p style="color:#667085; text-align:center;">No apology letters submitted.</p>
+          {% endif %}
+        </section>
+
+        <!-- Student Offense History -->
+        <section class="card">
+          <h3 style="margin:0 0 16px;"><i class="fas fa-history"></i> Offense History</h3>
+          {% for sv in student_violations %}
+          <div style="padding:10px 12px; border-left:3px solid {% if sv.id == violation.id %}var(--chmsu-dark-green){% else %}#e5e7eb{% endif %}; margin-bottom:8px; background:{% if sv.id == violation.id %}#f0fdf4{% else %}#f9fafb{% endif %};">
+            <div style="display:flex; justify-content:space-between;">
+              <a href="{% url 'violations:staff_violation_detail' sv.id %}" style="color:var(--chmsu-dark-green); font-weight:{% if sv.id == violation.id %}600{% else %}400{% endif %};">
+                #{{ sv.id }}
+              </a>
+              <span class="badge badge-sm {% if sv.type == 'major' %}badge-danger{% else %}badge-warning{% endif %}">
+                {{ sv.get_type_display }}
+              </span>
+            </div>
+            <small style="color:#667085;">{{ sv.incident_at|date:"M d, Y" }}</small>
+          </div>
+          {% empty %}
+          <p style="color:#667085;">No other violations on record.</p>
+          {% endfor %}
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="{% static 'violations/js/script.js' %}"></script>
+  <style>
+    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .badge-lg { padding: 6px 14px; font-size: 13px; }
+    .badge-sm { padding: 2px 6px; font-size: 10px; }
+    .badge-danger { background: #fee2e2; color: #dc2626; }
+    .badge-warning { background: #fef3c7; color: #d97706; }
+    .badge-success { background: #d1fae5; color: #059669; }
+    .badge-info { background: #dbeafe; color: #2563eb; }
+    .badge-secondary { background: #f3f4f6; color: #6b7280; }
+  </style>
+</body>
+</html>

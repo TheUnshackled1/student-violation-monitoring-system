@@ -1,0 +1,161 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% if edit_mode %}Edit{% else %}Create{% endif %} Violation - OSA Staff</title>
+  <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+<body class="role-staff">
+  <header class="top-nav">
+    <div class="top-left">
+      <a href="{% url 'violations:staff_dashboard' %}" style="display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;">
+        <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
+        <span class="header-title">{% if edit_mode %}Edit{% else %}Encode{% endif %} Violation</span>
+      </a>
+    </div>
+    <div class="top-right">
+      <a href="{% url 'violations:staff_violations_list' %}" class="ghost-btn"><i class="fas fa-arrow-left"></i> Back to List</a>
+    </div>
+  </header>
+
+  <div class="background-overlay"></div>
+  <div class="background-image"></div>
+
+  <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
+    <section class="card" style="max-width:800px; margin:0 auto;">
+      <h2 style="margin-bottom:20px;">
+        <i class="fas fa-{% if edit_mode %}edit{% else %}plus-circle{% endif %}"></i>
+        {% if edit_mode %}Edit Violation #{{ violation.id }}{% else %}Encode New Violation Record{% endif %}
+      </h2>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {% if not edit_mode %}
+        <!-- Student Selection -->
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Student ID <span style="color:red;">*</span></label>
+          <input type="text" name="student_id" list="studentList" required 
+                 placeholder="Enter or select student ID" 
+                 style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+          <datalist id="studentList">
+            {% for s in students %}
+            <option value="{{ s.student_id }}">{{ s.user.get_full_name|default:s.student_id }} - {{ s.program|default:'N/A' }}</option>
+            {% endfor %}
+          </datalist>
+          <small style="color:#667085;">Type or select from the dropdown</small>
+        </div>
+        {% else %}
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Student</label>
+          <input type="text" disabled value="{{ violation.student.user.get_full_name|default:violation.student.student_id }} ({{ violation.student.student_id }})" 
+                 style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px; background:#f9f9f9;">
+        </div>
+        {% endif %}
+
+        <!-- Incident Date & Time -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+          <div class="form-group">
+            <label style="display:block; margin-bottom:6px; font-weight:600;">Incident Date <span style="color:red;">*</span></label>
+            <input type="date" name="incident_date" required
+                   value="{% if edit_mode %}{{ violation.incident_at|date:'Y-m-d' }}{% endif %}"
+                   style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+          </div>
+          <div class="form-group">
+            <label style="display:block; margin-bottom:6px; font-weight:600;">Incident Time</label>
+            <input type="time" name="incident_time"
+                   value="{% if edit_mode %}{{ violation.incident_at|time:'H:i' }}{% endif %}"
+                   style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+          </div>
+        </div>
+
+        <!-- Type (Minor/Major) -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+          <div class="form-group">
+            <label style="display:block; margin-bottom:6px; font-weight:600;">Type <span style="color:red;">*</span></label>
+            <select name="type" required style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+              {% for val, label in type_choices %}
+              <option value="{{ val }}" {% if edit_mode and violation.type == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label style="display:block; margin-bottom:6px; font-weight:600;">Location <span style="color:red;">*</span></label>
+            <input type="text" name="location" required
+                   value="{% if edit_mode %}{{ violation.location }}{% endif %}"
+                   placeholder="Where did the incident occur?"
+                   style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+          </div>
+        </div>
+
+        {% if edit_mode %}
+        <!-- Status (only for edit) -->
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Status</label>
+          <select name="status" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+            {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if violation.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <!-- Description -->
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Description / Details <span style="color:red;">*</span></label>
+          <textarea name="description" required rows="5" 
+                    placeholder="Describe the violation incident in detail..."
+                    style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px; resize:vertical;">{% if edit_mode %}{{ violation.description }}{% endif %}</textarea>
+        </div>
+
+        <!-- Document Upload -->
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">
+            <i class="fas fa-paperclip"></i> Attach Evidence / Documents
+          </label>
+          <input type="file" name="documents" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                 style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+          <small style="color:#667085;">Accepted: PDF, Images (JPG, PNG), Word Documents. Max 5MB each.</small>
+        </div>
+
+        {% if edit_mode and existing_docs %}
+        <!-- Existing Documents -->
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Existing Documents</label>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            {% for doc in existing_docs %}
+            <div style="padding:8px 12px; background:#f3f4f6; border-radius:6px; display:flex; align-items:center; gap:8px;">
+              <i class="fas fa-file"></i>
+              <a href="{{ doc.document.url }}" target="_blank" style="color:var(--chmsu-dark-green);">{{ doc.document.name|slice:"-30:" }}</a>
+              <span class="badge {% if doc.is_verified %}badge-success{% else %}badge-warning{% endif %}">
+                {{ doc.is_verified|yesno:'Verified,Pending' }}
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <div style="display:flex; gap:12px; margin-top:24px;">
+          <button type="submit" class="login-button">
+            <i class="fas fa-save"></i> {% if edit_mode %}Update{% else %}Save{% endif %} Violation
+          </button>
+          <a href="{% url 'violations:staff_violations_list' %}" class="ghost-btn">Cancel</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="{% static 'violations/js/script.js' %}"></script>
+  <style>
+    .badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+    .badge-success { background: #d1fae5; color: #059669; }
+    .badge-warning { background: #fef3c7; color: #d97706; }
+  </style>
+</body>
+</html>

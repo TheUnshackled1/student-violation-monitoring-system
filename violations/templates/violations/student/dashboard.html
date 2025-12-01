@@ -18,8 +18,11 @@
             <span class="header-title">Student Dashboard</span>
         </div>
         <div class="top-right">
-            <button class="icon-btn" id="notifBtn" aria-label="Notifications">
+            <button class="icon-btn" id="notifBtn" aria-label="Notifications" style="position:relative;">
                 <i class="fas fa-bell"></i>
+                {% if unread_count %}
+                <span class="notif-badge" style="position:absolute; top:2px; right:2px; background:#dc2626; color:#fff; font-size:10px; padding:2px 5px; border-radius:10px; line-height:1;">{{ unread_count }}</span>
+                {% endif %}
             </button>
             <div class="profile-menu">
                 <button class="profile-btn" id="profileBtn">
@@ -160,16 +163,72 @@
         </section>
     </main>
 
-    <!-- Notifications Panel (optional UI) -->
+    <!-- Notifications Panel -->
     <aside class="notif-panel" id="notifPanel" aria-hidden="true">
         <div class="notif-header">
-            <h3>Notifications</h3>
+            <h3>Messages {% if unread_count %}<span class="badge badge-danger" style="font-size:12px; margin-left:6px;">{{ unread_count }} new</span>{% endif %}</h3>
             <button class="icon-btn" id="notifClose"><i class="fas fa-times"></i></button>
         </div>
-        <ul class="notif-list">
-            <li>Stay updated: new reports will show here.</li>
+        <ul class="notif-list" style="max-height:400px; overflow-y:auto; padding:0; margin:0;">
+            {% if staff_messages %}
+                {% for msg in staff_messages %}
+                <li class="message-item {% if not msg.read_at %}unread{% endif %}" 
+                    data-message-id="{{ msg.id }}"
+                    data-sender="{{ msg.sender.get_full_name|default:msg.sender.username }}"
+                    data-date="{{ msg.created_at|date:'M d, Y H:i' }}"
+                    data-content="{{ msg.content }}"
+                    style="padding:12px; border-bottom:1px solid #eee; cursor:pointer; {% if not msg.read_at %}background:#f0fdf4;{% endif %}">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                        <strong style="color:var(--chmsu-dark-green);">
+                            <i class="fas fa-user-tie"></i> {{ msg.sender.get_full_name|default:msg.sender.username }}
+                        </strong>
+                        <small style="color:#667085;">{{ msg.created_at|date:"M d, H:i" }}</small>
+                    </div>
+                    <p style="margin:0; color:#344054; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ msg.content|truncatechars:50 }}</p>
+                    {% if not msg.read_at %}
+                    <span class="unread-dot" style="display:inline-block; width:8px; height:8px; background:#dc2626; border-radius:50%; margin-top:6px;"></span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            {% else %}
+                <li style="padding:12px; color:#667085; text-align:center;">
+                    <i class="fas fa-inbox"></i> No messages yet.
+                </li>
+            {% endif %}
         </ul>
     </aside>
+
+    <!-- Message View Modal -->
+    <div class="modal" id="messageViewModal" aria-hidden="true">
+        <div class="modal-card" style="max-width:500px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-envelope-open"></i> Message</h3>
+                <button class="icon-btn" id="msgViewClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #eee;">
+                    <div>
+                        <strong style="color:var(--chmsu-dark-green); font-size:16px;">
+                            <i class="fas fa-user-tie"></i> <span id="msgViewSender">—</span>
+                        </strong>
+                        <div style="color:#667085; font-size:13px; margin-top:4px;">OSA Staff</div>
+                    </div>
+                    <small style="color:#667085;" id="msgViewDate">—</small>
+                </div>
+                <div id="msgViewContent" style="color:#344054; line-height:1.6; white-space:pre-wrap;">
+                    —
+                </div>
+            </div>
+            <div class="modal-actions" style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="login-button" id="msgViewMarkRead" style="display:none; background:linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <i class="fas fa-check"></i> Mark as Read
+                </button>
+                <button class="login-button" id="msgViewCloseBtn" style="background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Login History Modal -->
     <div class="modal" id="loginHistoryModal" aria-hidden="true">
@@ -212,11 +271,121 @@
                 </div>
             </div>
             <div class="modal-actions">
-                <button class="login-button" id="loginHistCloseBtn">Close</button>
+                <button class="login-button" id="loginHistCloseBtn" style="background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                    <i class="fas fa-times"></i> Close
+                </button>
             </div>
         </div>
     </div>
 
-        <script src="{% static 'violations/js/script.js' %}"></script>
+    <script src="{% static 'violations/js/script.js' %}"></script>
+    <script>
+        // Message View Modal functionality
+        (function(){
+            const modal = document.getElementById('messageViewModal');
+            const closeBtn = document.getElementById('msgViewClose');
+            const closeBtnFooter = document.getElementById('msgViewCloseBtn');
+            const markReadBtn = document.getElementById('msgViewMarkRead');
+            const senderEl = document.getElementById('msgViewSender');
+            const dateEl = document.getElementById('msgViewDate');
+            const contentEl = document.getElementById('msgViewContent');
+            
+            let currentMsgId = null;
+            let currentListItem = null;
+
+            function openModal(msgId, sender, date, content, isUnread, listItem){
+                currentMsgId = msgId;
+                currentListItem = listItem;
+                senderEl.textContent = sender;
+                dateEl.textContent = date;
+                contentEl.textContent = content;
+                markReadBtn.style.display = isUnread ? 'inline-flex' : 'none';
+                modal.classList.add('show');
+            }
+
+            function closeModal(){
+                modal.classList.remove('show');
+                currentMsgId = null;
+                currentListItem = null;
+            }
+
+            function updateBadges(){
+                // Update bell badge
+                const badge = document.querySelector('#notifBtn .notif-badge');
+                if(badge){
+                    const count = parseInt(badge.textContent) - 1;
+                    if(count <= 0){
+                        badge.remove();
+                    } else {
+                        badge.textContent = count;
+                    }
+                }
+                // Update header badge in panel
+                const headerBadge = document.querySelector('.notif-header .badge');
+                if(headerBadge){
+                    const hCount = parseInt(headerBadge.textContent) - 1;
+                    if(hCount <= 0){
+                        headerBadge.remove();
+                    } else {
+                        headerBadge.textContent = hCount + ' new';
+                    }
+                }
+            }
+
+            function markAsRead(){
+                if(!currentMsgId) return;
+                
+                fetch(`{% url 'violations:student_mark_message_read' 0 %}`.replace('/0/', `/${currentMsgId}/`), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.status === 'ok'){
+                        // Update list item styling
+                        if(currentListItem){
+                            currentListItem.classList.remove('unread');
+                            currentListItem.style.background = '';
+                            const dot = currentListItem.querySelector('.unread-dot');
+                            if(dot) dot.remove();
+                        }
+                        // Hide mark as read button
+                        markReadBtn.style.display = 'none';
+                        // Update badges
+                        updateBadges();
+                    }
+                })
+                .catch(err => console.error('Error marking message read:', err));
+            }
+
+            // Close modal handlers
+            if(closeBtn) closeBtn.addEventListener('click', closeModal);
+            if(closeBtnFooter) closeBtnFooter.addEventListener('click', closeModal);
+            if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+            document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && modal.classList.contains('show')) closeModal(); });
+
+            // Mark as read handler
+            if(markReadBtn) markReadBtn.addEventListener('click', markAsRead);
+
+            // Click on message items to view
+            document.querySelectorAll('.message-item').forEach(item => {
+                item.addEventListener('click', function(e){
+                    // Don't open modal if clicking on a button inside
+                    if(e.target.closest('button')) return;
+                    
+                    const msgId = this.dataset.messageId;
+                    const sender = this.dataset.sender;
+                    const date = this.dataset.date;
+                    const content = this.dataset.content;
+                    const isUnread = this.classList.contains('unread');
+                    
+                    openModal(msgId, sender, date, content, isUnread, this);
+                });
+            });
+        })();
+    </script>
 </body>
 </html>

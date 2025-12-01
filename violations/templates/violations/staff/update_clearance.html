@@ -1,0 +1,104 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Update Clearance - OSA Staff</title>
+  <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+<body class="role-staff">
+  <header class="top-nav">
+    <div class="top-left">
+      <a href="{% url 'violations:staff_dashboard' %}" style="display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;">
+        <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
+        <span class="header-title">Update Clearance</span>
+      </a>
+    </div>
+    <div class="top-right">
+      <a href="{% url 'violations:staff_clearances' %}" class="ghost-btn"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+  </header>
+
+  <div class="background-overlay"></div>
+  <div class="background-image"></div>
+
+  <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
+    <section class="card" style="max-width:600px; margin:0 auto;">
+      <h2 style="margin-bottom:20px;"><i class="fas fa-edit"></i> Update Clearance Status</h2>
+
+      <!-- Clearance Info -->
+      <div style="background:#f9fafb; padding:16px; border-radius:8px; margin-bottom:20px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div>
+            <span style="color:#667085;">Student:</span>
+            <strong>{{ clearance.student.user.get_full_name|default:clearance.student.student_id }}</strong>
+          </div>
+          <div>
+            <span style="color:#667085;">Student ID:</span>
+            <strong>{{ clearance.student.student_id }}</strong>
+          </div>
+          <div>
+            <span style="color:#667085;">Academic Year:</span>
+            <strong>{{ clearance.academic_year }}</strong>
+          </div>
+          <div>
+            <span style="color:#667085;">Semester:</span>
+            <strong>{{ clearance.semester }}</strong>
+          </div>
+          <div>
+            <span style="color:#667085;">Current Status:</span>
+            <span class="badge 
+              {% if clearance.status == 'cleared' %}badge-success
+              {% elif clearance.status == 'withheld' %}badge-danger
+              {% else %}badge-warning{% endif %}">
+              {{ clearance.status|upper }}
+            </span>
+          </div>
+          <div>
+            <span style="color:#667085;">Requirements Met:</span>
+            <strong>{{ clearance.requirements_met|yesno:'Yes,No' }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">New Status <span style="color:red;">*</span></label>
+          <select name="status" required style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">
+            <option value="pending" {% if clearance.status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="cleared" {% if clearance.status == 'cleared' %}selected{% endif %}>Cleared</option>
+            <option value="withheld" {% if clearance.status == 'withheld' %}selected{% endif %}>Withheld</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Notes</label>
+          <textarea name="notes" rows="3" placeholder="Add any notes..."
+                    style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">{{ clearance.notes }}</textarea>
+        </div>
+
+        <div style="display:flex; gap:12px;">
+          <button type="submit" class="login-button">
+            <i class="fas fa-save"></i> Update Clearance
+          </button>
+          <a href="{% url 'violations:staff_clearances' %}" class="ghost-btn">Cancel</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="{% static 'violations/js/script.js' %}"></script>
+  <style>
+    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .badge-success { background: #d1fae5; color: #059669; }
+    .badge-warning { background: #fef3c7; color: #d97706; }
+    .badge-danger { background: #fee2e2; color: #dc2626; }
+  </style>
+</body>
+</html>

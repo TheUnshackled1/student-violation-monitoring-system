@@ -1,21 +1,26 @@
 from django.contrib import messages
 from django.contrib.auth import login, authenticate, logout as auth_logout
 from django.db import IntegrityError, transaction
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.text import slugify
-
-from .models import User
-from .decorators import login_required, role_required
-from .models import Student as StudentModel
-from .models import TemporaryAccessRequest
+from django.http import HttpResponse, JsonResponse
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Count, Sum, Case, When, IntegerField, Q
 from django.utils import timezone
 from django.db import models
-from .models import Violation, LoginActivity
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.http import HttpResponse, JsonResponse
+from datetime import datetime
 from io import BytesIO
 import tempfile
 import os
+import csv
+
+from .models import (
+	User, Student as StudentModel, Staff as StaffModel, Faculty as FacultyModel,
+	TemporaryAccessRequest, Violation, LoginActivity,
+	ViolationDocument, ApologyLetter, IDConfiscation, ViolationClearance, StaffVerification,
+	Message
+)
+from .decorators import login_required, role_required
 
 
 ############################################
@@ -351,10 +356,16 @@ def student_dashboard_view(request):
 	violations = Violation.objects.select_related("reported_by", "student").filter(student=student).order_by("-created_at") if student else []
 	# Login history for current user
 	login_history = LoginActivity.objects.filter(user=request.user).order_by("-timestamp")[:20]
+	# Messages from staff/faculty
+	messages_qs = Message.objects.select_related("sender").filter(receiver=request.user).order_by("-created_at")
+	unread_count = messages_qs.filter(read_at__isnull=True).count()
+	staff_messages = messages_qs[:20]
 	ctx = {
 		"student": student,
 		"violations": violations,
 		"login_history": login_history,
+		"staff_messages": staff_messages,
+		"unread_count": unread_count,
 	}
 	return render(request, "violations/student/dashboard.html", ctx)
 
@@ -588,6 +599,8 @@ def staff_dashboard_view(request):
 	ongoing_sanctions = violation_qs.filter(status=Violation.Status.UNDER_REVIEW).count()
 	# include login history for modal
 	login_history = LoginActivity.objects.filter(user=request.user).order_by("-timestamp")[:20]
+	# Sent messages to students (for tracking read status)
+	sent_messages = Message.objects.select_related("receiver", "receiver__student_profile").filter(sender=request.user).order_by("-created_at")[:30]
 	ctx = {
 		"students": students,
 		"total_students": total_students,
@@ -596,6 +609,7 @@ def staff_dashboard_view(request):
 		"resolved_violations": resolved_violations,
 		"ongoing_sanctions": ongoing_sanctions,
 		"login_history": login_history,
+		"sent_messages": sent_messages,
 	}
 	return render(request, "violations/staff/dashboard.html", ctx)
 
@@ -667,3 +681,779 @@ def route_dashboard_view(request):
 
 	# Fallback
 	return redirect("violations:student_dashboard")
+
+
+############################################
+# Staff Feature Views - Complete Implementation
+############################################
+
+@role_required({User.Role.STAFF})
+def staff_violations_list_view(request):
+	"""Staff: View all violations with filtering and search."""
+	violations = Violation.objects.select_related('student', 'student__user', 'reported_by').order_by('-created_at')
+	
+	# Search
+	search_query = request.GET.get('search', '')
+	if search_query:
+		violations = violations.filter(
+			Q(student__student_id__icontains=search_query) |
+			Q(student__user__first_name__icontains=search_query) |
+			Q(student__user__last_name__icontains=search_query) |
+			Q(description__icontains=search_query)
+		)
+	
+	# Status filter
+	status_filter = request.GET.get('status', '')
+	if status_filter:
+		violations = violations.filter(status=status_filter)
+	
+	# Type (severity) filter
+	type_filter = request.GET.get('type', '')
+	if type_filter:
+		violations = violations.filter(type=type_filter)
+	
+	# Pagination
+	paginator = Paginator(violations, 20)
+	page = request.GET.get('page', 1)
+	try:
+		violations = paginator.page(page)
+	except (PageNotAnInteger, EmptyPage):
+		violations = paginator.page(1)
+	
+	ctx = {
+		'violations': violations,
+		'search_query': search_query,
+		'status_filter': status_filter,
+		'type_filter': type_filter,
+		'status_choices': Violation.Status.choices,
+		'type_choices': Violation.Severity.choices,
+	}
+	return render(request, 'violations/staff/violations_list.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_violation_create_view(request):
+	"""Staff: Create a new violation record from physical reports."""
+	if request.method == 'POST':
+		student_id = request.POST.get('student_id', '').strip()
+		description = request.POST.get('description', '').strip()
+		violation_type = request.POST.get('type', Violation.Severity.MINOR)
+		location = request.POST.get('location', '').strip()
+		incident_date = request.POST.get('incident_date', '')
+		incident_time = request.POST.get('incident_time', '')
+		
+		# Validate student
+		student = StudentModel.objects.filter(student_id__iexact=student_id).first()
+		if not student:
+			messages.error(request, f"Student with ID '{student_id}' not found.")
+			return redirect('violations:staff_violation_create')
+		
+		# Parse incident datetime
+		incident_at = timezone.now()
+		if incident_date:
+			try:
+				if incident_time:
+					incident_at = datetime.strptime(f"{incident_date} {incident_time}", "%Y-%m-%d %H:%M")
+				else:
+					incident_at = datetime.strptime(incident_date, "%Y-%m-%d")
+				incident_at = timezone.make_aware(incident_at)
+			except ValueError:
+				pass
+		
+		# Create violation
+		violation = Violation.objects.create(
+			student=student,
+			reported_by=request.user,
+			description=description,
+			type=violation_type,
+			location=location or 'Not specified',
+			incident_at=incident_at,
+			status=Violation.Status.REPORTED,
+		)
+		
+		# Handle document uploads
+		documents = request.FILES.getlist('documents')
+		for doc in documents:
+			ViolationDocument.objects.create(
+				violation=violation,
+				document=doc,
+				document_type='evidence',
+				uploaded_by=request.user,
+			)
+		
+		# Track offense frequency for this student
+		offense_count = Violation.objects.filter(student=student).count()
+		
+		messages.success(request, f"Violation #{violation.id} created successfully. This is offense #{offense_count} for {student.user.get_full_name() or student.student_id}.")
+		return redirect('violations:staff_violations_list')
+	
+	# GET request
+	students = StudentModel.objects.select_related('user').all().order_by('student_id')
+	ctx = {
+		'students': students,
+		'type_choices': Violation.Severity.choices,
+	}
+	return render(request, 'violations/staff/violation_form.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_violation_edit_view(request, violation_id):
+	"""Staff: Edit an existing violation record."""
+	violation = get_object_or_404(Violation.objects.select_related('student', 'student__user'), id=violation_id)
+	
+	if request.method == 'POST':
+		description = request.POST.get('description', '').strip()
+		violation_type = request.POST.get('type', violation.type)
+		status = request.POST.get('status', violation.status)
+		location = request.POST.get('location', violation.location)
+		incident_date = request.POST.get('incident_date', '')
+		incident_time = request.POST.get('incident_time', '')
+		
+		violation.description = description
+		violation.type = violation_type
+		violation.location = location
+		violation.status = status
+		
+		# Parse incident datetime
+		if incident_date:
+			try:
+				if incident_time:
+					incident_at = datetime.strptime(f"{incident_date} {incident_time}", "%Y-%m-%d %H:%M")
+				else:
+					incident_at = datetime.strptime(incident_date, "%Y-%m-%d")
+				violation.incident_at = timezone.make_aware(incident_at)
+			except ValueError:
+				pass
+		
+		violation.save()
+		
+		# Handle new document uploads
+		documents = request.FILES.getlist('documents')
+		for doc in documents:
+			ViolationDocument.objects.create(
+				violation=violation,
+				document=doc,
+				document_type='evidence',
+				uploaded_by=request.user,
+			)
+		
+		messages.success(request, f"Violation #{violation.id} updated successfully.")
+		return redirect('violations:staff_violations_list')
+	
+	# GET request
+	existing_docs = ViolationDocument.objects.filter(violation=violation)
+	ctx = {
+		'violation': violation,
+		'existing_docs': existing_docs,
+		'type_choices': Violation.Severity.choices,
+		'status_choices': Violation.Status.choices,
+		'edit_mode': True,
+	}
+	return render(request, 'violations/staff/violation_form.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_violation_detail_view(request, violation_id):
+	"""Staff: View violation details with all related data."""
+	violation = get_object_or_404(
+		Violation.objects.select_related('student', 'student__user', 'reported_by'),
+		id=violation_id
+	)
+	
+	# Get related data
+	documents = ViolationDocument.objects.filter(violation=violation)
+	apology_letters = ApologyLetter.objects.filter(violation=violation)
+	verifications = StaffVerification.objects.filter(violation=violation).select_related('verified_by')
+	id_confiscation = IDConfiscation.objects.filter(violation=violation).first()
+	
+	# Get offense history for the student
+	student_violations = Violation.objects.filter(student=violation.student).order_by('-created_at')
+	offense_number = list(student_violations).index(violation) + 1 if violation in student_violations else 1
+	total_offenses = student_violations.count()
+	
+	ctx = {
+		'violation': violation,
+		'documents': documents,
+		'apology_letters': apology_letters,
+		'verifications': verifications,
+		'id_confiscation': id_confiscation,
+		'offense_number': offense_number,
+		'total_offenses': total_offenses,
+		'student_violations': student_violations[:5],
+	}
+	return render(request, 'violations/staff/violation_detail.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_verify_violation_view(request, violation_id):
+	"""Staff: Verify/validate a violation record."""
+	violation = get_object_or_404(Violation, id=violation_id)
+	
+	if request.method == 'POST':
+		action = request.POST.get('action', 'verified')
+		notes = request.POST.get('notes', '').strip()
+		
+		# Create verification record
+		StaffVerification.objects.create(
+			violation=violation,
+			verified_by=request.user,
+			action=action,
+			notes=notes,
+		)
+		
+		# Update violation status based on action
+		if action == 'verified':
+			if violation.status == Violation.Status.REPORTED:
+				violation.status = Violation.Status.UNDER_REVIEW
+				violation.save()
+			messages.success(request, f"Violation #{violation.id} has been verified.")
+		elif action == 'correction_needed':
+			messages.warning(request, f"Violation #{violation.id} marked for correction.")
+		elif action == 'escalated':
+			messages.info(request, f"Violation #{violation.id} escalated to supervisor.")
+		
+		return redirect('violations:staff_violation_detail', violation_id=violation.id)
+	
+	return redirect('violations:staff_violation_detail', violation_id=violation.id)
+
+
+@role_required({User.Role.STAFF})
+def staff_apology_letters_view(request):
+	"""Staff: View and manage apology letter submissions."""
+	letters = ApologyLetter.objects.select_related(
+		'violation', 'student', 'student__user', 'verified_by'
+	).order_by('-submitted_at')
+	
+	# Filter by status
+	status_filter = request.GET.get('status', '')
+	if status_filter:
+		letters = letters.filter(status=status_filter)
+	
+	# Search
+	search_query = request.GET.get('search', '')
+	if search_query:
+		letters = letters.filter(
+			Q(student__student_id__icontains=search_query) |
+			Q(student__user__first_name__icontains=search_query) |
+			Q(student__user__last_name__icontains=search_query)
+		)
+	
+	# Pagination
+	paginator = Paginator(letters, 20)
+	page = request.GET.get('page', 1)
+	try:
+		letters = paginator.page(page)
+	except (PageNotAnInteger, EmptyPage):
+		letters = paginator.page(1)
+	
+	# Stats
+	pending_count = ApologyLetter.objects.filter(status='pending').count()
+	verified_count = ApologyLetter.objects.filter(status='verified').count()
+	rejected_count = ApologyLetter.objects.filter(status='rejected').count()
+	
+	ctx = {
+		'letters': letters,
+		'status_filter': status_filter,
+		'search_query': search_query,
+		'pending_count': pending_count,
+		'verified_count': verified_count,
+		'rejected_count': rejected_count,
+	}
+	return render(request, 'violations/staff/apology_letters.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_verify_apology_view(request, letter_id):
+	"""Staff: Verify or reject an apology letter."""
+	letter = get_object_or_404(ApologyLetter.objects.select_related('student', 'violation'), id=letter_id)
+	
+	if request.method == 'POST':
+		action = request.POST.get('action', 'verified')
+		notes = request.POST.get('notes', '').strip()
+		
+		letter.status = action
+		letter.verified_by = request.user
+		letter.verified_at = timezone.now()
+		letter.notes = notes
+		letter.save()
+		
+		if action == 'verified':
+			messages.success(request, f"Apology letter from {letter.student.user.get_full_name() or letter.student.student_id} has been verified.")
+		else:
+			messages.warning(request, f"Apology letter from {letter.student.user.get_full_name() or letter.student.student_id} has been rejected.")
+		
+		return redirect('violations:staff_apology_letters')
+	
+	ctx = {'letter': letter}
+	return render(request, 'violations/staff/verify_apology.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_id_confiscation_view(request):
+	"""Staff: Manage student ID confiscation and releases."""
+	confiscations = IDConfiscation.objects.select_related(
+		'student', 'student__user', 'violation', 'confiscated_by', 'released_by'
+	).order_by('-confiscated_at')
+	
+	# Filter by status
+	status_filter = request.GET.get('status', '')
+	if status_filter:
+		confiscations = confiscations.filter(status=status_filter)
+	
+	# Search
+	search_query = request.GET.get('search', '')
+	if search_query:
+		confiscations = confiscations.filter(
+			Q(student__student_id__icontains=search_query) |
+			Q(student__user__first_name__icontains=search_query) |
+			Q(student__user__last_name__icontains=search_query)
+		)
+	
+	# Pagination
+	paginator = Paginator(confiscations, 20)
+	page = request.GET.get('page', 1)
+	try:
+		confiscations = paginator.page(page)
+	except (PageNotAnInteger, EmptyPage):
+		confiscations = paginator.page(1)
+	
+	# Stats
+	confiscated_count = IDConfiscation.objects.filter(status='confiscated').count()
+	released_count = IDConfiscation.objects.filter(status='released').count()
+	
+	ctx = {
+		'confiscations': confiscations,
+		'status_filter': status_filter,
+		'search_query': search_query,
+		'confiscated_count': confiscated_count,
+		'released_count': released_count,
+	}
+	return render(request, 'violations/staff/id_confiscation.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_confiscate_id_view(request):
+	"""Staff: Record a new ID confiscation."""
+	if request.method == 'POST':
+		student_id = request.POST.get('student_id', '').strip()
+		violation_id = request.POST.get('violation_id', '')
+		reason = request.POST.get('reason', '').strip()
+		
+		student = StudentModel.objects.filter(student_id__iexact=student_id).first()
+		if not student:
+			messages.error(request, f"Student with ID '{student_id}' not found.")
+			return redirect('violations:staff_confiscate_id')
+		
+		# Check if already confiscated
+		existing = IDConfiscation.objects.filter(student=student, status='confiscated').first()
+		if existing:
+			messages.warning(request, f"ID for {student.user.get_full_name() or student.student_id} is already confiscated.")
+			return redirect('violations:staff_id_confiscation')
+		
+		violation = None
+		if violation_id:
+			violation = Violation.objects.filter(id=violation_id).first()
+		
+		IDConfiscation.objects.create(
+			student=student,
+			violation=violation,
+			confiscated_by=request.user,
+			reason=reason,
+			status='confiscated',
+		)
+		
+		messages.success(request, f"ID for {student.user.get_full_name() or student.student_id} has been confiscated.")
+		return redirect('violations:staff_id_confiscation')
+	
+	# GET request
+	students = StudentModel.objects.select_related('user').all().order_by('student_id')
+	violations = Violation.objects.filter(status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW])
+	ctx = {
+		'students': students,
+		'violations': violations,
+	}
+	return render(request, 'violations/staff/confiscate_id.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_release_id_view(request, confiscation_id):
+	"""Staff: Release a confiscated student ID."""
+	confiscation = get_object_or_404(IDConfiscation, id=confiscation_id)
+	
+	if request.method == 'POST':
+		release_notes = request.POST.get('release_notes', '').strip()
+		
+		confiscation.status = 'released'
+		confiscation.released_by = request.user
+		confiscation.released_at = timezone.now()
+		confiscation.release_notes = release_notes
+		confiscation.save()
+		
+		messages.success(request, f"ID for {confiscation.student.user.get_full_name() or confiscation.student.student_id} has been released.")
+		return redirect('violations:staff_id_confiscation')
+	
+	ctx = {'confiscation': confiscation}
+	return render(request, 'violations/staff/release_id.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_clearances_view(request):
+	"""Staff: View and manage student violation clearances."""
+	clearances = ViolationClearance.objects.select_related(
+		'student', 'student__user', 'cleared_by'
+	).order_by('-created_at')
+	
+	# Filter by status
+	status_filter = request.GET.get('status', '')
+	if status_filter:
+		clearances = clearances.filter(status=status_filter)
+	
+	# Search
+	search_query = request.GET.get('search', '')
+	if search_query:
+		clearances = clearances.filter(
+			Q(student__student_id__icontains=search_query) |
+			Q(student__user__first_name__icontains=search_query) |
+			Q(student__user__last_name__icontains=search_query)
+		)
+	
+	# Pagination
+	paginator = Paginator(clearances, 20)
+	page = request.GET.get('page', 1)
+	try:
+		clearances = paginator.page(page)
+	except (PageNotAnInteger, EmptyPage):
+		clearances = paginator.page(1)
+	
+	# Stats
+	pending_count = ViolationClearance.objects.filter(status='pending').count()
+	cleared_count = ViolationClearance.objects.filter(status='cleared').count()
+	withheld_count = ViolationClearance.objects.filter(status='withheld').count()
+	
+	ctx = {
+		'clearances': clearances,
+		'status_filter': status_filter,
+		'search_query': search_query,
+		'pending_count': pending_count,
+		'cleared_count': cleared_count,
+		'withheld_count': withheld_count,
+	}
+	return render(request, 'violations/staff/clearances.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_create_clearance_view(request):
+	"""Staff: Create a clearance request for a student."""
+	if request.method == 'POST':
+		student_id = request.POST.get('student_id', '').strip()
+		academic_year = request.POST.get('academic_year', '').strip()
+		semester = request.POST.get('semester', '').strip()
+		notes = request.POST.get('notes', '').strip()
+		
+		student = StudentModel.objects.filter(student_id__iexact=student_id).first()
+		if not student:
+			messages.error(request, f"Student with ID '{student_id}' not found.")
+			return redirect('violations:staff_create_clearance')
+		
+		# Check if clearance already exists for this period
+		existing = ViolationClearance.objects.filter(
+			student=student,
+			academic_year=academic_year,
+			semester=semester,
+		).first()
+		if existing:
+			messages.warning(request, f"Clearance for {student.student_id} in {academic_year} {semester} already exists.")
+			return redirect('violations:staff_clearances')
+		
+		# Check if student has unresolved violations
+		unresolved = Violation.objects.filter(
+			student=student,
+			status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW]
+		).count()
+		
+		requirements_met = unresolved == 0
+		status = 'pending' if unresolved > 0 else 'cleared'
+		
+		clearance = ViolationClearance.objects.create(
+			student=student,
+			academic_year=academic_year,
+			semester=semester,
+			status=status,
+			requirements_met=requirements_met,
+			notes=notes,
+		)
+		
+		if status == 'cleared':
+			clearance.cleared_by = request.user
+			clearance.cleared_at = timezone.now()
+			clearance.save()
+			messages.success(request, f"Clearance for {student.student_id} has been granted (no violations found).")
+		else:
+			messages.info(request, f"Clearance for {student.student_id} is pending ({unresolved} unresolved violations).")
+		
+		return redirect('violations:staff_clearances')
+	
+	# GET request
+	students = StudentModel.objects.select_related('user').all().order_by('student_id')
+	current_year = timezone.now().year
+	academic_years = [f"{y}-{y+1}" for y in range(current_year-2, current_year+1)]
+	semesters = ['First Semester', 'Second Semester', 'Summer']
+	
+	ctx = {
+		'students': students,
+		'academic_years': academic_years,
+		'semesters': semesters,
+	}
+	return render(request, 'violations/staff/create_clearance.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_update_clearance_view(request, clearance_id):
+	"""Staff: Update clearance status."""
+	clearance = get_object_or_404(ViolationClearance, id=clearance_id)
+	
+	if request.method == 'POST':
+		status = request.POST.get('status', clearance.status)
+		notes = request.POST.get('notes', '').strip()
+		
+		clearance.status = status
+		clearance.notes = notes
+		
+		if status == 'cleared':
+			clearance.cleared_by = request.user
+			clearance.cleared_at = timezone.now()
+			clearance.requirements_met = True
+		
+		clearance.save()
+		
+		messages.success(request, f"Clearance for {clearance.student.student_id} updated to {status}.")
+		return redirect('violations:staff_clearances')
+	
+	ctx = {'clearance': clearance}
+	return render(request, 'violations/staff/update_clearance.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_reports_view(request):
+	"""Staff: Generate and view violation reports."""
+	# Date range filters
+	start_date = request.GET.get('start_date', '')
+	end_date = request.GET.get('end_date', '')
+	report_type = request.GET.get('report_type', 'summary')
+	
+	violations = Violation.objects.select_related('student', 'student__user', 'reported_by')
+	
+	if start_date:
+		try:
+			start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+			violations = violations.filter(incident_at__gte=timezone.make_aware(start_dt))
+		except ValueError:
+			pass
+	
+	if end_date:
+		try:
+			end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+			violations = violations.filter(incident_at__lte=timezone.make_aware(end_dt))
+		except ValueError:
+			pass
+	
+	# Summary statistics
+	total_violations = violations.count()
+	by_type = violations.values('type').annotate(count=Count('id'))
+	by_status = violations.values('status').annotate(count=Count('id'))
+	
+	# Top offenders
+	top_offenders = (
+		violations.values('student__student_id', 'student__user__first_name', 'student__user__last_name')
+		.annotate(count=Count('id'))
+		.order_by('-count')[:10]
+	)
+	
+	# Monthly trend
+	monthly_trend = (
+		violations.extra(select={'month': "strftime('%%Y-%%m', incident_at)"})
+		.values('month')
+		.annotate(count=Count('id'))
+		.order_by('month')
+	)
+	
+	ctx = {
+		'start_date': start_date,
+		'end_date': end_date,
+		'report_type': report_type,
+		'total_violations': total_violations,
+		'by_type': {item['type']: item['count'] for item in by_type},
+		'by_status': {item['status']: item['count'] for item in by_status},
+		'top_offenders': top_offenders,
+		'monthly_trend': list(monthly_trend),
+		'violations': violations.order_by('-incident_at')[:50],
+	}
+	return render(request, 'violations/staff/reports.html', ctx)
+
+
+@role_required({User.Role.STAFF})
+def staff_export_report_view(request):
+	"""Staff: Export violation report as CSV."""
+	start_date = request.GET.get('start_date', '')
+	end_date = request.GET.get('end_date', '')
+	
+	violations = Violation.objects.select_related('student', 'student__user', 'reported_by').order_by('-incident_at')
+	
+	if start_date:
+		try:
+			start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+			violations = violations.filter(incident_at__gte=timezone.make_aware(start_dt))
+		except ValueError:
+			pass
+	
+	if end_date:
+		try:
+			end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+			violations = violations.filter(incident_at__lte=timezone.make_aware(end_dt))
+		except ValueError:
+			pass
+	
+	# Create CSV response
+	response = HttpResponse(content_type='text/csv')
+	response['Content-Disposition'] = f'attachment; filename="violations_report_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+	
+	writer = csv.writer(response)
+	writer.writerow(['ID', 'Student ID', 'Student Name', 'Description', 'Type', 'Status', 'Location', 'Incident Date', 'Reported By', 'Created At'])
+	
+	for v in violations:
+		writer.writerow([
+			v.id,
+			v.student.student_id,
+			v.student.user.get_full_name() or v.student.student_id,
+			v.description,
+			v.type,
+			v.status,
+			v.location,
+			v.incident_at.strftime("%Y-%m-%d %H:%M") if v.incident_at else '',
+			v.reported_by.get_full_name() if v.reported_by else '',
+			v.created_at.strftime("%Y-%m-%d %H:%M"),
+		])
+	
+	return response
+
+
+@role_required({User.Role.STAFF})
+def staff_delete_document_view(request, document_id):
+	"""Staff: Delete a violation document."""
+	document = get_object_or_404(ViolationDocument, id=document_id)
+	violation_id = document.violation.id
+	
+	if request.method == 'POST':
+		document.delete()
+		messages.success(request, "Document deleted successfully.")
+	
+	return redirect('violations:staff_violation_detail', violation_id=violation_id)
+
+
+@role_required({User.Role.STAFF})
+def staff_send_message_view(request):
+	"""Staff: Send a message to a student."""
+	if request.method == 'POST':
+		student_id = request.POST.get('student_id', '').strip()
+		message_content = request.POST.get('message', '').strip()
+		
+		if not student_id or not message_content:
+			messages.error(request, "Student ID and message are required.")
+			return redirect('violations:staff_dashboard')
+		
+		# Find the student
+		student = StudentModel.objects.select_related('user').filter(student_id__iexact=student_id).first()
+		if not student:
+			messages.error(request, f"Student with ID '{student_id}' not found.")
+			return redirect('violations:staff_dashboard')
+		
+		# Create the message
+		Message.objects.create(
+			sender=request.user,
+			receiver=student.user,
+			content=message_content
+		)
+		
+		messages.success(request, f"Message sent to {student.user.get_full_name() or student.student_id}.")
+		return redirect('violations:staff_dashboard')
+	
+	return redirect('violations:staff_dashboard')
+
+
+@role_required({User.Role.STUDENT})
+def student_mark_message_read_view(request, message_id):
+	"""Student: Mark a message as read."""
+	message_obj = get_object_or_404(Message, id=message_id, receiver=request.user)
+	message_obj.mark_read()
+	return JsonResponse({'status': 'ok'})
+
+
+@role_required({User.Role.STAFF})
+def staff_add_student_view(request):
+	"""Staff: Add a new student to the system."""
+	if request.method == 'POST':
+		# Get form data
+		student_id = request.POST.get('student_id', '').strip()
+		username = request.POST.get('username', '').strip()
+		first_name = request.POST.get('first_name', '').strip()
+		last_name = request.POST.get('last_name', '').strip()
+		email = request.POST.get('email', '').strip()
+		password = request.POST.get('password', '').strip()
+		contact_number = request.POST.get('contact_number', '').strip()
+		program = request.POST.get('program', '').strip()
+		year_level = request.POST.get('year_level', '').strip()
+		department = request.POST.get('department', '').strip()
+		guardian_name = request.POST.get('guardian_name', '').strip()
+		guardian_contact = request.POST.get('guardian_contact', '').strip()
+		
+		# Validate required fields
+		if not all([student_id, username, first_name, last_name, password, program, year_level]):
+			messages.error(request, "Please fill in all required fields.")
+			return redirect('violations:staff_dashboard')
+		
+		# Check if student ID already exists
+		if StudentModel.objects.filter(student_id__iexact=student_id).exists():
+			messages.error(request, f"A student with ID '{student_id}' already exists.")
+			return redirect('violations:staff_dashboard')
+		
+		# Check if username already exists
+		if User.objects.filter(username__iexact=username).exists():
+			messages.error(request, f"Username '{username}' is already taken.")
+			return redirect('violations:staff_dashboard')
+		
+		# Check if email already exists (if provided)
+		if email and User.objects.filter(email__iexact=email).exists():
+			messages.error(request, f"Email '{email}' is already registered.")
+			return redirect('violations:staff_dashboard')
+		
+		try:
+			# Create the user account
+			user = User.objects.create_user(
+				username=username,
+				email=email or None,
+				password=password,
+				first_name=first_name,
+				last_name=last_name,
+				role=User.Role.STUDENT
+			)
+			
+			# Create the student profile
+			StudentModel.objects.create(
+				user=user,
+				student_id=student_id,
+				program=program,
+				year_level=int(year_level),
+				department=department or None,
+				contact_number=contact_number or None,
+				guardian_name=guardian_name or None,
+				guardian_contact=guardian_contact or None,
+				enrollment_status='Enrolled'
+			)
+			
+			messages.success(request, f"Student '{first_name} {last_name}' ({student_id}) has been added successfully.")
+		except Exception as e:
+			messages.error(request, f"Error creating student: {str(e)}")
+		
+		return redirect('violations:staff_dashboard')
+	
+	return redirect('violations:staff_dashboard')

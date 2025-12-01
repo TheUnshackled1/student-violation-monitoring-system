@@ -17,7 +17,9 @@
       <span class="header-title">OSA Staff Dashboard</span>
     </div>
     <div class="top-right">
-      <button class="icon-btn" id="chatHeaderBtn" aria-label="Team Chat"><i class="fas fa-comments"></i></button>
+      <button class="icon-btn" id="sentMessagesBtn" aria-label="Sent Messages" title="View Sent Messages" style="position:relative;">
+        <i class="fas fa-paper-plane"></i>
+      </button>
       <div class="searchbar">
         <i class="fas fa-search"></i>
         <input type="text" placeholder="Search student..." />
@@ -25,8 +27,8 @@
       <button class="icon-btn" id="notifBtn"><i class="fas fa-bell"></i></button>
       <div class="profile-menu">
         <button class="profile-btn" id="profileBtn">
-          <span class="avatar">S</span>
-          <span class="name">OSA Staff</span>
+          <span class="avatar">{{ request.user.first_name|slice:":1"|default:request.user.username|slice:":1"|upper }}</span>
+          <span class="name">{{ request.user.get_full_name|default:request.user.username }}</span>
           <i class="fas fa-chevron-down"></i>
         </button>
         <div class="dropdown" id="profileDropdown">
@@ -75,9 +77,40 @@
       </div>
     </section>
 
-    
-
-    
+    <!-- Quick Actions Section -->
+    <section class="card" style="margin-top:20px;">
+      <h3 style="margin:0 0 16px;"><i class="fas fa-bolt"></i> Quick Actions</h3>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+        <button type="button" class="quick-action-btn" id="addStudentBtn">
+          <i class="fas fa-user-plus"></i>
+          <span>Add Student</span>
+        </button>
+        <a href="{% url 'violations:staff_violation_create' %}" class="quick-action-btn">
+          <i class="fas fa-plus-circle"></i>
+          <span>Encode Violation</span>
+        </a>
+        <a href="{% url 'violations:staff_violations_list' %}" class="quick-action-btn">
+          <i class="fas fa-list"></i>
+          <span>All Violations</span>
+        </a>
+        <a href="{% url 'violations:staff_apology_letters' %}" class="quick-action-btn">
+          <i class="fas fa-envelope-open-text"></i>
+          <span>Apology Letters</span>
+        </a>
+        <a href="{% url 'violations:staff_id_confiscation' %}" class="quick-action-btn">
+          <i class="fas fa-id-card"></i>
+          <span>ID Confiscation</span>
+        </a>
+        <a href="{% url 'violations:staff_clearances' %}" class="quick-action-btn">
+          <i class="fas fa-clipboard-check"></i>
+          <span>Clearances</span>
+        </a>
+        <a href="{% url 'violations:staff_reports' %}" class="quick-action-btn">
+          <i class="fas fa-chart-bar"></i>
+          <span>Reports</span>
+        </a>
+      </div>
+    </section>
 
     <!-- Student Directory Table -->
     <section class="card" style="margin-top:20px;">
@@ -136,13 +169,11 @@
                 <td>
                   <div class="actions-group">
                     <a class="action-btn gray" href="{% url 'violations:staff_student_detail' s.student_id %}"><i class="fas fa-id-card"></i> View</a>
-                    {% if s.user.email %}
-                      <a class="action-btn gray" href="mailto:{{ s.user.email }}"><i class="fas fa-envelope"></i> Contact</a>
-                    {% elif s.contact_number %}
-                      <a class="action-btn gray" href="tel:{{ s.contact_number }}"><i class="fas fa-phone"></i> Contact</a>
-                    {% else %}
-                      <button class="action-btn gray" disabled><i class="fas fa-ban"></i> Contact</button>
-                    {% endif %}
+                    <button class="action-btn gray message-student-btn" 
+                            data-student-id="{{ s.student_id }}"
+                            data-student-name="{{ s.user.get_full_name|default:s.user.username }}">
+                      <i class="fas fa-paper-plane"></i> Message
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -212,7 +243,7 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button class="login-button" id="loginHistCloseBtn">Close</button>
+        <button class="login-button" id="loginHistCloseBtn" style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);"><i class="fas fa-times"></i> Close</button>
       </div>
     </div>
   </div>
@@ -256,7 +287,7 @@
           <div class="stat-card small"><div class="label">Guardian Contact</div><div class="value" id="sdGuardianContact">—</div></div>
         </div>
         <div style="margin-top:16px; display:flex; justify-content:flex-end;">
-          <button class="login-button" id="studentDetailCloseBtn">Close</button>
+          <button class="login-button" id="studentDetailCloseBtn" style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);"><i class="fas fa-times"></i> Close</button>
         </div>
       </div>
     </div>
@@ -273,6 +304,168 @@
     </ul>
   </aside>
 
+  <!-- Sent Messages Panel -->
+  <aside class="notif-panel" id="sentMessagesPanel" aria-hidden="true" style="right:16px; width:min(450px, 95vw);">
+    <div class="notif-header">
+      <h3><i class="fas fa-paper-plane"></i> Sent Messages</h3>
+      <button class="icon-btn" id="sentMsgClose"><i class="fas fa-times"></i></button>
+    </div>
+    <ul class="notif-list" style="max-height:450px; overflow-y:auto; padding:0; margin:0;">
+      {% if sent_messages %}
+        {% for msg in sent_messages %}
+        <li class="sent-message-item" style="padding:12px; border-bottom:1px solid #eee;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+            <div>
+              <strong style="color:var(--chmsu-dark-green);">
+                <i class="fas fa-user-graduate"></i> 
+                {{ msg.receiver.get_full_name|default:msg.receiver.username }}
+              </strong>
+              {% if msg.receiver.student_profile %}
+              <span style="color:#667085; font-size:12px; margin-left:4px;">({{ msg.receiver.student_profile.student_id }})</span>
+              {% endif %}
+            </div>
+            <small style="color:#667085;">{{ msg.created_at|date:"M d, H:i" }}</small>
+          </div>
+          <p style="margin:0 0 8px; color:#344054; font-size:14px;">{{ msg.content|truncatechars:80 }}</p>
+          <div style="display:flex; align-items:center; gap:6px;">
+            {% if msg.read_at %}
+              <span class="badge" style="background:#dcfce7; color:#166534; font-size:11px;">
+                <i class="fas fa-check-double"></i> Seen {{ msg.read_at|date:"M d, H:i" }}
+              </span>
+            {% else %}
+              <span class="badge" style="background:#fef3c7; color:#92400e; font-size:11px;">
+                <i class="fas fa-clock"></i> Not seen yet
+              </span>
+            {% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      {% else %}
+        <li style="padding:20px; color:#667085; text-align:center;">
+          <i class="fas fa-inbox" style="font-size:24px; margin-bottom:8px; display:block;"></i>
+          No messages sent yet.
+        </li>
+      {% endif %}
+    </ul>
+  </aside>
+
+  <!-- Send Message Modal -->
+  <div class="modal" id="sendMessageModal" aria-hidden="true">
+    <div class="modal-card" style="max-width:500px;">
+      <div class="modal-header">
+        <h3><i class="fas fa-paper-plane"></i> Send Message to Student</h3>
+        <button class="icon-btn" id="msgModalClose"><i class="fas fa-times"></i></button>
+      </div>
+      <form method="POST" action="{% url 'violations:staff_send_message' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p style="margin-bottom:12px;">
+            Sending message to: <strong id="msgRecipientName">—</strong>
+          </p>
+          <input type="hidden" name="student_id" id="msgStudentId" value="" />
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="msgContent" style="font-weight:500; margin-bottom:6px; display:block;">Message</label>
+            <textarea name="message" id="msgContent" rows="4" required
+                      placeholder="Type your message to the student here..."
+                      style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px; resize:vertical;"></textarea>
+          </div>
+        </div>
+        <div class="modal-actions" style="display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" class="login-button" id="msgModalCancel" style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);"><i class="fas fa-times"></i> Cancel</button>
+          <button type="submit" class="login-button"><i class="fas fa-paper-plane"></i> Send Message</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Student Modal -->
+  <div class="modal" id="addStudentModal" aria-hidden="true">
+    <div class="modal-card" style="max-width:600px;">
+      <div class="modal-header">
+        <h3><i class="fas fa-user-plus"></i> Add New Student</h3>
+        <button class="icon-btn" id="addStudentClose"><i class="fas fa-times"></i></button>
+      </div>
+      <form method="POST" action="{% url 'violations:staff_add_student' %}">
+        {% csrf_token %}
+        <div class="modal-body" style="max-height:60vh; overflow-y:auto;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="form-group">
+              <label for="newStudentId" style="font-weight:500; margin-bottom:6px; display:block;">Student ID <span style="color:#ef4444;">*</span></label>
+              <input type="text" name="student_id" id="newStudentId" required placeholder="e.g., 2024-00001"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+            </div>
+            <div class="form-group">
+              <label for="newUsername" style="font-weight:500; margin-bottom:6px; display:block;">Username <span style="color:#ef4444;">*</span></label>
+              <input type="text" name="username" id="newUsername" required placeholder="Login username"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+            </div>
+            <div class="form-group">
+              <label for="newFirstName" style="font-weight:500; margin-bottom:6px; display:block;">First Name <span style="color:#ef4444;">*</span></label>
+              <input type="text" name="first_name" id="newFirstName" required placeholder="First name"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+            </div>
+            <div class="form-group">
+              <label for="newLastName" style="font-weight:500; margin-bottom:6px; display:block;">Last Name <span style="color:#ef4444;">*</span></label>
+              <input type="text" name="last_name" id="newLastName" required placeholder="Last name"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+            </div>
+            <div class="form-group">
+              <label for="newEmail" style="font-weight:500; margin-bottom:6px; display:block;">Email</label>
+              <input type="email" name="email" id="newEmail" placeholder="student@email.com"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+            </div>
+            <div class="form-group">
+              <label for="newContact" style="font-weight:500; margin-bottom:6px; display:block;">Contact Number</label>
+              <input type="text" name="contact_number" id="newContact" placeholder="09xxxxxxxxx"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+            </div>
+            <div class="form-group">
+              <label for="newProgram" style="font-weight:500; margin-bottom:6px; display:block;">Program <span style="color:#ef4444;">*</span></label>
+              <input type="text" name="program" id="newProgram" required placeholder="e.g., BSIT, BSCS"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+            </div>
+            <div class="form-group">
+              <label for="newYearLevel" style="font-weight:500; margin-bottom:6px; display:block;">Year Level <span style="color:#ef4444;">*</span></label>
+              <select name="year_level" id="newYearLevel" required
+                      style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;">
+                <option value="">Select Year</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+              <label for="newDepartment" style="font-weight:500; margin-bottom:6px; display:block;">Department</label>
+              <input type="text" name="department" id="newDepartment" placeholder="e.g., College of Computer Studies"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+            </div>
+            <div class="form-group">
+              <label for="newGuardianName" style="font-weight:500; margin-bottom:6px; display:block;">Guardian Name</label>
+              <input type="text" name="guardian_name" id="newGuardianName" placeholder="Parent/Guardian name"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+            </div>
+            <div class="form-group">
+              <label for="newGuardianContact" style="font-weight:500; margin-bottom:6px; display:block;">Guardian Contact</label>
+              <input type="text" name="guardian_contact" id="newGuardianContact" placeholder="Guardian phone"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+              <label for="newPassword" style="font-weight:500; margin-bottom:6px; display:block;">Initial Password <span style="color:#ef4444;">*</span></label>
+              <input type="password" name="password" id="newPassword" required placeholder="Set initial password"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+              <small style="color:#667085; font-size:12px;">Student can change this after first login.</small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions" style="display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" class="login-button" id="addStudentCancel" style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);"><i class="fas fa-times"></i> Cancel</button>
+          <button type="submit" class="login-button"><i class="fas fa-user-plus"></i> Add Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="{% static 'violations/js/script.js' %}"></script>
   <script src="{% static 'violations/js/chat.js' %}"></script>
   <script>
@@ -281,6 +474,20 @@
       const btn = document.getElementById('chatHeaderBtn');
       const panel = document.getElementById('chatPanel');
       if(btn && panel){ btn.addEventListener('click', () => { panel.classList.toggle('show'); }); }
+    })();
+  </script>
+  <script>
+    // Sent Messages panel toggle
+    (function(){
+      const btn = document.getElementById('sentMessagesBtn');
+      const panel = document.getElementById('sentMessagesPanel');
+      const closeBtn = document.getElementById('sentMsgClose');
+      if(btn && panel){ 
+        btn.addEventListener('click', () => { panel.classList.toggle('show'); }); 
+      }
+      if(closeBtn && panel){
+        closeBtn.addEventListener('click', () => { panel.classList.remove('show'); });
+      }
     })();
   </script>
   <script>
@@ -402,5 +609,90 @@
       attach('.metric-chip');
     })();
   </script>
+  <script>
+    // Send Message Modal Logic
+    (function(){
+      const modal = document.getElementById('sendMessageModal');
+      const btnClose = document.getElementById('msgModalClose');
+      const btnCancel = document.getElementById('msgModalCancel');
+      const recipientName = document.getElementById('msgRecipientName');
+      const studentIdInput = document.getElementById('msgStudentId');
+      const msgContent = document.getElementById('msgContent');
+
+      function openModal(studentId, name){
+        if(recipientName) recipientName.textContent = name || studentId;
+        if(studentIdInput) studentIdInput.value = studentId;
+        if(msgContent) msgContent.value = '';
+        if(modal) modal.classList.add('show');
+      }
+      function closeModal(){
+        if(modal) modal.classList.remove('show');
+      }
+
+      if(btnClose) btnClose.addEventListener('click', closeModal);
+      if(btnCancel) btnCancel.addEventListener('click', closeModal);
+      if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+      document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && modal.classList.contains('show')) closeModal(); });
+
+      // Attach click handlers to all message buttons
+      document.querySelectorAll('.message-student-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const studentId = btn.dataset.studentId;
+          const studentName = btn.dataset.studentName;
+          openModal(studentId, studentName);
+        });
+      });
+    })();
+  </script>
+  <script>
+    // Add Student Modal Logic
+    (function(){
+      const modal = document.getElementById('addStudentModal');
+      const openBtn = document.getElementById('addStudentBtn');
+      const btnClose = document.getElementById('addStudentClose');
+      const btnCancel = document.getElementById('addStudentCancel');
+
+      function openModal(){
+        if(modal) modal.classList.add('show');
+      }
+      function closeModal(){
+        if(modal) modal.classList.remove('show');
+      }
+
+      if(openBtn) openBtn.addEventListener('click', openModal);
+      if(btnClose) btnClose.addEventListener('click', closeModal);
+      if(btnCancel) btnCancel.addEventListener('click', closeModal);
+      if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+    })();
+  </script>
+  <style>
+    .quick-action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px;
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--chmsu-dark-green);
+      transition: all 0.2s ease;
+    }
+    .quick-action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(10, 77, 42, 0.15);
+      background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    }
+    .quick-action-btn i {
+      font-size: 24px;
+    }
+    .quick-action-btn span {
+      font-weight: 500;
+      font-size: 14px;
+    }
+  </style>
 </body>
 </html>

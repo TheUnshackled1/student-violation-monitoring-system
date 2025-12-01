@@ -1,0 +1,110 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify Apology Letter - OSA Staff</title>
+  <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+<body class="role-staff">
+  <header class="top-nav">
+    <div class="top-left">
+      <a href="{% url 'violations:staff_dashboard' %}" style="display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;">
+        <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
+        <span class="header-title">Review Apology Letter</span>
+      </a>
+    </div>
+    <div class="top-right">
+      <a href="{% url 'violations:staff_apology_letters' %}" class="ghost-btn"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+  </header>
+
+  <div class="background-overlay"></div>
+  <div class="background-image"></div>
+
+  <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
+    <section class="card" style="max-width:800px; margin:0 auto;">
+      <h2 style="margin-bottom:20px;"><i class="fas fa-envelope-open-text"></i> Review Apology Letter</h2>
+
+      <!-- Letter Info -->
+      <div style="background:#f9fafb; padding:16px; border-radius:8px; margin-bottom:20px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div>
+            <span style="color:#667085;">Student:</span>
+            <strong>{{ letter.student.user.get_full_name|default:letter.student.student_id }}</strong>
+            <div style="font-size:12px; color:#667085;">{{ letter.student.student_id }}</div>
+          </div>
+          <div>
+            <span style="color:#667085;">Violation:</span>
+            <a href="{% url 'violations:staff_violation_detail' letter.violation.id %}" style="color:var(--chmsu-dark-green);">
+              <strong>#{{ letter.violation.id }}</strong>
+            </a>
+          </div>
+          <div>
+            <span style="color:#667085;">Submitted:</span>
+            <strong>{{ letter.submitted_at|date:"F d, Y \a\t H:i" }}</strong>
+          </div>
+          <div>
+            <span style="color:#667085;">Current Status:</span>
+            <span class="badge badge-warning">{{ letter.status|upper }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- View Letter -->
+      <div style="margin-bottom:20px;">
+        <h4><i class="fas fa-file-alt"></i> Submitted Letter</h4>
+        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:20px; text-align:center;">
+          <a href="{{ letter.letter_file.url }}" target="_blank" class="login-button">
+            <i class="fas fa-external-link-alt"></i> Open Letter in New Tab
+          </a>
+          <p style="margin:12px 0 0; color:#667085;">Click to view the full apology letter document</p>
+        </div>
+      </div>
+
+      <!-- Verification Form -->
+      <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Verification Decision <span style="color:red;">*</span></label>
+          <div style="display:flex; gap:12px;">
+            <label style="display:flex; align-items:center; gap:8px; padding:12px 20px; border:2px solid #d1fae5; border-radius:8px; cursor:pointer; flex:1; background:#f0fdf4;">
+              <input type="radio" name="action" value="verified" checked>
+              <i class="fas fa-check-circle" style="color:#059669;"></i>
+              <span>Verify & Accept</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; padding:12px 20px; border:2px solid #fee2e2; border-radius:8px; cursor:pointer; flex:1; background:#fef2f2;">
+              <input type="radio" name="action" value="rejected">
+              <i class="fas fa-times-circle" style="color:#dc2626;"></i>
+              <span>Reject</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Notes / Feedback</label>
+          <textarea name="notes" rows="4" placeholder="Add notes or feedback for the student..."
+                    style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;"></textarea>
+        </div>
+
+        <div style="display:flex; gap:12px;">
+          <button type="submit" class="login-button">
+            <i class="fas fa-paper-plane"></i> Submit Decision
+          </button>
+          <a href="{% url 'violations:staff_apology_letters' %}" class="ghost-btn">Cancel</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="{% static 'violations/js/script.js' %}"></script>
+  <style>
+    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .badge-warning { background: #fef3c7; color: #d97706; }
+  </style>
+</body>
+</html>
