@@ -1,11 +1,5 @@
 /* Custom Admin Login Styles */
 
-/* Login page background image */
-.login-page {
-    background: url('/static/violations/images/admin_login_bg.jpg') center center / cover no-repeat fixed !important;
-    min-height: 100vh !important;
-}
-
 /* Make the login logo smaller */
 .login-logo img,
 .login-box-body .login-logo img {
