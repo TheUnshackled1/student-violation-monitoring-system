@@ -97,19 +97,19 @@
 							</div>
 						</div>
 
-						<!-- Faculty Fields (Django admin-style: username + password) -->
+						<!-- Faculty Fields (email + password) -->
 						<div class="form-group" data-role="faculty">
-							<label for="faculty_username">Username</label>
+							<label for="faculty_email">Email</label>
 							<div class="input-with-icon">
-								<i class="fa-solid fa-user"></i>
-								<input type="text" id="faculty_username" name="username" placeholder="Enter your username" required />
+								<i class="fa-solid fa-envelope"></i>
+								<input type="email" id="faculty_email" name="faculty_email" placeholder="you@chmsu.edu.ph" required />
 							</div>
 						</div>
 						<div class="form-group" data-role="faculty">
 							<label for="faculty_password">Password</label>
 							<div class="password-group input-with-icon">
 								<i class="fa-solid fa-lock"></i>
-								<input type="password" id="faculty_password" name="password" placeholder="Enter your password" required />
+								<input type="password" id="faculty_password" name="faculty_password" placeholder="Enter your password" required />
 								<span class="password-toggle" onclick="togglePasswordVisibility('faculty_password')">
 									<i class="fas fa-eye"></i>
 								</span>

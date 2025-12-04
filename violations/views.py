@@ -1388,6 +1388,42 @@ def student_mark_message_read_view(request, message_id):
 	return JsonResponse({'status': 'ok'})
 
 
+@role_required({User.Role.STUDENT})
+def student_reply_message_view(request):
+	"""Student: Reply to a staff message (limited to 10 characters)."""
+	if request.method != 'POST':
+		return JsonResponse({'status': 'error', 'error': 'POST required'}, status=405)
+	
+	try:
+		import json
+		data = json.loads(request.body)
+		message_id = data.get('message_id')
+		reply_text = data.get('reply', '').strip()
+		
+		if not message_id or not reply_text:
+			return JsonResponse({'status': 'error', 'error': 'Missing message_id or reply'}, status=400)
+		
+		# Limit reply to 10 characters
+		if len(reply_text) > 10:
+			reply_text = reply_text[:10]
+		
+		# Get the original message to find the sender (staff)
+		original_message = get_object_or_404(Message, id=message_id, receiver=request.user)
+		
+		# Create a reply message from student to staff
+		Message.objects.create(
+			sender=request.user,
+			receiver=original_message.sender,
+			content=reply_text
+		)
+		
+		return JsonResponse({'status': 'ok'})
+	except json.JSONDecodeError:
+		return JsonResponse({'status': 'error', 'error': 'Invalid JSON'}, status=400)
+	except Exception as e:
+		return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
+
+
 @role_required({User.Role.STAFF})
 def staff_add_student_view(request):
 	"""Staff: Add a new student to the system."""

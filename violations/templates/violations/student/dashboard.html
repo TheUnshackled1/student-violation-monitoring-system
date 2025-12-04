@@ -31,7 +31,6 @@
                     <i class="fas fa-chevron-down"></i>
                 </button>
                 <div class="dropdown" id="profileDropdown">
-                    <a href="#">View Profile</a>
                     <a href="{% url 'violations:auth_logout' %}">Logout</a>
                 </div>
             </div>
@@ -174,6 +173,7 @@
                 {% for msg in staff_messages %}
                 <li class="message-item {% if not msg.read_at %}unread{% endif %}" 
                     data-message-id="{{ msg.id }}"
+                    data-sender-id="{{ msg.sender.id }}"
                     data-sender="{{ msg.sender.get_full_name|default:msg.sender.username }}"
                     data-date="{{ msg.created_at|date:'M d, Y H:i' }}"
                     data-content="{{ msg.content }}"
@@ -217,6 +217,21 @@
                 </div>
                 <div id="msgViewContent" style="color:#344054; line-height:1.6; white-space:pre-wrap;">
                     —
+                </div>
+                
+                <!-- Reply Section -->
+                <div id="replySection" style="margin-top:16px; padding-top:16px; border-top:1px solid #eee;">
+                    <label for="replyInput" style="font-weight:600; color:#344054; margin-bottom:8px; display:block;">
+                        <i class="fas fa-reply"></i> Reply to Staff
+                    </label>
+                    <div style="position:relative;">
+                        <textarea id="replyInput" maxlength="10" placeholder="Type your reply (max 10 characters)..." 
+                            style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px; resize:none; font-family:inherit; font-size:14px; height:60px;"></textarea>
+                        <small id="replyCharCount" style="position:absolute; bottom:8px; right:10px; color:#667085; font-size:11px;">0/10</small>
+                    </div>
+                    <button id="sendReplyBtn" class="login-button" style="margin-top:10px; background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);" disabled>
+                        <i class="fas fa-paper-plane"></i> Send Reply
+                    </button>
                 </div>
             </div>
             <div class="modal-actions" style="display:flex; gap:10px; justify-content:flex-end;">
@@ -290,16 +305,98 @@
             const dateEl = document.getElementById('msgViewDate');
             const contentEl = document.getElementById('msgViewContent');
             
+            // Reply elements
+            const replyInput = document.getElementById('replyInput');
+            const replyCharCount = document.getElementById('replyCharCount');
+            const sendReplyBtn = document.getElementById('sendReplyBtn');
+            
             let currentMsgId = null;
             let currentListItem = null;
+            let currentSenderId = null;
 
-            function openModal(msgId, sender, date, content, isUnread, listItem){
+            // Character count for reply
+            if(replyInput){
+                replyInput.addEventListener('input', function(){
+                    const len = this.value.length;
+                    replyCharCount.textContent = len + '/10';
+                    sendReplyBtn.disabled = len === 0;
+                    
+                    // Visual feedback when approaching limit
+                    if(len >= 8){
+                        replyCharCount.style.color = '#dc2626';
+                    } else {
+                        replyCharCount.style.color = '#667085';
+                    }
+                });
+            }
+
+            // Send reply handler
+            if(sendReplyBtn){
+                sendReplyBtn.addEventListener('click', function(){
+                    const replyText = replyInput.value.trim();
+                    if(!replyText || !currentMsgId) return;
+                    
+                    sendReplyBtn.disabled = true;
+                    sendReplyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                    
+                    fetch('{% url "violations:student_reply_message" %}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message_id: currentMsgId,
+                            reply: replyText
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if(data.status === 'ok'){
+                            // Clear input and show success
+                            replyInput.value = '';
+                            replyCharCount.textContent = '0/10';
+                            sendReplyBtn.innerHTML = '<i class="fas fa-check"></i> Sent!';
+                            sendReplyBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                            
+                            setTimeout(() => {
+                                sendReplyBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Reply';
+                                sendReplyBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+                                sendReplyBtn.disabled = true;
+                            }, 2000);
+                        } else {
+                            alert(data.error || 'Failed to send reply');
+                            sendReplyBtn.disabled = false;
+                            sendReplyBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Reply';
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error sending reply:', err);
+                        alert('Failed to send reply. Please try again.');
+                        sendReplyBtn.disabled = false;
+                        sendReplyBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Reply';
+                    });
+                });
+            }
+
+            function openModal(msgId, sender, date, content, isUnread, listItem, senderId){
                 currentMsgId = msgId;
                 currentListItem = listItem;
+                currentSenderId = senderId;
                 senderEl.textContent = sender;
                 dateEl.textContent = date;
                 contentEl.textContent = content;
                 markReadBtn.style.display = isUnread ? 'inline-flex' : 'none';
+                
+                // Reset reply input
+                if(replyInput){
+                    replyInput.value = '';
+                    replyCharCount.textContent = '0/10';
+                    sendReplyBtn.disabled = true;
+                    sendReplyBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Reply';
+                    sendReplyBtn.style.background = 'linear-gradient(135deg, var(--chmsu-dark-green) 0%, var(--chmsu-light-green) 100%)';
+                }
+                
                 modal.classList.add('show');
             }
 
@@ -307,6 +404,7 @@
                 modal.classList.remove('show');
                 currentMsgId = null;
                 currentListItem = null;
+                currentSenderId = null;
             }
 
             function updateBadges(){
@@ -381,8 +479,9 @@
                     const date = this.dataset.date;
                     const content = this.dataset.content;
                     const isUnread = this.classList.contains('unread');
+                    const senderId = this.dataset.senderId;
                     
-                    openModal(msgId, sender, date, content, isUnread, this);
+                    openModal(msgId, sender, date, content, isUnread, this, senderId);
                 });
             });
         })();

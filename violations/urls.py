@@ -27,6 +27,7 @@ urlpatterns = [
     # Student
     path('student/dashboard/', views.student_dashboard_view, name='student_dashboard'),
     path('student/message/<int:message_id>/read/', views.student_mark_message_read_view, name='student_mark_message_read'),
+    path('student/message/reply/', views.student_reply_message_view, name='student_reply_message'),
 
     # Faculty (Reporting Personnel)
     path('faculty/dashboard/', views.faculty_dashboard_view, name='faculty_dashboard'),
