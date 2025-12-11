@@ -143,6 +143,15 @@
                                 data-status="{{ v.get_status_display }}"
                                 data-status-raw="{{ v.status }}"
                                 data-apology-status="{% if latest_apology %}{{ latest_apology.status }}{% endif %}"
+                                data-apology-id="{% if latest_apology %}{{ latest_apology.id }}{% endif %}"
+                                data-apology-date="{% if latest_apology %}{{ latest_apology.letter_date|default:latest_apology.submitted_at|date:'F d, Y' }}{% endif %}"
+                                data-apology-campus="{% if latest_apology %}{{ latest_apology.letter_campus }}{% endif %}"
+                                data-apology-fullname="{% if latest_apology %}{{ latest_apology.letter_full_name }}{% endif %}"
+                                data-apology-address="{% if latest_apology %}{{ latest_apology.letter_home_address }}{% endif %}"
+                                data-apology-program="{% if latest_apology %}{{ latest_apology.letter_program }}{% endif %}"
+                                data-apology-violations="{% if latest_apology %}{{ latest_apology.letter_violations }}{% endif %}"
+                                data-apology-printedname="{% if latest_apology %}{{ latest_apology.letter_printed_name }}{% endif %}"
+                                data-apology-signature="{% if latest_apology %}{{ latest_apology.signature_data }}{% endif %}"
                                 data-date="{{ v.created_at|date:'M d, Y' }}"
                                 data-incident-date="{{ v.incident_at|date:'M d, Y g:i A' }}"
                                 data-location="{{ v.location }}"
@@ -436,12 +445,119 @@
                         <i class="fas fa-file-alt"></i> <span>View Evidence File</span>
                     </a>
                 </div>
+                
+                <!-- Apology Letter Summary Section -->
+                <div id="apologyLetterSection" style="margin-top:16px; padding-top:16px; border-top:1px solid #eee; display:none;">
+                    <label style="font-size:12px; color:#667085; display:block; margin-bottom:8px;"><i class="fas fa-envelope-open-text"></i> Apology Letter Status</label>
+                    <div id="apologyLetterSummary" style="padding:12px; border-radius:8px;">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                            <span id="apologyStatusBadge" class="badge" style="padding:6px 12px;"></span>
+                        </div>
+                        <p id="apologyStatusMessage" style="margin:0; font-size:13px;"></p>
+                        <button id="viewApologyLetterBtn" style="display:none; margin-top:10px; background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color:#fff; border:none; padding:8px 14px; border-radius:6px; cursor:pointer; font-size:13px;">
+                            <i class="fas fa-file-pdf"></i> View My Apology Letter
+                        </button>
+                    </div>
+                </div>
             </div>
             <div class="modal-actions" style="display:flex; gap:10px; justify-content:flex-end;">
                 <a href="{% url 'violations:student_apology' %}" class="login-button" id="writeApologyBtn" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); text-decoration:none;">
                     <i class="fas fa-pen-to-square"></i> Write Apology Letter
                 </a>
                 <button class="login-button" id="violationModalCloseBtn" style="background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apology Letter PDF Modal -->
+    <div class="modal" id="apologyPdfModal" aria-hidden="true">
+        <div class="modal-card" style="max-width:750px; max-height:90vh; display:flex; flex-direction:column;">
+            <div class="modal-header" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); color:#fff;">
+                <h3><i class="fas fa-file-pdf"></i> Your Apology Letter</h3>
+                <button class="icon-btn" id="apologyPdfModalClose" style="color:#fff;"><i class="fas fa-times"></i></button>
+            </div>
+            <!-- Zoom Controls -->
+            <div style="display:flex; align-items:center; justify-content:center; gap:12px; padding:10px 16px; background:#f3f4f6; border-bottom:1px solid #e5e7eb;">
+                <button id="pdfZoomOut" class="icon-btn" title="Zoom Out" style="background:#fff; border:1px solid #d1d5db; border-radius:6px; padding:6px 10px;">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <span id="pdfZoomLevel" style="font-size:13px; font-weight:500; min-width:50px; text-align:center;">100%</span>
+                <button id="pdfZoomIn" class="icon-btn" title="Zoom In" style="background:#fff; border:1px solid #d1d5db; border-radius:6px; padding:6px 10px;">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+                <button id="pdfZoomReset" class="icon-btn" title="Reset Zoom" style="background:#fff; border:1px solid #d1d5db; border-radius:6px; padding:6px 10px; margin-left:8px;">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <span style="color:#667085; font-size:12px; margin-left:12px;"><i class="fas fa-mouse"></i> Scroll to navigate</span>
+            </div>
+            <div class="modal-body" style="padding:0; flex:1; overflow:hidden;">
+                <!-- Scrollable Container -->
+                <div id="pdfScrollContainer" style="max-height:55vh; overflow-y:auto; overflow-x:auto; background:#e5e7eb; padding:16px;">
+                    <!-- PDF-like Letter Display -->
+                    <div id="apologyLetterPdf" style="background:#fffef7; padding:30px 40px; font-family:'Times New Roman', Times, serif; font-size:14px; line-height:1.6; min-height:600px; box-shadow:0 4px 12px rgba(0,0,0,0.15); margin:0 auto; transform-origin:top center; transition:transform 0.2s ease;">
+                        <!-- Header -->
+                        <div style="text-align:center; border-bottom:2px solid #1f2937; padding-bottom:16px; margin-bottom:20px;">
+                            <div style="font-size:18px; font-weight:bold; margin-bottom:6px;">LETTER OF APOLOGY</div>
+                            <div style="font-size:11px; color:#666;">Document Code: F.25-OSAS-CHMSU</div>
+                        </div>
+                        
+                        <!-- Date -->
+                        <p style="margin-bottom:16px;">
+                            Date: <span id="pdfLetterDate" style="border-bottom:1px solid #333; padding:2px 8px;">—</span>
+                        </p>
+                        
+                        <!-- Addressee -->
+                        <p style="margin-bottom:6px;"><strong>The Student Formator</strong></p>
+                        <p style="margin-bottom:16px;">
+                            <span id="pdfLetterCampus" style="border-bottom:1px solid #333; padding:2px 8px;">—</span> Campus
+                        </p>
+                        
+                        <p style="margin-bottom:16px;">SIR/MADAM:</p>
+                        
+                        <!-- Body -->
+                        <p style="margin-bottom:16px; text-align:justify;">
+                            I, <span id="pdfLetterFullName" style="border-bottom:1px solid #333; padding:2px 8px;">—</span>, from 
+                            <span id="pdfLetterAddress" style="border-bottom:1px solid #333; padding:2px 8px;">—</span> (Home Address) of
+                            <span id="pdfLetterProgram" style="border-bottom:1px solid #333; padding:2px 8px;">—</span> (Program, Major, Year & Section)
+                        </p>
+                        
+                        <p style="margin-bottom:16px;">has violated the Student Code of Conduct.</p>
+                        
+                        <p style="margin-bottom:16px;">
+                            Specific Violation/s: <span id="pdfLetterViolations" style="display:block; margin-top:6px; border-bottom:1px solid #333; padding:2px 8px;">—</span>
+                        </p>
+                        
+                        <p style="text-align:justify; text-indent:40px; margin:16px 0;">
+                            I sincerely apologize for my recent violation of the university's Rules & Regulations and 
+                            understand the importance of adhering to these guidelines in the future. I am committed to 
+                            upholding these standards to maintain a positive learning environment.
+                        </p>
+                        
+                        <p style="text-align:justify; text-indent:40px; margin:16px 0;">
+                            I acknowledge the seriousness of my actions and the potential consequences of further 
+                            violations. I assure you that I take this matter seriously and will strive to prevent such incidents 
+                            from happening again.
+                        </p>
+                        
+                        <p style="margin-top:24px;">Respectfully yours,</p>
+                        
+                        <!-- Signature -->
+                        <div style="margin-top:30px;">
+                            <div id="pdfSignatureContainer">
+                                <img id="pdfLetterSignature" src="" alt="Signature" style="max-width:180px; max-height:60px; display:none;" />
+                                <div id="pdfNoSignature" style="color:#999; font-style:italic; font-size:12px;">(No digital signature)</div>
+                            </div>
+                            <div style="border-top:1px solid #000; width:180px; margin-top:10px; padding-top:6px; text-align:center;">
+                                <span id="pdfLetterPrintedName">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions" style="display:flex; gap:10px; justify-content:flex-end; padding:16px; border-top:1px solid #e5e7eb;">
+                <button class="login-button" id="apologyPdfModalCloseBtn" style="background:linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
                     <i class="fas fa-times"></i> Close
                 </button>
             </div>
@@ -726,6 +842,20 @@
             const modal = document.getElementById('violationModal');
             const closeBtn = document.getElementById('violationModalClose');
             const closeBtnFooter = document.getElementById('violationModalCloseBtn');
+            const writeApologyBtn = document.getElementById('writeApologyBtn');
+            const apologyLetterSection = document.getElementById('apologyLetterSection');
+            const apologyLetterSummary = document.getElementById('apologyLetterSummary');
+            const apologyStatusBadge = document.getElementById('apologyStatusBadge');
+            const apologyStatusMessage = document.getElementById('apologyStatusMessage');
+            const viewApologyLetterBtn = document.getElementById('viewApologyLetterBtn');
+            
+            // PDF Modal elements
+            const pdfModal = document.getElementById('apologyPdfModal');
+            const pdfModalClose = document.getElementById('apologyPdfModalClose');
+            const pdfModalCloseBtn = document.getElementById('apologyPdfModalCloseBtn');
+            
+            // Store current row data for PDF modal
+            let currentRowData = null;
             
             // Elements to populate
             const typeBadge = document.getElementById('violationTypeBadge');
@@ -740,12 +870,116 @@
             const evidenceSection = document.getElementById('evidenceSection');
             const evidence = document.getElementById('violationEvidence');
             
+            // Zoom functionality
+            let currentZoom = 100;
+            const minZoom = 50;
+            const maxZoom = 200;
+            const zoomStep = 25;
+            const pdfContent = document.getElementById('apologyLetterPdf');
+            const zoomLevelEl = document.getElementById('pdfZoomLevel');
+            const zoomInBtn = document.getElementById('pdfZoomIn');
+            const zoomOutBtn = document.getElementById('pdfZoomOut');
+            const zoomResetBtn = document.getElementById('pdfZoomReset');
+            const scrollContainer = document.getElementById('pdfScrollContainer');
+            
+            function updateZoom() {
+                if(pdfContent) {
+                    pdfContent.style.transform = `scale(${currentZoom / 100})`;
+                    // Adjust width to prevent horizontal scroll at lower zoom
+                    if(currentZoom < 100) {
+                        pdfContent.style.width = `${100 / (currentZoom / 100)}%`;
+                    } else {
+                        pdfContent.style.width = '';
+                    }
+                }
+                if(zoomLevelEl) zoomLevelEl.textContent = currentZoom + '%';
+                // Update button states
+                if(zoomInBtn) zoomInBtn.disabled = currentZoom >= maxZoom;
+                if(zoomOutBtn) zoomOutBtn.disabled = currentZoom <= minZoom;
+            }
+            
+            if(zoomInBtn) {
+                zoomInBtn.addEventListener('click', () => {
+                    if(currentZoom < maxZoom) {
+                        currentZoom += zoomStep;
+                        updateZoom();
+                    }
+                });
+            }
+            
+            if(zoomOutBtn) {
+                zoomOutBtn.addEventListener('click', () => {
+                    if(currentZoom > minZoom) {
+                        currentZoom -= zoomStep;
+                        updateZoom();
+                    }
+                });
+            }
+            
+            if(zoomResetBtn) {
+                zoomResetBtn.addEventListener('click', () => {
+                    currentZoom = 100;
+                    updateZoom();
+                    // Reset scroll position
+                    if(scrollContainer) scrollContainer.scrollTop = 0;
+                });
+            }
+            
+            // Open PDF Modal function
+            function openPdfModal() {
+                if(!currentRowData) return;
+                
+                // Reset zoom when opening
+                currentZoom = 100;
+                updateZoom();
+                
+                // Populate PDF modal with apology letter data
+                document.getElementById('pdfLetterDate').textContent = currentRowData.apologyDate || '—';
+                document.getElementById('pdfLetterCampus').textContent = currentRowData.apologyCampus || '—';
+                document.getElementById('pdfLetterFullName').textContent = currentRowData.apologyFullname || '—';
+                document.getElementById('pdfLetterAddress').textContent = currentRowData.apologyAddress || '—';
+                document.getElementById('pdfLetterProgram').textContent = currentRowData.apologyProgram || '—';
+                document.getElementById('pdfLetterViolations').textContent = currentRowData.apologyViolations || currentRowData.description || '—';
+                document.getElementById('pdfLetterPrintedName').textContent = currentRowData.apologyPrintedname || '—';
+                
+                // Handle signature
+                const signatureImg = document.getElementById('pdfLetterSignature');
+                const noSignature = document.getElementById('pdfNoSignature');
+                if(currentRowData.apologySignature && currentRowData.apologySignature.trim()) {
+                    signatureImg.src = currentRowData.apologySignature;
+                    signatureImg.style.display = 'block';
+                    noSignature.style.display = 'none';
+                } else {
+                    signatureImg.style.display = 'none';
+                    noSignature.style.display = 'block';
+                }
+                
+                // Reset scroll position
+                if(scrollContainer) scrollContainer.scrollTop = 0;
+                
+                pdfModal.classList.add('show');
+            }
+            
+            // Close PDF Modal function
+            function closePdfModal() {
+                pdfModal.classList.remove('show');
+            }
+            
+            // PDF Modal event listeners
+            if(viewApologyLetterBtn) viewApologyLetterBtn.addEventListener('click', openPdfModal);
+            if(pdfModalClose) pdfModalClose.addEventListener('click', closePdfModal);
+            if(pdfModalCloseBtn) pdfModalCloseBtn.addEventListener('click', closePdfModal);
+            if(pdfModal) pdfModal.addEventListener('click', (e) => { if(e.target === pdfModal) closePdfModal(); });
+            
             function openModal(row) {
+                // Store row data for PDF modal
+                currentRowData = row.dataset;
                 // Get data from row
                 const type = row.dataset.type;
                 const typeRaw = row.dataset.typeRaw;
                 const status = row.dataset.status;
                 const statusRaw = row.dataset.statusRaw;
+                const apologyStatus = row.dataset.apologyStatus;
                 
                 // Set type badge
                 typeBadge.textContent = type;
@@ -757,20 +991,118 @@
                     typeBadge.style.color = '#3730a3';
                 }
                 
-                // Set status badge
-                statusBadge.textContent = status;
-                if(statusRaw === 'reported') {
-                    statusBadge.style.background = '#fff7ed';
-                    statusBadge.style.color = '#9a3412';
-                } else if(statusRaw === 'under_review') {
-                    statusBadge.style.background = '#fef9c3';
-                    statusBadge.style.color = '#854d0e';
-                } else if(statusRaw === 'resolved') {
+                // Set status badge based on combined status (violation + apology)
+                if(statusRaw === 'resolved') {
+                    statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Resolved';
                     statusBadge.style.background = '#dcfce7';
                     statusBadge.style.color = '#166534';
-                } else {
+                } else if(statusRaw === 'dismissed') {
+                    statusBadge.innerHTML = '<i class="fas fa-ban"></i> Dismissed';
                     statusBadge.style.background = '#f3f4f6';
                     statusBadge.style.color = '#374151';
+                } else if(apologyStatus === 'approved') {
+                    statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Letter Approved';
+                    statusBadge.style.background = '#dcfce7';
+                    statusBadge.style.color = '#166534';
+                } else if(apologyStatus === 'pending') {
+                    statusBadge.innerHTML = '<i class="fas fa-clock"></i> Letter Pending';
+                    statusBadge.style.background = '#fef9c3';
+                    statusBadge.style.color = '#854d0e';
+                } else if(apologyStatus === 'revision_needed') {
+                    statusBadge.innerHTML = '<i class="fas fa-edit"></i> Revision Needed';
+                    statusBadge.style.background = '#fff7ed';
+                    statusBadge.style.color = '#9a3412';
+                } else if(apologyStatus === 'rejected') {
+                    statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Letter Rejected';
+                    statusBadge.style.background = '#fee2e2';
+                    statusBadge.style.color = '#b91c1c';
+                } else if(statusRaw === 'reported') {
+                    statusBadge.innerHTML = '<i class="fas fa-exclamation-circle"></i> Pending';
+                    statusBadge.style.background = '#fee2e2';
+                    statusBadge.style.color = '#b91c1c';
+                } else if(statusRaw === 'under_review') {
+                    statusBadge.innerHTML = '<i class="fas fa-search"></i> Under Review';
+                    statusBadge.style.background = '#fef9c3';
+                    statusBadge.style.color = '#854d0e';
+                } else {
+                    statusBadge.textContent = status;
+                    statusBadge.style.background = '#f3f4f6';
+                    statusBadge.style.color = '#374151';
+                }
+                
+                // Handle Apology Letter Section and Write Button visibility
+                if(apologyStatus) {
+                    // Show apology letter summary
+                    apologyLetterSection.style.display = 'block';
+                    
+                    if(apologyStatus === 'approved') {
+                        apologyLetterSummary.style.background = '#dcfce7';
+                        apologyStatusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Approved';
+                        apologyStatusBadge.style.background = '#166534';
+                        apologyStatusBadge.style.color = '#fff';
+                        apologyStatusMessage.innerHTML = '<i class="fas fa-info-circle"></i> Your apology letter has been approved. You may now claim your ID at the OSA Office.';
+                        apologyStatusMessage.style.color = '#166534';
+                        // Show view letter button
+                        if(viewApologyLetterBtn) {
+                            viewApologyLetterBtn.style.display = 'inline-flex';
+                            viewApologyLetterBtn.style.alignItems = 'center';
+                            viewApologyLetterBtn.style.gap = '6px';
+                        }
+                        // Hide write button
+                        writeApologyBtn.style.display = 'none';
+                    } else if(apologyStatus === 'pending') {
+                        apologyLetterSummary.style.background = '#fef9c3';
+                        apologyStatusBadge.innerHTML = '<i class="fas fa-clock"></i> Pending Review';
+                        apologyStatusBadge.style.background = '#854d0e';
+                        apologyStatusBadge.style.color = '#fff';
+                        apologyStatusMessage.innerHTML = '<i class="fas fa-hourglass-half"></i> Your apology letter is being reviewed by staff.';
+                        apologyStatusMessage.style.color = '#854d0e';
+                        // Show view letter button
+                        if(viewApologyLetterBtn) {
+                            viewApologyLetterBtn.style.display = 'inline-flex';
+                            viewApologyLetterBtn.style.alignItems = 'center';
+                            viewApologyLetterBtn.style.gap = '6px';
+                        }
+                        // Hide write button - already submitted
+                        writeApologyBtn.style.display = 'none';
+                    } else if(apologyStatus === 'revision_needed') {
+                        apologyLetterSummary.style.background = '#fff7ed';
+                        apologyStatusBadge.innerHTML = '<i class="fas fa-edit"></i> Revision Needed';
+                        apologyStatusBadge.style.background = '#9a3412';
+                        apologyStatusBadge.style.color = '#fff';
+                        apologyStatusMessage.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please revise and resubmit your apology letter.';
+                        apologyStatusMessage.style.color = '#9a3412';
+                        // Hide view button for revision needed
+                        if(viewApologyLetterBtn) viewApologyLetterBtn.style.display = 'none';
+                        // Show write button for revision
+                        writeApologyBtn.style.display = 'inline-flex';
+                        writeApologyBtn.innerHTML = '<i class="fas fa-pen-to-square"></i> Revise Letter';
+                    } else if(apologyStatus === 'rejected') {
+                        apologyLetterSummary.style.background = '#fee2e2';
+                        apologyStatusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Rejected';
+                        apologyStatusBadge.style.background = '#b91c1c';
+                        apologyStatusBadge.style.color = '#fff';
+                        apologyStatusMessage.innerHTML = '<i class="fas fa-times"></i> Your apology letter was rejected. Please submit a new letter.';
+                        apologyStatusMessage.style.color = '#b91c1c';
+                        // Hide view button for rejected
+                        if(viewApologyLetterBtn) viewApologyLetterBtn.style.display = 'none';
+                        // Show write button for new submission
+                        writeApologyBtn.style.display = 'inline-flex';
+                        writeApologyBtn.innerHTML = '<i class="fas fa-pen-to-square"></i> Submit New Letter';
+                    }
+                } else {
+                    // No apology letter submitted yet
+                    apologyLetterSection.style.display = 'none';
+                    // Hide view letter button
+                    if(viewApologyLetterBtn) viewApologyLetterBtn.style.display = 'none';
+                    
+                    // Show/hide write button based on violation status
+                    if(statusRaw === 'resolved' || statusRaw === 'dismissed') {
+                        writeApologyBtn.style.display = 'none';
+                    } else {
+                        writeApologyBtn.style.display = 'inline-flex';
+                        writeApologyBtn.innerHTML = '<i class="fas fa-pen-to-square"></i> Write Apology Letter';
+                    }
                 }
                 
                 // Set other fields
@@ -803,13 +1135,25 @@
             
             function closeModal() {
                 modal.classList.remove('show');
+                // Also close PDF modal if open
+                if(pdfModal && pdfModal.classList.contains('show')) {
+                    pdfModal.classList.remove('show');
+                }
             }
             
             // Close handlers
             if(closeBtn) closeBtn.addEventListener('click', closeModal);
             if(closeBtnFooter) closeBtnFooter.addEventListener('click', closeModal);
             if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
-            document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && modal.classList.contains('show')) closeModal(); });
+            document.addEventListener('keydown', (e) => { 
+                if(e.key === 'Escape') {
+                    if(pdfModal && pdfModal.classList.contains('show')) {
+                        closePdfModal();
+                    } else if(modal.classList.contains('show')) {
+                        closeModal();
+                    }
+                }
+            });
             
             // Click on view buttons
             document.querySelectorAll('.view-violation-btn').forEach(btn => {
