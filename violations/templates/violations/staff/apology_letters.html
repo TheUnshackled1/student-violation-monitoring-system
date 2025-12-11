@@ -36,8 +36,13 @@
       </div>
       <div class="dash-card">
         <div class="card-icon"><i class="fas fa-check-circle"></i></div>
-        <div class="card-title">Verified</div>
-        <div class="card-metric">{{ verified_count }}</div>
+        <div class="card-title">Approved</div>
+        <div class="card-metric">{{ approved_count }}</div>
+      </div>
+      <div class="dash-card">
+        <div class="card-icon"><i class="fas fa-redo"></i></div>
+        <div class="card-title">Needs Revision</div>
+        <div class="card-metric">{{ revision_count }}</div>
       </div>
       <div class="dash-card">
         <div class="card-icon"><i class="fas fa-times-circle"></i></div>
@@ -59,7 +64,8 @@
           <select name="status" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
             <option value="">All Status</option>
             <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
-            <option value="verified" {% if status_filter == 'verified' %}selected{% endif %}>Verified</option>
+            <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+            <option value="revision_needed" {% if status_filter == 'revision_needed' %}selected{% endif %}>Needs Revision</option>
             <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
           </select>
         </div>
@@ -99,16 +105,17 @@
               <td>{{ letter.submitted_at|date:"M d, Y g:i A" }}</td>
               <td>
                 <span class="badge 
-                  {% if letter.status == 'verified' %}badge-success
+                  {% if letter.status == 'approved' %}badge-success
                   {% elif letter.status == 'rejected' %}badge-danger
+                  {% elif letter.status == 'revision_needed' %}badge-revision
                   {% else %}badge-warning{% endif %}">
-                  {{ letter.status|upper }}
+                  {{ letter.get_status_display }}
                 </span>
               </td>
               <td>{{ letter.verified_by.get_full_name|default:'—' }}</td>
               <td>
                 <div class="actions-group">
-                  <a class="action-btn gray" href="{{ letter.letter_file.url }}" target="_blank">
+                  <a class="action-btn gray" href="{% url 'violations:staff_verify_apology' letter.id %}">
                     <i class="fas fa-eye"></i> View
                   </a>
                   {% if letter.status == 'pending' %}
@@ -149,6 +156,7 @@
     .badge-success { background: #d1fae5; color: #059669; }
     .badge-warning { background: #fef3c7; color: #d97706; }
     .badge-danger { background: #fee2e2; color: #dc2626; }
+    .badge-revision { background: #fef9c3; color: #854d0e; }
   </style>
 </body>
 </html>

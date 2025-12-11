@@ -112,8 +112,9 @@
               <td>{{ v.reported_by.get_full_name|default:'—' }}</td>
               <td>
                 <div class="actions-group">
-                  <a class="action-btn gray" href="{% url 'violations:staff_violation_detail' v.id %}"><i class="fas fa-eye"></i></a>
-                  <a class="action-btn gray" href="{% url 'violations:staff_violation_edit' v.id %}"><i class="fas fa-edit"></i></a>
+                  <a class="action-btn gray" href="{% url 'violations:staff_violation_detail' v.id %}" title="View Details"><i class="fas fa-eye"></i></a>
+                  <a class="action-btn gray" href="{% url 'violations:staff_violation_edit' v.id %}" title="Edit"><i class="fas fa-edit"></i></a>
+                  <a class="action-btn danger" href="{% url 'violations:staff_violation_delete' v.id %}" title="Delete"><i class="fas fa-trash-alt"></i></a>
                 </div>
               </td>
             </tr>
@@ -149,6 +150,12 @@
     .badge-success { background: #d1fae5; color: #059669; }
     .badge-info { background: #dbeafe; color: #2563eb; }
     .badge-secondary { background: #f3f4f6; color: #6b7280; }
+    .actions-group { display: flex; gap: 6px; }
+    .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; text-decoration: none; transition: all 0.2s; }
+    .action-btn.gray { background: #f3f4f6; color: #6b7280; }
+    .action-btn.gray:hover { background: #e5e7eb; color: #374151; }
+    .action-btn.danger { background: #fee2e2; color: #dc2626; }
+    .action-btn.danger:hover { background: #fecaca; color: #b91c1c; }
   </style>
 </body>
 </html>

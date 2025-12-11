@@ -21,6 +21,7 @@
     <div class="top-right">
       <a href="{% url 'violations:staff_violations_list' %}" class="ghost-btn"><i class="fas fa-arrow-left"></i> Back</a>
       <a href="{% url 'violations:staff_violation_edit' violation.id %}" class="login-button"><i class="fas fa-edit"></i> Edit</a>
+      <a href="{% url 'violations:staff_violation_delete' violation.id %}" class="delete-btn" style="background:#dc2626; color:#fff; padding:10px 16px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-weight:500;"><i class="fas fa-trash-alt"></i> Delete</a>
     </div>
   </header>
 

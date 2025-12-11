@@ -9,9 +9,133 @@
   <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    /* Official Letter Template Styles */
+    .letter-template {
+        background: white;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 40px;
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .letter-header {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 24px;
+        border-bottom: 2px solid #1f2937;
+        padding-bottom: 16px;
+    }
+    .letter-logo {
+        width: 70px;
+        height: 70px;
+        margin-right: 20px;
+    }
+    .letter-title-section {
+        flex: 1;
+        text-align: center;
+    }
+    .letter-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+    .letter-doc-info {
+        text-align: right;
+        font-size: 11px;
+        border: 1px solid #000;
+        padding: 4px 8px;
+    }
+    .letter-doc-info div {
+        border-bottom: 1px solid #000;
+        padding: 2px 0;
+    }
+    .letter-doc-info div:last-child {
+        border-bottom: none;
+    }
+    .letter-body {
+        margin-top: 24px;
+    }
+    .letter-field {
+        border: none;
+        border-bottom: 1px solid #000;
+        min-width: 150px;
+        display: inline-block;
+        padding: 2px 4px;
+        font-weight: 500;
+        background: #f9fafb;
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 14px;
+    }
+    .letter-field.wide {
+        min-width: 300px;
+    }
+    .letter-field.full {
+        display: block;
+        width: 100%;
+        margin: 8px 0;
+        box-sizing: border-box;
+    }
+    .signature-image {
+        max-width: 250px;
+        max-height: 80px;
+        border: 1px solid #000;
+    }
+    .letter-paragraph {
+        text-align: justify;
+        text-indent: 40px;
+        margin: 16px 0;
+    }
+    .letter-signature {
+        margin-top: 48px;
+    }
+    .signature-line {
+        border-top: 1px solid #000;
+        width: 250px;
+        margin-top: 40px;
+        padding-top: 4px;
+        text-align: center;
+    }
+    .letter-footer {
+        margin-top: 32px;
+        padding-top: 16px;
+    }
+    .status-stamp {
+        text-align: right;
+        margin-top: 24px;
+    }
+    .status-stamp-box {
+        display: inline-block;
+        border: 2px solid #000;
+        padding: 8px 16px;
+        font-weight: bold;
+        font-size: 12px;
+    }
+    @media print {
+        body * { visibility: hidden; }
+        .letter-template, .letter-template * { visibility: visible; }
+        .letter-template { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100%;
+            border: none;
+            box-shadow: none;
+            padding: 20px;
+        }
+        .no-print { display: none !important; }
+    }
+    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .badge-warning { background: #fef3c7; color: #d97706; }
+    .badge-success { background: #d1fae5; color: #065f46; }
+    .badge-danger { background: #fee2e2; color: #b91c1c; }
+  </style>
 </head>
 <body class="role-staff">
-  <header class="top-nav">
+  <header class="top-nav no-print">
     <div class="top-left">
       <a href="{% url 'violations:staff_dashboard' %}" style="display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;">
         <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
@@ -19,19 +143,21 @@
       </a>
     </div>
     <div class="top-right">
+      <button type="button" class="ghost-btn" onclick="window.print()" style="margin-right: 8px;">
+        <i class="fas fa-print"></i> Print
+      </button>
       <a href="{% url 'violations:staff_apology_letters' %}" class="ghost-btn"><i class="fas fa-arrow-left"></i> Back</a>
     </div>
   </header>
 
-  <div class="background-overlay"></div>
-  <div class="background-image"></div>
+  <div class="background-overlay no-print"></div>
+  <div class="background-image no-print"></div>
 
-  <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
-    <section class="card" style="max-width:800px; margin:0 auto;">
-      <h2 style="margin-bottom:20px;"><i class="fas fa-envelope-open-text"></i> Review Apology Letter</h2>
-
-      <!-- Letter Info -->
-      <div style="background:#f9fafb; padding:16px; border-radius:8px; margin-bottom:20px;">
+  <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px); max-width: 900px;">
+    <!-- Letter Info -->
+    <section class="card no-print" style="margin-bottom: 20px;">
+      <h2 style="margin-bottom:16px;"><i class="fas fa-envelope-open-text"></i> Review Apology Letter</h2>
+      <div style="background:#f9fafb; padding:16px; border-radius:8px;">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
           <div>
             <span style="color:#667085;">Student:</span>
@@ -50,34 +176,138 @@
           </div>
           <div>
             <span style="color:#667085;">Current Status:</span>
-            <span class="badge badge-warning">{{ letter.status|upper }}</span>
+            <span class="badge 
+              {% if letter.status == 'approved' %}badge-success
+              {% elif letter.status == 'rejected' %}badge-danger
+              {% else %}badge-warning{% endif %}">
+              {{ letter.get_status_display }}
+            </span>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- View Letter -->
-      <div style="margin-bottom:20px;">
-        <h4><i class="fas fa-file-alt"></i> Submitted Letter</h4>
-        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:20px; text-align:center;">
-          <a href="{{ letter.letter_file.url }}" target="_blank" class="login-button">
-            <i class="fas fa-external-link-alt"></i> Open Letter in New Tab
-          </a>
-          <p style="margin:12px 0 0; color:#667085;">Click to view the full apology letter document</p>
+    <!-- Official CHMSU Letter of Apology Template (Read-Only) -->
+    <section class="card" style="margin-bottom: 20px;">
+      <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0;"><i class="fas fa-file-alt"></i> Student's Letter of Apology</h3>
+      </div>
+      
+      <div class="letter-template" id="letterTemplate">
+        <div class="letter-header">
+          <img src="{% static 'violations/images/chmsu_logo.png' %}" class="letter-logo" alt="CHMSU Logo" />
+          <div class="letter-title-section">
+            <div class="letter-title">LETTER OF APOLOGY</div>
+          </div>
+          <div class="letter-doc-info">
+            <div><strong>Document Code:</strong> F.25-OSAS-CHMSU</div>
+            <div><strong>Revision No.:</strong> 0</div>
+            <div><strong>Effective Date:</strong> September 2, 2024</div>
+            <div><strong>Page:</strong> 1 of 1</div>
+          </div>
+        </div>
+        
+        <div class="letter-body">
+          <p style="margin-bottom: 24px;">
+            Date: <span class="letter-field">{{ letter.letter_date|default:letter.submitted_at|date:"F d, Y" }}</span>
+          </p>
+          
+          <p style="margin-bottom: 4px;"><strong>The Student Formator</strong></p>
+          <p style="margin-bottom: 16px;">
+            <span class="letter-field">{{ letter.letter_campus|default:letter.student.department|default:"—" }}</span> Campus
+          </p>
+          
+          <p style="margin-bottom: 16px;">SIR/MADAM:</p>
+          
+          <p style="margin-bottom: 16px;">
+            I, <span class="letter-field">{{ letter.letter_full_name|default:letter.student.user.get_full_name|default:"—" }}</span>, from 
+            <span class="letter-field wide">{{ letter.letter_home_address|default:"—" }}</span> (Home Address) of
+            <span class="letter-field wide">{{ letter.letter_program|default:letter.student.program|default:"—" }}</span> (Program, Major, Year & Section)
+          </p>
+          
+          <p style="margin-bottom: 16px;">has violated the Student Code of Conduct.</p>
+          
+          <p style="margin-bottom: 16px;">
+            Specific Violation/s: <span class="letter-field full">{{ letter.letter_violations|default:letter.violation.description }}</span>
+          </p>
+          
+          <p class="letter-paragraph">
+            I sincerely apologize for my recent violation of the university's Rules & Regulations and 
+            understand the importance of adhering to these guidelines in the future. I am committed to 
+            upholding these standards to maintain a positive learning environment.
+          </p>
+          
+          <p class="letter-paragraph">
+            I acknowledge the seriousness of my actions and the potential consequences of further 
+            violations. I assure you that I take this matter seriously and will strive to prevent such incidents 
+            from happening again. Your understanding is appreciated, and I am grateful for the opportunity 
+            to learn and grow from this experience.
+          </p>
+          
+          <p style="margin-top: 32px;">Respectfully yours,</p>
+          
+          <div class="letter-signature">
+            {% if letter.signature_data %}
+            <p style="font-size: 12px; color: #666; margin-bottom: 4px;">Student Signature:</p>
+            <img src="{{ letter.signature_data }}" alt="Student Signature" class="signature-image" />
+            {% else %}
+            <p style="font-size: 12px; color: #999; margin-bottom: 4px;">(No digital signature)</p>
+            {% endif %}
+            <div style="border-top: 1px solid #000; width: 250px; margin-top: 8px; padding-top: 4px; text-align: center;">
+              <span class="letter-field" style="text-align: center; border-bottom: none;">{{ letter.letter_printed_name|default:letter.student.user.get_full_name|default:"—" }}</span>
+              <div style="font-size: 12px; color: #666;">Signature over printed name</div>
+            </div>
+          </div>
+          
+          <div class="letter-footer">
+            <p style="margin-bottom: 8px;">Conformed:</p>
+            <div class="signature-line" style="margin-top: 48px;">
+              Student Formator
+            </div>
+          </div>
+          
+          <div class="status-stamp">
+            <div class="status-stamp-box">
+              STATUS<br>
+              <span style="font-size: 10px;">CONTROLLED</span>
+            </div>
+          </div>
         </div>
       </div>
+    </section>
 
-      <!-- Verification Form -->
+    {% if letter.file %}
+    <!-- Uploaded File (if available) -->
+    <section class="card no-print" style="margin-bottom: 20px;">
+      <h4><i class="fas fa-paperclip"></i> Attached File</h4>
+      <div style="background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:16px; text-align:center;">
+        <a href="{{ letter.file.url }}" target="_blank" class="login-button">
+          <i class="fas fa-external-link-alt"></i> Open Attached File
+        </a>
+        <p style="margin:12px 0 0; color:#667085; font-size: 0.875rem;">Student also uploaded a physical signed copy</p>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- Verification Form -->
+    <section class="card no-print">
+      <h3 style="margin-bottom: 16px;"><i class="fas fa-clipboard-check"></i> Verification Decision</h3>
       <form method="post">
         {% csrf_token %}
         <div style="margin-bottom:16px;">
-          <label style="display:block; margin-bottom:6px; font-weight:600;">Verification Decision <span style="color:red;">*</span></label>
-          <div style="display:flex; gap:12px;">
-            <label style="display:flex; align-items:center; gap:8px; padding:12px 20px; border:2px solid #d1fae5; border-radius:8px; cursor:pointer; flex:1; background:#f0fdf4;">
-              <input type="radio" name="action" value="verified" checked>
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Decision <span style="color:red;">*</span></label>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <label style="display:flex; align-items:center; gap:8px; padding:12px 20px; border:2px solid #d1fae5; border-radius:8px; cursor:pointer; flex:1; background:#f0fdf4; min-width:150px;">
+              <input type="radio" name="action" value="approved" checked>
               <i class="fas fa-check-circle" style="color:#059669;"></i>
-              <span>Verify & Accept</span>
+              <span>Approve</span>
             </label>
-            <label style="display:flex; align-items:center; gap:8px; padding:12px 20px; border:2px solid #fee2e2; border-radius:8px; cursor:pointer; flex:1; background:#fef2f2;">
+            <label style="display:flex; align-items:center; gap:8px; padding:12px 20px; border:2px solid #fef3c7; border-radius:8px; cursor:pointer; flex:1; background:#fffbeb; min-width:150px;">
+              <input type="radio" name="action" value="revision_needed">
+              <i class="fas fa-redo" style="color:#d97706;"></i>
+              <span>Needs Revision</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; padding:12px 20px; border:2px solid #fee2e2; border-radius:8px; cursor:pointer; flex:1; background:#fef2f2; min-width:150px;">
               <input type="radio" name="action" value="rejected">
               <i class="fas fa-times-circle" style="color:#dc2626;"></i>
               <span>Reject</span>
@@ -86,9 +316,9 @@
         </div>
 
         <div style="margin-bottom:16px;">
-          <label style="display:block; margin-bottom:6px; font-weight:600;">Notes / Feedback</label>
-          <textarea name="notes" rows="4" placeholder="Add notes or feedback for the student..."
-                    style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;"></textarea>
+          <label style="display:block; margin-bottom:6px; font-weight:600;">Remarks / Feedback</label>
+          <textarea name="remarks" rows="4" placeholder="Add remarks or feedback for the student (required if revision needed or rejected)..."
+                    style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px;">{{ letter.remarks }}</textarea>
         </div>
 
         <div style="display:flex; gap:12px;">
@@ -102,9 +332,5 @@
   </main>
 
   <script src="{% static 'violations/js/script.js' %}"></script>
-  <style>
-    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
-    .badge-warning { background: #fef3c7; color: #d97706; }
-  </style>
 </body>
 </html>

@@ -15,7 +15,7 @@ import os
 import csv
 
 from .models import (
-	User, Student as StudentModel, Staff as StaffModel, Faculty as FacultyModel,
+	User, Student as StudentModel, Staff as StaffModel, OSACoordinator as OSACoordinatorModel,
 	TemporaryAccessRequest, Violation, LoginActivity,
 	ViolationDocument, ApologyLetter, IDConfiscation, ViolationClearance, StaffVerification,
 	Message
@@ -41,8 +41,8 @@ def welcome_tts_view(request):
 	if not text:
 		name = (request.GET.get("name") or getattr(request.user, "first_name", "") or getattr(request.user, "username", "") or "there").strip() or "there"
 		role_raw = (request.GET.get("role") or getattr(getattr(request.user, "role", None), "lower", lambda: str(getattr(request.user, "role", "")))() or "").lower()
-		if role_raw in {"faculty_admin", "faculty"}:
-			role_label = "Faculty"
+		if role_raw in {"osa_coordinator", "faculty_admin", "faculty"}:
+			role_label = "OSA Coordinator"
 		elif role_raw == "staff":
 			role_label = "Staff"
 		else:
@@ -351,9 +351,12 @@ def signup_view(request):
 @role_required({User.Role.STUDENT})
 def student_dashboard_view(request):
 	"""Student dashboard (UI-only) — restricted to Student role."""
+	from django.db.models import Prefetch
 	student = getattr(request.user, "student_profile", None)
-	# Fetch real violations for this student
-	violations = Violation.objects.select_related("reported_by", "student").filter(student=student).order_by("-created_at") if student else []
+	# Fetch real violations for this student with prefetched apology letters (latest first)
+	violations = Violation.objects.select_related("reported_by", "student").prefetch_related(
+		Prefetch("apology_letters", queryset=ApologyLetter.objects.order_by("-submitted_at"))
+	).filter(student=student).order_by("-created_at") if student else []
 	# Login history for current user
 	login_history = LoginActivity.objects.filter(user=request.user).order_by("-timestamp")[:20]
 	# Messages from staff/faculty - exclude deleted by receiver (student)
@@ -380,12 +383,12 @@ def student_dashboard_view(request):
 
 
 ############################################
-# Faculty (Reporting Personnel) - frontend-only
+# OSA Coordinator (Reporting Personnel) - frontend-only
 ############################################
 
-@role_required({User.Role.FACULTY_ADMIN})
+@role_required({User.Role.OSA_COORDINATOR})
 def faculty_dashboard_view(request):
-	"""Faculty dashboard — shows quick stats for the current reporter."""
+	"""OSA Coordinator dashboard — shows quick stats for the current reporter."""
 	# Aggregate counts for reports created by this user
 	my_reports_qs = Violation.objects.filter(reported_by=request.user)
 	total_reports = my_reports_qs.count()
@@ -472,12 +475,12 @@ def faculty_dashboard_view(request):
 		"unread_count": unread_count,
 		"trashed_messages": trashed_messages,
 	}
-	return render(request, "violations/faculty/dashboard.html", ctx)
+	return render(request, "violations/osa_coordinator/dashboard.html", ctx)
 
 
-@role_required({User.Role.FACULTY_ADMIN})
+@role_required({User.Role.OSA_COORDINATOR})
 def faculty_student_detail_view(request, student_id: str):
-	"""Faculty: View a student's profile details and violations by student_id (mirrors staff detail)."""
+	"""OSA Coordinator: View a student's profile details and violations by student_id (mirrors staff detail)."""
 	student = StudentModel.objects.select_related("user").filter(student_id__iexact=student_id).first()
 	if not student:
 		messages.error(request, "Student not found.")
@@ -502,9 +505,9 @@ def faculty_student_detail_view(request, student_id: str):
 	return render(request, "violations/staff/student_detail.html", ctx)
 
 
-@role_required({User.Role.FACULTY_ADMIN})
+@role_required({User.Role.OSA_COORDINATOR})
 def faculty_report_view(request):
-	"""Faculty: Report Violation form — supports GET (form) and POST (create)."""
+	"""OSA Coordinator: Report Violation form — supports GET (form) and POST (create)."""
 	if request.method == "POST":
 		# Expect Student ID in student_search for MVP
 		student_key = (request.POST.get("student_search") or "").strip()
@@ -524,7 +527,7 @@ def faculty_report_view(request):
 		}.items() if not v]
 		if missing:
 			messages.error(request, f"Please fill in all required fields: {', '.join(missing)}.")
-			return render(request, "violations/faculty/report_form.html", status=400)
+			return render(request, "violations/osa_coordinator/report_form.html", status=400)
 
 		# Resolve student by exact student_id first, else try name match (basic)
 		try:
@@ -534,7 +537,7 @@ def faculty_report_view(request):
 			student = StudentModel.objects.select_related("user").filter(user__first_name__icontains=student_key).first()
 			if not student:
 				messages.error(request, "Student not found. Please provide a valid Student ID or name.")
-				return render(request, "violations/faculty/report_form.html", status=404)
+				return render(request, "violations/osa_coordinator/report_form.html", status=404)
 
 		# Parse datetime-local
 		try:
@@ -542,7 +545,7 @@ def faculty_report_view(request):
 			incident_at = datetime.fromisoformat(incident_dt)
 		except Exception:
 			messages.error(request, "Invalid date/time format.")
-			return render(request, "violations/faculty/report_form.html", status=400)
+			return render(request, "violations/osa_coordinator/report_form.html", status=400)
 
 		# Create violation
 		v = Violation(
@@ -561,14 +564,14 @@ def faculty_report_view(request):
 		messages.success(request, "Violation report submitted.")
 		return redirect("violations:faculty_my_reports")
 
-	return render(request, "violations/faculty/report_form.html")
+	return render(request, "violations/osa_coordinator/report_form.html")
 
 
-@role_required({User.Role.FACULTY_ADMIN})
+@role_required({User.Role.OSA_COORDINATOR})
 def faculty_my_reports_view(request):
-	"""Faculty: My Reported Violations list — restricted to Faculty(Admin)."""
+	"""OSA Coordinator: My Reported Violations list — restricted to OSA Coordinator."""
 	my_reports = Violation.objects.select_related("student__user").filter(reported_by=request.user).order_by("-created_at")
-	return render(request, "violations/faculty/my_reports.html", {"reports": my_reports})
+	return render(request, "violations/osa_coordinator/my_reports.html", {"reports": my_reports})
 
 
 ############################################
@@ -638,8 +641,8 @@ def staff_dashboard_view(request):
 		models.Q(sender=request.user, deleted_by_sender__isnull=False) |
 		models.Q(receiver=request.user, deleted_by_receiver__isnull=False)
 	).order_by("-created_at")[:50]
-	# Faculty list for messaging
-	faculty_list = User.objects.filter(role=User.Role.FACULTY_ADMIN).order_by("first_name", "last_name")
+	# OSA Coordinator list for messaging
+	faculty_list = User.objects.filter(role=User.Role.OSA_COORDINATOR).order_by("first_name", "last_name")
 	ctx = {
 		"students": students,
 		"total_students": total_students,
@@ -708,7 +711,7 @@ def route_dashboard_view(request):
 	role = getattr(request.user, "role", None)
 	if role == getattr(getattr(type(request.user), "Role", object), "STUDENT", "student"):
 		return redirect("violations:student_dashboard")
-	if role == getattr(getattr(type(request.user), "Role", object), "FACULTY_ADMIN", "faculty_admin"):
+	if role == getattr(getattr(type(request.user), "Role", object), "OSA_COORDINATOR", "osa_coordinator"):
 		return redirect("violations:faculty_dashboard")
 	if role == getattr(getattr(type(request.user), "Role", object), "STAFF", "staff"):
 		# If staff has an active temporary access approval, route to faculty dashboard
@@ -895,6 +898,35 @@ def staff_violation_edit_view(request, violation_id):
 
 
 @role_required({User.Role.STAFF})
+def staff_violation_delete_view(request, violation_id):
+	"""Staff: Delete a violation record (with confirmation).
+	
+	This allows staff to remove a violation that was misapplied to a student.
+	Related documents, apology letters, and other data will be cascade deleted.
+	"""
+	violation = get_object_or_404(
+		Violation.objects.select_related('student', 'student__user', 'reported_by'),
+		id=violation_id
+	)
+	
+	if request.method == 'POST':
+		student_name = violation.student.user.get_full_name() or violation.student.student_id
+		violation_id_str = f"#{violation.id}"
+		
+		# Delete the violation (cascade deletes related documents, etc.)
+		violation.delete()
+		
+		messages.success(request, f"Violation {violation_id_str} for {student_name} has been deleted successfully.")
+		return redirect('violations:staff_violations_list')
+	
+	# GET request - show confirmation page
+	ctx = {
+		'violation': violation,
+	}
+	return render(request, 'violations/staff/violation_delete_confirm.html', ctx)
+
+
+@role_required({User.Role.STAFF})
 def staff_violation_detail_view(request, violation_id):
 	"""Staff: View violation details with all related data."""
 	violation = get_object_or_404(
@@ -989,17 +1021,19 @@ def staff_apology_letters_view(request):
 		letters = paginator.page(1)
 	
 	# Stats
-	pending_count = ApologyLetter.objects.filter(status='pending').count()
-	verified_count = ApologyLetter.objects.filter(status='verified').count()
-	rejected_count = ApologyLetter.objects.filter(status='rejected').count()
+	pending_count = ApologyLetter.objects.filter(status=ApologyLetter.Status.PENDING).count()
+	approved_count = ApologyLetter.objects.filter(status=ApologyLetter.Status.APPROVED).count()
+	rejected_count = ApologyLetter.objects.filter(status=ApologyLetter.Status.REJECTED).count()
+	revision_count = ApologyLetter.objects.filter(status=ApologyLetter.Status.REVISION_NEEDED).count()
 	
 	ctx = {
 		'letters': letters,
 		'status_filter': status_filter,
 		'search_query': search_query,
 		'pending_count': pending_count,
-		'verified_count': verified_count,
+		'approved_count': approved_count,
 		'rejected_count': rejected_count,
+		'revision_count': revision_count,
 	}
 	return render(request, 'violations/staff/apology_letters.html', ctx)
 
@@ -1010,19 +1044,21 @@ def staff_verify_apology_view(request, letter_id):
 	letter = get_object_or_404(ApologyLetter.objects.select_related('student', 'violation'), id=letter_id)
 	
 	if request.method == 'POST':
-		action = request.POST.get('action', 'verified')
-		notes = request.POST.get('notes', '').strip()
+		action = request.POST.get('action', 'approved')
+		remarks = request.POST.get('remarks', '').strip()
 		
 		letter.status = action
 		letter.verified_by = request.user
 		letter.verified_at = timezone.now()
-		letter.notes = notes
+		letter.remarks = remarks
 		letter.save()
 		
-		if action == 'verified':
-			messages.success(request, f"Apology letter from {letter.student.user.get_full_name() or letter.student.student_id} has been verified.")
+		if action == ApologyLetter.Status.APPROVED:
+			messages.success(request, f"Apology letter from {letter.student.user.get_full_name() or letter.student.student_id} has been approved.")
+		elif action == ApologyLetter.Status.REVISION_NEEDED:
+			messages.warning(request, f"Apology letter from {letter.student.user.get_full_name() or letter.student.student_id} requires revision.")
 		else:
-			messages.warning(request, f"Apology letter from {letter.student.user.get_full_name() or letter.student.student_id} has been rejected.")
+			messages.error(request, f"Apology letter from {letter.student.user.get_full_name() or letter.student.student_id} has been rejected.")
 		
 		return redirect('violations:staff_apology_letters')
 	
@@ -1433,10 +1469,10 @@ def staff_send_faculty_message_view(request):
 			messages.error(request, 'Please select a faculty member and enter a message.')
 			return redirect('violations:staff_dashboard')
 		
-		# Find the faculty user
-		faculty_user = User.objects.filter(id=faculty_id, role=User.Role.FACULTY_ADMIN).first()
+		# Find the OSA Coordinator user
+		faculty_user = User.objects.filter(id=faculty_id, role=User.Role.OSA_COORDINATOR).first()
 		if not faculty_user:
-			messages.error(request, 'Faculty member not found.')
+			messages.error(request, 'OSA Coordinator not found.')
 			return redirect('violations:staff_dashboard')
 		
 		# Create the message
@@ -1685,17 +1721,17 @@ def student_restore_message_view(request):
 		return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
 
 
-@role_required({User.Role.FACULTY_ADMIN})
+@role_required({User.Role.OSA_COORDINATOR})
 def faculty_mark_message_read_view(request, message_id: int):
-	"""Faculty: Mark a message as read."""
+	"""OSA Coordinator: Mark a message as read."""
 	message_obj = get_object_or_404(Message, id=message_id, receiver=request.user)
 	message_obj.mark_read()
 	return JsonResponse({'status': 'ok'})
 
 
-@role_required({User.Role.FACULTY_ADMIN})
+@role_required({User.Role.OSA_COORDINATOR})
 def faculty_delete_message_view(request):
-	"""Faculty: Move a message to trash (soft delete)."""
+	"""OSA Coordinator: Move a message to trash (soft delete)."""
 	if request.method != 'POST':
 		return JsonResponse({'status': 'error', 'error': 'POST required'}, status=405)
 	
@@ -1716,9 +1752,9 @@ def faculty_delete_message_view(request):
 		return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
 
 
-@role_required({User.Role.FACULTY_ADMIN})
+@role_required({User.Role.OSA_COORDINATOR})
 def faculty_restore_message_view(request):
-	"""Faculty: Restore a message from trash."""
+	"""OSA Coordinator: Restore a message from trash."""
 	if request.method != 'POST':
 		return JsonResponse({'status': 'error', 'error': 'POST required'}, status=405)
 	
@@ -1739,9 +1775,9 @@ def faculty_restore_message_view(request):
 		return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
 
 
-@role_required({User.Role.FACULTY_ADMIN})
+@role_required({User.Role.OSA_COORDINATOR})
 def faculty_reply_message_view(request):
-	"""Faculty: Reply to a staff message."""
+	"""OSA Coordinator: Reply to a staff message."""
 	if request.method != 'POST':
 		return JsonResponse({'status': 'error', 'error': 'POST required'}, status=405)
 	
@@ -1769,3 +1805,129 @@ def faculty_reply_message_view(request):
 		return JsonResponse({'status': 'error', 'error': 'Invalid JSON'}, status=400)
 	except Exception as e:
 		return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
+
+
+############################################
+# Student: Letter of Apology Submission
+############################################
+
+@role_required({User.Role.STUDENT})
+def student_apology_view(request):
+	"""Student view to submit letter of apology for violations."""
+	student = getattr(request.user, "student_profile", None)
+	if not student:
+		messages.error(request, "Student profile not found.")
+		return redirect("violations:student_dashboard")
+	
+	# Get all violations that need apology (not resolved, or those requiring apology)
+	violations_needing_apology = Violation.objects.filter(
+		student=student
+	).exclude(
+		status=Violation.Status.RESOLVED
+	).order_by("-created_at")
+	
+	# Get existing apology letters for this student
+	existing_apologies = ApologyLetter.objects.filter(student=student).select_related("violation")
+	apology_by_violation = {a.violation_id: a for a in existing_apologies}
+	
+	if request.method == "POST":
+		violation_id = request.POST.get("violation_id")
+		apology_file = request.FILES.get("apology_file")  # Optional now
+		
+		# Get letter form data
+		letter_date = request.POST.get("letter_date", "").strip()
+		letter_campus = request.POST.get("letter_campus", "").strip()
+		letter_full_name = request.POST.get("letter_full_name", "").strip()
+		letter_home_address = request.POST.get("letter_home_address", "").strip()
+		letter_program = request.POST.get("letter_program", "").strip()
+		letter_violations = request.POST.get("letter_violations", "").strip()
+		letter_printed_name = request.POST.get("letter_printed_name", "").strip()
+		signature_data = request.POST.get("signature_data", "").strip()
+		
+		if not violation_id:
+			messages.error(request, "Please select a violation.")
+			return redirect("violations:student_apology")
+		
+		# Validate that at least form data is filled
+		if not letter_full_name:
+			messages.error(request, "Please fill out the letter form with your full name.")
+			return redirect("violations:student_apology")
+		
+		# Validate file type if file is uploaded
+		if apology_file:
+			allowed_types = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']
+			if apology_file.content_type not in allowed_types:
+				messages.error(request, "Please upload a PDF or image file (JPEG, PNG).")
+				return redirect("violations:student_apology")
+		
+		# Get the violation
+		violation = get_object_or_404(Violation, id=violation_id, student=student)
+		
+		# Check if already submitted and pending/approved
+		existing = apology_by_violation.get(violation.id)
+		if existing and existing.status in [ApologyLetter.Status.PENDING, ApologyLetter.Status.APPROVED]:
+			messages.warning(request, f"You have already submitted an apology letter for this violation. Status: {existing.get_status_display()}")
+			return redirect("violations:student_apology")
+		
+		# Create or update apology letter
+		if existing and existing.status in [ApologyLetter.Status.REJECTED, ApologyLetter.Status.REVISION_NEEDED]:
+			# Update existing rejected/revision needed letter
+			if apology_file:
+				existing.file = apology_file
+			existing.status = ApologyLetter.Status.PENDING
+			existing.submitted_at = timezone.now()
+			existing.verified_by = None
+			existing.verified_at = None
+			existing.remarks = ""
+			# Update letter form data
+			existing.letter_date = letter_date
+			existing.letter_campus = letter_campus
+			existing.letter_full_name = letter_full_name
+			existing.letter_home_address = letter_home_address
+			existing.letter_program = letter_program
+			existing.letter_violations = letter_violations
+			existing.letter_printed_name = letter_printed_name
+			existing.signature_data = signature_data
+			existing.save()
+			messages.success(request, "Your revised letter of apology has been resubmitted successfully!")
+		else:
+			# Create new apology letter
+			apology_letter = ApologyLetter(
+				violation=violation,
+				student=student,
+				status=ApologyLetter.Status.PENDING,
+				letter_date=letter_date,
+				letter_campus=letter_campus,
+				letter_full_name=letter_full_name,
+				letter_home_address=letter_home_address,
+				letter_program=letter_program,
+				letter_violations=letter_violations,
+				letter_printed_name=letter_printed_name,
+				signature_data=signature_data
+			)
+			if apology_file:
+				apology_letter.file = apology_file
+			apology_letter.save()
+			messages.success(request, "Your letter of apology has been submitted successfully!")
+		
+		return redirect("violations:student_apology")
+	
+	# Prepare context with violation apology status
+	violations_with_status = []
+	for v in violations_needing_apology:
+		apology = apology_by_violation.get(v.id)
+		violations_with_status.append({
+			"violation": v,
+			"apology": apology,
+			"can_submit": apology is None or apology.status in [ApologyLetter.Status.REJECTED, ApologyLetter.Status.REVISION_NEEDED]
+		})
+	
+	# Also include resolved violations that might have apologies
+	all_apologies = ApologyLetter.objects.filter(student=student).select_related("violation").order_by("-submitted_at")
+	
+	ctx = {
+		"student": student,
+		"violations_with_status": violations_with_status,
+		"all_apologies": all_apologies,
+	}
+	return render(request, "violations/student/apology.html", ctx)

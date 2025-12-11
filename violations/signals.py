@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.utils import timezone
 
-from .models import User, Student, Faculty, Staff, LoginActivity
+from .models import User, Student, OSACoordinator, Staff, LoginActivity
 
 
 @receiver(post_save, sender=User)
@@ -13,8 +13,8 @@ def create_role_profile(sender, instance: User, created: bool, **kwargs):
     # Auto-create a matching role profile for convenience
     if instance.role == User.Role.STUDENT:
         Student.objects.create(user=instance, student_id=f"{instance.username}")
-    elif instance.role == User.Role.FACULTY_ADMIN:
-        Faculty.objects.create(user=instance, employee_id=f"FAC-{instance.username}")
+    elif instance.role == User.Role.OSA_COORDINATOR:
+        OSACoordinator.objects.create(user=instance, employee_id=f"OSA-{instance.username}")
     elif instance.role == User.Role.STAFF:
         Staff.objects.create(user=instance, employee_id=f"STA-{instance.username}")
     # Record account creation event

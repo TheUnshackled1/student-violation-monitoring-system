@@ -455,7 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loginHistCloseBtn) loginHistCloseBtn.addEventListener('click', closeLoginHistory);
     }
 
-    // Faculty report form: enable submit when required fields filled; show modal on submit
+    // OSA Coordinator report form: enable submit when required fields filled; show modal on submit
     const reportForm = document.getElementById('reportForm');
     if (reportForm) {
         const submitBtn = document.getElementById('submitReport');

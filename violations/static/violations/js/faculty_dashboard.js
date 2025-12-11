@@ -1,4 +1,4 @@
-// Faculty Dashboard Enhancements
+// OSA Coordinator Dashboard Enhancements
 // - Client-side search filtering (name or ID)
 // - Clickable student rows linking to detail page
 // - Accessible announcements (ARIA live region) for search results count

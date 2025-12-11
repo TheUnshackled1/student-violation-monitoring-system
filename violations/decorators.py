@@ -35,13 +35,13 @@ def role_required(allowed_roles: Iterable[str]):
             if role in allowed_roles:
                 return view_func(request, *args, **kwargs)
 
-            # Elevated access: If this view requires Faculty(Admin), allow approved/active temporary access.
+            # Elevated access: If this view requires OSA Coordinator, allow approved/active temporary access.
             try:
-                requires_faculty = getattr(User.Role, "FACULTY_ADMIN", "faculty_admin") in allowed_roles
+                requires_osa_coordinator = getattr(User.Role, "OSA_COORDINATOR", "osa_coordinator") in allowed_roles
             except Exception:
-                requires_faculty = False
+                requires_osa_coordinator = False
 
-            if requires_faculty:
+            if requires_osa_coordinator:
                 now = timezone.now()
                 has_active = TemporaryAccessRequest.objects.filter(
                     requester=user,

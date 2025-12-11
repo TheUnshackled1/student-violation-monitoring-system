@@ -78,7 +78,7 @@
             <div class="dash-card">
                 <div class="card-icon"><i class="fas fa-scale-balanced"></i></div>
                 <div class="card-title">Standing</div>
-                <div class="card-desc">{% if violations|length %}Under Monitoring{% else %}Good Standing{% endif %}</div>
+                <div class="card-desc">{% if violations|length %}{{ violations|length }} violation{{ violations|length|pluralize }}{% else %}Good Standing{% endif %}</div>
             </div>
         </section>
 
@@ -129,11 +129,27 @@
                                 <th>Type</th>
                                 <th>Status</th>
                                 <th>Reported By</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for v in violations %}
-                            <tr>
+                            {% with latest_apology=v.apology_letters.all|first %}
+                            <tr class="violation-row"
+                                style="{% if v.status == 'resolved' %}background-color: #dcfce7;{% elif latest_apology.status == 'approved' %}background-color: #dcfce7;{% elif v.status == 'dismissed' %}background-color: #f3f4f6;{% elif v.status == 'reported' or v.status == 'under_review' %}background-color: #fee2e2;{% endif %}"
+                                data-id="{{ v.id }}"
+                                data-type="{{ v.get_type_display }}"
+                                data-type-raw="{{ v.type }}"
+                                data-status="{{ v.get_status_display }}"
+                                data-status-raw="{{ v.status }}"
+                                data-apology-status="{% if latest_apology %}{{ latest_apology.status }}{% endif %}"
+                                data-date="{{ v.created_at|date:'M d, Y' }}"
+                                data-incident-date="{{ v.incident_at|date:'M d, Y g:i A' }}"
+                                data-location="{{ v.location }}"
+                                data-description="{{ v.description }}"
+                                data-reporter="{{ v.reporter.get_full_name|default:v.reporter.username }}"
+                                data-witness="{{ v.witness_statement|default:'' }}"
+                                data-evidence="{% if v.evidence_file %}{{ v.evidence_file.url }}{% endif %}">
                                 <td>{{ v.created_at|date:"M d, Y" }}</td>
                                 <td>
                                     {% if v.type == 'major' %}
@@ -143,18 +159,36 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if v.status == 'reported' %}
-                                        <span class="badge" style="background:#fff7ed; color:#9a3412;">{{ v.get_status_display }}</span>
+                                    {% if v.status == 'resolved' %}
+                                        <span class="badge" style="background:#dcfce7; color:#166534;"><i class="fas fa-check-circle"></i> Resolved</span>
+                                    {% elif v.status == 'dismissed' %}
+                                        <span class="badge" style="background:#f3f4f6; color:#374151;"><i class="fas fa-ban"></i> Dismissed</span>
+                                    {% elif latest_apology %}
+                                        {% if latest_apology.status == 'approved' %}
+                                            <span class="badge" style="background:#dcfce7; color:#166534;"><i class="fas fa-check-circle"></i> Letter Approved</span>
+                                        {% elif latest_apology.status == 'pending' %}
+                                            <span class="badge" style="background:#fef9c3; color:#854d0e;"><i class="fas fa-clock"></i> Letter Pending</span>
+                                        {% elif latest_apology.status == 'revision_needed' %}
+                                            <span class="badge" style="background:#fff7ed; color:#9a3412;"><i class="fas fa-edit"></i> Revision Needed</span>
+                                        {% elif latest_apology.status == 'rejected' %}
+                                            <span class="badge" style="background:#fee2e2; color:#b91c1c;"><i class="fas fa-times-circle"></i> Letter Rejected</span>
+                                        {% endif %}
+                                    {% elif v.status == 'reported' %}
+                                        <span class="badge" style="background:#fee2e2; color:#b91c1c;"><i class="fas fa-exclamation-circle"></i> Pending</span>
                                     {% elif v.status == 'under_review' %}
-                                        <span class="badge" style="background:#fef9c3; color:#854d0e;">{{ v.get_status_display }}</span>
-                                    {% elif v.status == 'resolved' %}
-                                        <span class="badge" style="background:#dcfce7; color:#166534;">{{ v.get_status_display }}</span>
+                                        <span class="badge" style="background:#fef9c3; color:#854d0e;"><i class="fas fa-search"></i> Under Review</span>
                                     {% else %}
                                         <span class="badge" style="background:#f3f4f6; color:#374151;">{{ v.get_status_display }}</span>
                                     {% endif %}
                                 </td>
                                 <td>{{ v.reporter.get_full_name|default:v.reporter.username }}</td>
+                                <td>
+                                    <button class="view-violation-btn" style="background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                </td>
                             </tr>
+                            {% endwith %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -308,7 +342,7 @@
                 <h3>Logged in History</h3>
                 <button class="icon-btn" id="loginHistClose"><i class="fas fa-times"></i></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
                 <p><strong>Last login:</strong> {% if request.user.last_login %}{{ request.user.last_login|date:"M d, Y g:i A" }}{% else %}—{% endif %}</p>
                 <p><strong>Account created:</strong> {{ request.user.date_joined|date:"M d, Y g:i A" }}</p>
                 <div style="margin-top:10px;">
@@ -343,6 +377,71 @@
             </div>
             <div class="modal-actions">
                 <button class="login-button" id="loginHistCloseBtn" style="background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Violation Details Modal -->
+    <div class="modal" id="violationModal" aria-hidden="true">
+        <div class="modal-card" style="max-width:600px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> Violation Details</h3>
+                <button class="icon-btn" id="violationModalClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- Type and Status badges -->
+                <div style="display:flex; gap:12px; margin-bottom:16px;">
+                    <span id="violationTypeBadge" class="badge" style="padding:6px 12px; font-size:13px;"></span>
+                    <span id="violationStatusBadge" class="badge" style="padding:6px 12px; font-size:13px;"></span>
+                </div>
+                
+                <!-- Violation Info Grid -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                    <div>
+                        <label style="font-size:12px; color:#667085; display:block; margin-bottom:4px;">Incident Date</label>
+                        <p id="violationIncidentDate" style="font-weight:500; margin:0;">—</p>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:#667085; display:block; margin-bottom:4px;">Reported On</label>
+                        <p id="violationReportedDate" style="font-weight:500; margin:0;">—</p>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:#667085; display:block; margin-bottom:4px;">Reported By</label>
+                        <p id="violationReporter" style="font-weight:500; margin:0;">—</p>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:#667085; display:block; margin-bottom:4px;">Location</label>
+                        <p id="violationLocation" style="font-weight:500; margin:0;">—</p>
+                    </div>
+                </div>
+                
+                <!-- Description -->
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:12px; color:#667085; display:block; margin-bottom:4px;">Description</label>
+                    <div id="violationDescription" style="background:#f9fafb; padding:12px; border-radius:8px; line-height:1.6; white-space:pre-wrap;">—</div>
+                </div>
+                
+                <!-- Witness Statement (if any) -->
+                <div id="witnessSection" style="margin-bottom:16px; display:none;">
+                    <label style="font-size:12px; color:#667085; display:block; margin-bottom:4px;">Witness Statement</label>
+                    <div id="violationWitness" style="background:#fef3c7; padding:12px; border-radius:8px; line-height:1.6; white-space:pre-wrap;">—</div>
+                </div>
+                
+                <!-- Evidence (if any) -->
+                <div id="evidenceSection" style="display:none;">
+                    <label style="font-size:12px; color:#667085; display:block; margin-bottom:4px;">Evidence</label>
+                    <a id="violationEvidence" href="#" target="_blank" style="display:inline-flex; align-items:center; gap:6px; color:#3b82f6; text-decoration:none;">
+                        <i class="fas fa-file-alt"></i> <span>View Evidence File</span>
+                    </a>
+                </div>
+            </div>
+            <div class="modal-actions" style="display:flex; gap:10px; justify-content:flex-end;">
+                <a href="{% url 'violations:student_apology' %}" class="login-button" id="writeApologyBtn" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); text-decoration:none;">
+                    <i class="fas fa-pen-to-square"></i> Write Apology Letter
+                </a>
+                <button class="login-button" id="violationModalCloseBtn" style="background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
                     <i class="fas fa-times"></i> Close
                 </button>
             </div>
@@ -617,6 +716,107 @@
                         console.error('Error restoring message:', err);
                         alert('Error restoring message');
                     }
+                });
+            });
+        })();
+    </script>
+    <script>
+        // Violation Details Modal functionality
+        (function(){
+            const modal = document.getElementById('violationModal');
+            const closeBtn = document.getElementById('violationModalClose');
+            const closeBtnFooter = document.getElementById('violationModalCloseBtn');
+            
+            // Elements to populate
+            const typeBadge = document.getElementById('violationTypeBadge');
+            const statusBadge = document.getElementById('violationStatusBadge');
+            const incidentDate = document.getElementById('violationIncidentDate');
+            const reportedDate = document.getElementById('violationReportedDate');
+            const reporter = document.getElementById('violationReporter');
+            const locationEl = document.getElementById('violationLocation');
+            const description = document.getElementById('violationDescription');
+            const witnessSection = document.getElementById('witnessSection');
+            const witness = document.getElementById('violationWitness');
+            const evidenceSection = document.getElementById('evidenceSection');
+            const evidence = document.getElementById('violationEvidence');
+            
+            function openModal(row) {
+                // Get data from row
+                const type = row.dataset.type;
+                const typeRaw = row.dataset.typeRaw;
+                const status = row.dataset.status;
+                const statusRaw = row.dataset.statusRaw;
+                
+                // Set type badge
+                typeBadge.textContent = type;
+                if(typeRaw === 'major') {
+                    typeBadge.style.background = '#fee2e2';
+                    typeBadge.style.color = '#b91c1c';
+                } else {
+                    typeBadge.style.background = '#e0e7ff';
+                    typeBadge.style.color = '#3730a3';
+                }
+                
+                // Set status badge
+                statusBadge.textContent = status;
+                if(statusRaw === 'reported') {
+                    statusBadge.style.background = '#fff7ed';
+                    statusBadge.style.color = '#9a3412';
+                } else if(statusRaw === 'under_review') {
+                    statusBadge.style.background = '#fef9c3';
+                    statusBadge.style.color = '#854d0e';
+                } else if(statusRaw === 'resolved') {
+                    statusBadge.style.background = '#dcfce7';
+                    statusBadge.style.color = '#166534';
+                } else {
+                    statusBadge.style.background = '#f3f4f6';
+                    statusBadge.style.color = '#374151';
+                }
+                
+                // Set other fields
+                incidentDate.textContent = row.dataset.incidentDate || '—';
+                reportedDate.textContent = row.dataset.date || '—';
+                reporter.textContent = row.dataset.reporter || '—';
+                locationEl.textContent = row.dataset.location || '—';
+                description.textContent = row.dataset.description || '—';
+                
+                // Witness statement
+                const witnessText = row.dataset.witness;
+                if(witnessText && witnessText.trim()) {
+                    witnessSection.style.display = 'block';
+                    witness.textContent = witnessText;
+                } else {
+                    witnessSection.style.display = 'none';
+                }
+                
+                // Evidence
+                const evidenceUrl = row.dataset.evidence;
+                if(evidenceUrl && evidenceUrl.trim()) {
+                    evidenceSection.style.display = 'block';
+                    evidence.href = evidenceUrl;
+                } else {
+                    evidenceSection.style.display = 'none';
+                }
+                
+                modal.classList.add('show');
+            }
+            
+            function closeModal() {
+                modal.classList.remove('show');
+            }
+            
+            // Close handlers
+            if(closeBtn) closeBtn.addEventListener('click', closeModal);
+            if(closeBtnFooter) closeBtnFooter.addEventListener('click', closeModal);
+            if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+            document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && modal.classList.contains('show')) closeModal(); });
+            
+            // Click on view buttons
+            document.querySelectorAll('.view-violation-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const row = btn.closest('.violation-row');
+                    if(row) openModal(row);
                 });
             });
         })();

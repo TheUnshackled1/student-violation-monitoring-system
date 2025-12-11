@@ -7,20 +7,20 @@ from .models import ChatMessage
 
 """Realtime chat consumer.
 
-Currently allows faculty admin + staff. Extend to normal faculty role so that
-regular faculty accounts (whose template uses body class `role-faculty`) can join.
+Currently allows OSA Coordinator + staff. Extend to normal OSA Coordinator role so that
+regular OSA Coordinator accounts (whose template uses body class `role-faculty`) can join.
 In production you may want to tighten further or move role logic into a
 permission helper.
 """
 
-ALLOWED_ROLES = {"faculty_admin", "faculty", "staff"}
-ROOM_NAME = "staff-faculty"  # default shared room
+ALLOWED_ROLES = {"osa_coordinator", "faculty_admin", "faculty", "staff"}
+ROOM_NAME = "staff-osa"  # default shared room
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         user = self.scope.get("user")
-        # Only authenticated staff & faculty (admin) + superusers
+        # Only authenticated staff & OSA Coordinator (admin) + superusers
         if not user or not user.is_authenticated:
             await self.close()
             return

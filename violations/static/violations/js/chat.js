@@ -1,4 +1,4 @@
-// Staff/Faculty realtime chat (WebSocket)
+// Staff/OSA Coordinator realtime chat (WebSocket)
 (function(){
   // Support both legacy id `chatToggle` and current header button id `chatHeaderBtn`.
   const chatToggle = document.getElementById('chatToggle') || document.getElementById('chatHeaderBtn');
@@ -14,7 +14,7 @@
   if(chatToggle){ chatToggle.addEventListener('click', () => { chatPanel.classList.toggle('show'); unreadCount = 0; updateBadge(); }); }
 
   // Build ws:// or wss:// URL
-  const room = 'staff-faculty';
+  const room = 'staff-osa';
   const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const wsUrl = `${scheme}://${window.location.host}/ws/chat/${room}/`;
 

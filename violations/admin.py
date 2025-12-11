@@ -5,7 +5,7 @@ from django.utils.html import format_html
 from .models import (
 	User,
 	Student,
-	Faculty,
+	OSACoordinator,
 	Staff,
 	TemporaryAccessRequest,
 	Message,
@@ -60,7 +60,7 @@ class UserAdmin(DjangoUserAdmin):
 		colors = {
 			"student": "#22c55e",
 			"staff": "#3b82f6",
-			"faculty_admin": "#f59e0b",
+			"osa_coordinator": "#f59e0b",
 		}
 		color = colors.get(obj.role, "#6b7280")
 		return format_html(
@@ -127,8 +127,8 @@ class StudentAdmin(admin.ModelAdmin):
 		)
 
 
-@admin.register(Faculty)
-class FacultyAdmin(admin.ModelAdmin):
+@admin.register(OSACoordinator)
+class OSACoordinatorAdmin(admin.ModelAdmin):
 	list_display = ("employee_id", "get_full_name", "position", "office_location")
 	search_fields = ("employee_id", "user__username", "user__first_name", "user__last_name")
 	list_per_page = 25

@@ -1,0 +1,119 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delete Violation #{{ violation.id }} - OSA Staff</title>
+  <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+<body class="role-staff">
+  <header class="top-nav">
+    <div class="top-left">
+      <a href="{% url 'violations:staff_dashboard' %}" style="display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;">
+        <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
+        <span class="header-title">Delete Violation</span>
+      </a>
+    </div>
+    <div class="top-right">
+      <a href="{% url 'violations:staff_violation_detail' violation.id %}" class="ghost-btn"><i class="fas fa-arrow-left"></i> Cancel</a>
+    </div>
+  </header>
+
+  <div class="background-overlay"></div>
+  <div class="background-image"></div>
+
+  <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px); max-width:600px;">
+    <section class="card" style="text-align:center;">
+      <div style="background:#fee2e2; width:80px; height:80px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px;">
+        <i class="fas fa-exclamation-triangle" style="font-size:36px; color:#dc2626;"></i>
+      </div>
+      
+      <h2 style="margin:0 0 12px; color:#dc2626;">Delete Violation?</h2>
+      <p style="color:#667085; margin-bottom:24px;">
+        Are you sure you want to delete this violation? This action cannot be undone.
+      </p>
+
+      <!-- Violation Summary -->
+      <div style="background:#f9fafb; padding:16px; border-radius:8px; text-align:left; margin-bottom:24px;">
+        <h4 style="margin:0 0 12px;"><i class="fas fa-info-circle"></i> Violation Details</h4>
+        <div style="display:grid; gap:8px;">
+          <div>
+            <span style="color:#667085;">Violation ID:</span>
+            <strong>#{{ violation.id }}</strong>
+          </div>
+          <div>
+            <span style="color:#667085;">Student:</span>
+            <strong>{{ violation.student.user.get_full_name|default:violation.student.student_id }}</strong>
+            <span style="color:#667085;">({{ violation.student.student_id }})</span>
+          </div>
+          <div>
+            <span style="color:#667085;">Type:</span>
+            <span class="badge {% if violation.type == 'major' %}badge-danger{% else %}badge-warning{% endif %}">
+              {{ violation.get_type_display }}
+            </span>
+          </div>
+          <div>
+            <span style="color:#667085;">Status:</span>
+            <span class="badge 
+              {% if violation.status == 'reported' %}badge-info
+              {% elif violation.status == 'under_review' %}badge-warning
+              {% elif violation.status == 'resolved' %}badge-success
+              {% else %}badge-secondary{% endif %}">
+              {{ violation.get_status_display }}
+            </span>
+          </div>
+          <div>
+            <span style="color:#667085;">Incident Date:</span>
+            <strong>{{ violation.incident_at|date:"M d, Y g:i A" }}</strong>
+          </div>
+          <div>
+            <span style="color:#667085;">Description:</span>
+            <p style="margin:4px 0 0; padding:8px; background:#fff; border-radius:4px; border:1px solid #e5e7eb;">
+              {{ violation.description|truncatewords:30 }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Warning -->
+      <div style="background:#fef3c7; padding:12px; border-radius:8px; margin-bottom:24px; text-align:left;">
+        <p style="margin:0; color:#92400e; font-size:14px;">
+          <i class="fas fa-exclamation-circle"></i>
+          <strong>Warning:</strong> Deleting this violation will also remove all associated:
+        </p>
+        <ul style="margin:8px 0 0 20px; color:#92400e; font-size:14px;">
+          <li>Evidence documents</li>
+          <li>Apology letters</li>
+          <li>Staff verifications</li>
+          <li>ID confiscation records (if any)</li>
+        </ul>
+      </div>
+
+      <!-- Action Buttons -->
+      <form method="post" style="display:flex; gap:12px; justify-content:center;">
+        {% csrf_token %}
+        <a href="{% url 'violations:staff_violation_detail' violation.id %}" class="ghost-btn" style="padding:12px 24px;">
+          <i class="fas fa-times"></i> Cancel
+        </a>
+        <button type="submit" class="login-button" style="background:#dc2626; padding:12px 24px;">
+          <i class="fas fa-trash-alt"></i> Yes, Delete Violation
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <script src="{% static 'violations/js/script.js' %}"></script>
+  <style>
+    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; text-transform: uppercase; display: inline-block; }
+    .badge-danger { background: #fee2e2; color: #dc2626; }
+    .badge-warning { background: #fef3c7; color: #d97706; }
+    .badge-success { background: #d1fae5; color: #059669; }
+    .badge-info { background: #dbeafe; color: #2563eb; }
+    .badge-secondary { background: #f3f4f6; color: #6b7280; }
+  </style>
+</body>
+</html>

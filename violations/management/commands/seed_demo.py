@@ -29,12 +29,12 @@ class Command(BaseCommand):
             return user
 
         faculty = ensure_user(
-            username="faculty_admin",
-            email="faculty@chmsu.edu.ph",
-            role=User.Role.FACULTY_ADMIN,
+            username="osa_coordinator",
+            email="osa@chmsu.edu.ph",
+            role=User.Role.OSA_COORDINATOR,
             password="Passw0rd!",
             first_name="Fiona",
-            last_name="Faculty",
+            last_name="Coordinator",
         )
         staff = ensure_user(
             username="osa_staff",

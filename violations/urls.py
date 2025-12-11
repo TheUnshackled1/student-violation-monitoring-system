@@ -26,12 +26,13 @@ urlpatterns = [
 
     # Student
     path('student/dashboard/', views.student_dashboard_view, name='student_dashboard'),
+    path('student/apology/', views.student_apology_view, name='student_apology'),
     path('student/message/<int:message_id>/read/', views.student_mark_message_read_view, name='student_mark_message_read'),
     path('student/message/reply/', views.student_reply_message_view, name='student_reply_message'),
     path('student/message/delete/', views.student_delete_message_view, name='student_delete_message'),
     path('student/message/restore/', views.student_restore_message_view, name='student_restore_message'),
 
-    # Faculty (Reporting Personnel)
+    # OSA Coordinator (Reporting Personnel)
     path('faculty/dashboard/', views.faculty_dashboard_view, name='faculty_dashboard'),
     path('faculty/report/', views.faculty_report_view, name='faculty_report'),
     path('faculty/my-reports/', views.faculty_my_reports_view, name='faculty_my_reports'),
@@ -50,6 +51,7 @@ urlpatterns = [
     path('staff/violations/create/', views.staff_violation_create_view, name='staff_violation_create'),
     path('staff/violations/<int:violation_id>/', views.staff_violation_detail_view, name='staff_violation_detail'),
     path('staff/violations/<int:violation_id>/edit/', views.staff_violation_edit_view, name='staff_violation_edit'),
+    path('staff/violations/<int:violation_id>/delete/', views.staff_violation_delete_view, name='staff_violation_delete'),
     path('staff/violations/<int:violation_id>/verify/', views.staff_verify_violation_view, name='staff_verify_violation'),
     path('staff/violations/documents/<int:document_id>/delete/', views.staff_delete_document_view, name='staff_delete_document'),
     

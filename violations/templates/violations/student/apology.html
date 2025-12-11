@@ -1,0 +1,1046 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Letter of Apology - CHMSU Student Violation Tracker</title>
+    <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+    <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        .apology-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .form-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .form-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .violation-select-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .violation-select-card:hover {
+            border-color: #4f46e5;
+            background: #f5f3ff;
+        }
+        .violation-select-card.selected {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+        .violation-select-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #f9fafb;
+        }
+        .violation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .violation-date {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        .violation-desc {
+            color: #374151;
+            font-size: 0.9rem;
+        }
+        .apology-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-approved { background: #d1fae5; color: #065f46; }
+        .status-rejected { background: #fee2e2; color: #b91c1c; }
+        .status-revision { background: #fef9c3; color: #854d0e; }
+        
+        /* Official Letter Template Styles */
+        .letter-template {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 40px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .letter-header {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #1f2937;
+            padding-bottom: 16px;
+        }
+        .letter-logo {
+            width: 70px;
+            height: 70px;
+            margin-right: 20px;
+        }
+        .letter-title-section {
+            flex: 1;
+            text-align: center;
+        }
+        .letter-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .letter-doc-info {
+            text-align: right;
+            font-size: 11px;
+            border: 1px solid #000;
+            padding: 4px 8px;
+        }
+        .letter-doc-info div {
+            border-bottom: 1px solid #000;
+            padding: 2px 0;
+        }
+        .letter-doc-info div:last-child {
+            border-bottom: none;
+        }
+        .letter-body {
+            margin-top: 24px;
+        }
+        .letter-field {
+            border: none;
+            border-bottom: 1px solid #000;
+            min-width: 150px;
+            display: inline-block;
+            padding: 2px 4px;
+            font-weight: 500;
+            background: transparent;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 14px;
+            outline: none;
+        }
+        .letter-field:focus {
+            border-bottom: 2px solid #4f46e5;
+            background: #f5f3ff;
+        }
+        .letter-field.wide {
+            min-width: 300px;
+            width: 300px;
+        }
+        .letter-field.full {
+            display: block;
+            width: 100%;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+        .signature-canvas-container {
+            border: 1px solid #000;
+            width: 250px;
+            height: 80px;
+            margin-top: 16px;
+            position: relative;
+            background: #fff;
+        }
+        .signature-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        .clear-signature {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 10px;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        .clear-signature:hover {
+            opacity: 1;
+        }
+        @media print {
+            .clear-signature { display: none !important; }
+            .letter-field { border-bottom: 1px solid #000 !important; background: transparent !important; }
+        }
+        .letter-paragraph {
+            text-align: justify;
+            text-indent: 40px;
+            margin: 16px 0;
+        }
+        .letter-signature {
+            margin-top: 48px;
+        }
+        .signature-line {
+            border-top: 1px solid #000;
+            width: 250px;
+            margin-top: 40px;
+            padding-top: 4px;
+            text-align: center;
+        }
+        .letter-footer {
+            margin-top: 32px;
+            padding-top: 16px;
+        }
+        .status-stamp {
+            text-align: right;
+            margin-top: 24px;
+        }
+        .status-stamp-box {
+            display: inline-block;
+            border: 2px solid #000;
+            padding: 8px 16px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+        .upload-area:hover {
+            border-color: #4f46e5;
+            background: #f5f3ff;
+        }
+        .upload-area.dragover {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+        .upload-icon {
+            font-size: 3rem;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+        .file-preview {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .file-preview i {
+            font-size: 2rem;
+            color: #4f46e5;
+        }
+        .file-info {
+            flex: 1;
+        }
+        .file-name {
+            font-weight: 500;
+            color: #1f2937;
+        }
+        .file-size {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        .remove-file {
+            color: #dc2626;
+            cursor: pointer;
+            padding: 4px;
+        }
+        .history-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .remarks-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px;
+            margin-top: 8px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.875rem;
+        }
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .info-box h4 {
+            color: #1e40af;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-box ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #374151;
+        }
+        .info-box li {
+            margin-bottom: 4px;
+        }
+        .no-violations {
+            text-align: center;
+            padding: 48px;
+            color: #6b7280;
+        }
+        .no-violations i {
+            font-size: 4rem;
+            color: #d1d5db;
+            margin-bottom: 16px;
+        }
+        .print-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .print-btn:hover {
+            opacity: 0.9;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            .letter-template, .letter-template * { visibility: visible; }
+            .letter-template { 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%;
+                border: none;
+                box-shadow: none;
+                padding: 20px;
+            }
+            .no-print { display: none !important; }
+        }
+        @media (max-width: 768px) {
+            .apology-container {
+                padding: 0 8px;
+            }
+            .letter-template {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body class="role-student">
+    <!-- Top Navigation -->
+    <header class="top-nav no-print">
+        <div class="top-left">
+            <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
+            <span class="header-title">Letter of Apology</span>
+        </div>
+        <div class="top-right">
+            <a href="{% url 'violations:student_dashboard' %}" class="icon-btn" title="Back to Dashboard">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="profile-menu">
+                <button class="profile-btn" id="profileBtn">
+                    <span class="avatar">{{ request.user.first_name|default:request.user.username|first|upper }}</span>
+                    <span class="name">{{ request.user.first_name|default:request.user.username }}</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown" id="profileDropdown">
+                    <a href="{% url 'violations:auth_logout' %}">Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="background-overlay no-print"></div>
+    <div class="background-image no-print"></div>
+
+    <main class="container apology-container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
+        <!-- Messages -->
+        {% if messages %}
+        <div style="margin-bottom: 16px;" class="no-print">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" style="padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; {% if message.tags == 'success' %}background: #d1fae5; color: #065f46;{% elif message.tags == 'error' %}background: #fee2e2; color: #b91c1c;{% elif message.tags == 'warning' %}background: #fef3c7; color: #92400e;{% else %}background: #e0e7ff; color: #3730a3;{% endif %}">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Instructions -->
+        <div class="info-box no-print">
+            <h4><i class="fas fa-info-circle"></i> Instructions for Letter of Apology</h4>
+            <ul>
+                <li>Select the violation you want to submit an apology for</li>
+                <li>Fill out the letter template with your information</li>
+                <li>Print the letter, sign it, and have it conformed by the Student Formator</li>
+                <li>Submit the signed document to the OSA office</li>
+            </ul>
+        </div>
+
+        {% if violations_with_status %}
+        <!-- Step 1: Select Violation -->
+        <div class="form-card no-print">
+            <h3 class="form-title"><i class="fas fa-list-check"></i> Step 1: Select a Violation</h3>
+            
+            {% for item in violations_with_status %}
+            <div class="violation-select-card {% if not item.can_submit %}disabled{% endif %}" 
+                 data-violation-id="{{ item.violation.id }}"
+                 data-violation-desc="{{ item.violation.description }}"
+                 data-violation-date="{{ item.violation.created_at|date:'F d, Y' }}"
+                 {% if not item.can_submit %}title="Already submitted"{% endif %}>
+                <input type="radio" name="violation_select" value="{{ item.violation.id }}" 
+                       {% if not item.can_submit %}disabled{% endif %}
+                       style="display: none;" />
+                <div class="violation-header">
+                    <div>
+                        <span class="badge" style="{% if item.violation.type == 'major' %}background:#fee2e2; color:#b91c1c;{% else %}background:#e0e7ff; color:#3730a3;{% endif %}">
+                            {{ item.violation.get_type_display }}
+                        </span>
+                        <span class="badge" style="background:#f3f4f6; color:#374151; margin-left: 4px;">
+                            {{ item.violation.get_status_display }}
+                        </span>
+                    </div>
+                    <span class="violation-date">{{ item.violation.created_at|date:"M d, Y" }}</span>
+                </div>
+                <p class="violation-desc">{{ item.violation.description|truncatewords:30 }}</p>
+                
+                {% if item.apology %}
+                <div style="margin-top: 8px;">
+                    <span class="apology-status 
+                        {% if item.apology.status == 'pending' %}status-pending
+                        {% elif item.apology.status == 'approved' %}status-approved
+                        {% elif item.apology.status == 'rejected' %}status-rejected
+                        {% else %}status-revision{% endif %}">
+                        <i class="fas {% if item.apology.status == 'pending' %}fa-clock{% elif item.apology.status == 'approved' %}fa-check{% elif item.apology.status == 'rejected' %}fa-times{% else %}fa-redo{% endif %}"></i>
+                        Apology: {{ item.apology.get_status_display }}
+                    </span>
+                    {% if item.apology.remarks and item.can_submit %}
+                    <div class="remarks-box">
+                        <strong>Staff Feedback:</strong> {{ item.apology.remarks }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Step 2: Letter Template -->
+        <div class="form-card" id="letterSection" style="display: none;">
+            <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 class="form-title" style="margin-bottom: 0;"><i class="fas fa-file-alt"></i> Step 2: Fill Out & Print the Letter</h3>
+                <button type="button" class="print-btn" onclick="window.print()">
+                    <i class="fas fa-print"></i> Print Letter
+                </button>
+            </div>
+            
+            <!-- Official CHMSU Letter of Apology Template -->
+            <div class="letter-template" id="letterTemplate">
+                <div class="letter-header">
+                    <img src="{% static 'violations/images/chmsu_logo.png' %}" class="letter-logo" alt="CHMSU Logo" />
+                    <div class="letter-title-section">
+                        <div class="letter-title">LETTER OF APOLOGY</div>
+                    </div>
+                    <div class="letter-doc-info">
+                        <div><strong>Document Code:</strong> F.25-OSAS-CHMSU</div>
+                        <div><strong>Revision No.:</strong> 0</div>
+                        <div><strong>Effective Date:</strong> September 2, 2024</div>
+                        <div><strong>Page:</strong> 1 of 1</div>
+                    </div>
+                </div>
+                
+                <div class="letter-body">
+                    <p style="margin-bottom: 24px;">
+                        Date: <input type="text" class="letter-field" id="letterDate" value="{% now 'F d, Y' %}" />
+                    </p>
+                    
+                    <p style="margin-bottom: 4px;"><strong>The Student Formator</strong></p>
+                    <p style="margin-bottom: 16px;">
+                        <input type="text" class="letter-field" id="letterCampus" value="{{ student.department|default:'' }}" placeholder="Campus" /> Campus
+                    </p>
+                    
+                    <p style="margin-bottom: 16px;">SIR/MADAM:</p>
+                    
+                    <p style="margin-bottom: 16px;">
+                        I, <input type="text" class="letter-field" id="letterName" value="{{ request.user.get_full_name|default:'' }}" placeholder="Full Name" />, from 
+                        <input type="text" class="letter-field wide" id="letterAddress" placeholder="Home Address" /> (Home Address) of
+                        <input type="text" class="letter-field wide" id="letterProgram" value="{{ student.program|default:'' }}" placeholder="Program, Major, Year & Section" /> (Program, Major, Year & Section)
+                    </p>
+                    
+                    <p style="margin-bottom: 16px;">has violated the Student Code of Conduct.</p>
+                    
+                    <p style="margin-bottom: 16px;">
+                        Specific Violation/s: <input type="text" class="letter-field full" id="letterViolation" placeholder="Enter specific violation/s" />
+                    </p>
+                    
+                    <p class="letter-paragraph">
+                        I sincerely apologize for my recent violation of the university's Rules & Regulations and 
+                        understand the importance of adhering to these guidelines in the future. I am committed to 
+                        upholding these standards to maintain a positive learning environment.
+                    </p>
+                    
+                    <p class="letter-paragraph">
+                        I acknowledge the seriousness of my actions and the potential consequences of further 
+                        violations. I assure you that I take this matter seriously and will strive to prevent such incidents 
+                        from happening again. Your understanding is appreciated, and I am grateful for the opportunity 
+                        to learn and grow from this experience.
+                    </p>
+                    
+                    <p style="margin-top: 32px;">Respectfully yours,</p>
+                    
+                    <div class="letter-signature">
+                        <p style="font-size: 12px; color: #666; margin-bottom: 4px;">Sign here:</p>
+                        <div class="signature-canvas-container">
+                            <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+                            <button type="button" class="clear-signature" onclick="clearSignature()">Clear</button>
+                        </div>
+                        <div style="border-top: 1px solid #000; width: 250px; margin-top: 8px; padding-top: 4px; text-align: center;">
+                            <input type="text" class="letter-field" id="letterPrintedName" value="{{ request.user.get_full_name|default:'' }}" placeholder="Printed Name" style="text-align: center; border-bottom: none;" />
+                            <div style="font-size: 12px; color: #666;">Signature over printed name</div>
+                        </div>
+                    </div>
+                    
+                    <div class="letter-footer">
+                        <p style="margin-bottom: 8px;">Conformed:</p>
+                        <div class="signature-line" style="margin-top: 48px;">
+                            Student Formator
+                        </div>
+                    </div>
+                    
+                    <div class="status-stamp">
+                        <div class="status-stamp-box">
+                            STATUS<br>
+                            <span style="font-size: 10px;">CONTROLLED</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Back to Dashboard button -->
+            <div class="no-print" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+                <a href="{% url 'violations:student_dashboard' %}" class="ghost-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Step 3: Upload Signed Letter - OPTIONAL -->
+        <div class="form-card no-print" id="uploadSection" style="display: none;">
+            <h3 class="form-title"><i class="fas fa-cloud-upload-alt"></i> Step 3: Upload Signed Letter (Optional)</h3>
+            
+            <form method="post" enctype="multipart/form-data" id="apologyForm">
+                {% csrf_token %}
+                <input type="hidden" name="violation_id" id="selectedViolationId" value="" />
+                
+                <!-- Hidden fields to capture letter form data -->
+                <input type="hidden" name="letter_date" id="hiddenLetterDate" value="" />
+                <input type="hidden" name="letter_campus" id="hiddenLetterCampus" value="" />
+                <input type="hidden" name="letter_full_name" id="hiddenLetterName" value="" />
+                <input type="hidden" name="letter_home_address" id="hiddenLetterAddress" value="" />
+                <input type="hidden" name="letter_program" id="hiddenLetterProgram" value="" />
+                <input type="hidden" name="letter_violations" id="hiddenLetterViolations" value="" />
+                <input type="hidden" name="letter_printed_name" id="hiddenLetterPrintedName" value="" />
+                <input type="hidden" name="signature_data" id="hiddenSignatureData" value="" />
+                
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <p style="color: #6b7280; margin-bottom: 8px;">
+                        Drag and drop your signed letter here or click to browse
+                    </p>
+                    <p style="color: #9ca3af; font-size: 0.875rem;">
+                        Accepted formats: PDF, JPEG, PNG (Max 10MB)
+                    </p>
+                    <input type="file" name="apology_file" id="fileInput" 
+                           accept=".pdf,.jpg,.jpeg,.png" style="display: none;" />
+                </div>
+                
+                <div class="file-preview" id="filePreview" style="display: none;">
+                    <i class="fas fa-file"></i>
+                    <div class="file-info">
+                        <div class="file-name" id="fileName"></div>
+                        <div class="file-size" id="fileSize"></div>
+                    </div>
+                    <span class="remove-file" id="removeFile" title="Remove file">
+                        <i class="fas fa-times-circle fa-lg"></i>
+                    </span>
+                </div>
+                
+                <!-- Submit Button -->
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+                    <a href="{% url 'violations:student_dashboard' %}" class="ghost-btn">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                        <button type="submit" class="primary-btn" id="submitBtn" disabled>
+                            <i class="fas fa-paper-plane"></i> Submit Apology Letter
+                        </button>
+                </div>
+            </form>
+        </div>
+        
+        {% else %}
+        <div class="form-card">
+            <div class="no-violations">
+                <i class="fas fa-check-circle"></i>
+                <h3>No Pending Violations</h3>
+                <p>You don't have any violations that require a letter of apology.</p>
+                <a href="{% url 'violations:student_dashboard' %}" class="primary-btn" style="margin-top: 16px;">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Submission History -->
+        {% if all_apologies %}
+        <div class="form-card no-print">
+            <h3 class="form-title"><i class="fas fa-history"></i> Your Submission History</h3>
+            
+            {% for apology in all_apologies %}
+            <div class="history-item" style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 0; margin-bottom: 16px; overflow: hidden;">
+                <!-- Status Alert Messages -->
+                {% if apology.status == 'approved' %}
+                <div style="background: #d1fae5; border-left: 4px solid #059669; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-check-circle" style="color: #059669; font-size: 1.25rem;"></i>
+                    <div>
+                        <strong style="color: #065f46;">Letter Approved!</strong>
+                        <p style="margin: 4px 0 0; color: #047857; font-size: 0.9rem;">You may now claim your ID at the OSA Office.</p>
+                    </div>
+                </div>
+                {% elif apology.status == 'revision_needed' %}
+                <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-exclamation-triangle" style="color: #d97706; font-size: 1.25rem;"></i>
+                    <div>
+                        <strong style="color: #92400e;">Revision Required</strong>
+                        <p style="margin: 4px 0 0; color: #b45309; font-size: 0.9rem;">Please revise your Letter of Apology based on the staff feedback below.</p>
+                    </div>
+                </div>
+                {% elif apology.status == 'rejected' %}
+                <div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-times-circle" style="color: #dc2626; font-size: 1.25rem;"></i>
+                    <div>
+                        <strong style="color: #b91c1c;">Letter Rejected</strong>
+                        <p style="margin: 4px 0 0; color: #dc2626; font-size: 0.9rem;">Please submit a new Letter of Apology.</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Header -->
+                <div style="background: #f9fafb; padding: 16px; border-bottom: 1px solid #e5e7eb;">
+                    <div class="history-header" style="margin-bottom: 0;">
+                        <div>
+                            <span class="badge" style="{% if apology.violation.type == 'major' %}background:#fee2e2; color:#b91c1c;{% else %}background:#e0e7ff; color:#3730a3;{% endif %}">
+                                {{ apology.violation.get_type_display }}
+                            </span>
+                            <span style="color: #6b7280; font-size: 0.875rem; margin-left: 8px;">
+                                Submitted: {{ apology.submitted_at|date:"M d, Y g:i A" }}
+                            </span>
+                        </div>
+                        <span class="apology-status 
+                            {% if apology.status == 'pending' %}status-pending
+                            {% elif apology.status == 'approved' %}status-approved
+                            {% elif apology.status == 'rejected' %}status-rejected
+                            {% else %}status-revision{% endif %}">
+                            <i class="fas {% if apology.status == 'pending' %}fa-clock{% elif apology.status == 'approved' %}fa-check{% elif apology.status == 'rejected' %}fa-times{% else %}fa-redo{% endif %}"></i>
+                            {{ apology.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Letter Content -->
+                <div style="padding: 16px;">
+                    <details style="cursor: pointer;">
+                        <summary style="font-weight: 600; color: #374151; padding: 8px 0; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-file-alt"></i> View Your Submitted Letter
+                        </summary>
+                        
+                        <!-- Mini Letter Template -->
+                        <div style="background: #fffef7; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-top: 12px; font-family: 'Times New Roman', Times, serif; font-size: 13px; line-height: 1.5;">
+                            <div style="text-align: center; border-bottom: 2px solid #1f2937; padding-bottom: 12px; margin-bottom: 16px;">
+                                <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">LETTER OF APOLOGY</div>
+                                <div style="font-size: 10px; color: #666;">Document Code: F.25-OSAS-CHMSU</div>
+                            </div>
+                            
+                            <p style="margin-bottom: 12px;">
+                                Date: <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_date|default:apology.submitted_at|date:"F d, Y" }}</span>
+                            </p>
+                            
+                            <p style="margin-bottom: 4px;"><strong>The Student Formator</strong></p>
+                            <p style="margin-bottom: 12px;">
+                                <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_campus|default:student.department|default:"—" }}</span> Campus
+                            </p>
+                            
+                            <p style="margin-bottom: 12px;">SIR/MADAM:</p>
+                            
+                            <p style="margin-bottom: 12px;">
+                                I, <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_full_name|default:request.user.get_full_name|default:"—" }}</span>, from 
+                                <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_home_address|default:"—" }}</span> (Home Address) of
+                                <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_program|default:student.program|default:"—" }}</span> (Program, Major, Year & Section)
+                            </p>
+                            
+                            <p style="margin-bottom: 12px;">has violated the Student Code of Conduct.</p>
+                            
+                            <p style="margin-bottom: 12px;">
+                                Specific Violation/s: <span style="display: block; margin-top: 4px; background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_violations|default:apology.violation.description }}</span>
+                            </p>
+                            
+                            <p style="text-align: justify; text-indent: 30px; margin: 12px 0;">
+                                I sincerely apologize for my recent violation of the university's Rules & Regulations and 
+                                understand the importance of adhering to these guidelines in the future. I am committed to 
+                                upholding these standards to maintain a positive learning environment.
+                            </p>
+                            
+                            <p style="text-align: justify; text-indent: 30px; margin: 12px 0;">
+                                I acknowledge the seriousness of my actions and the potential consequences of further 
+                                violations. I assure you that I take this matter seriously and will strive to prevent such incidents 
+                                from happening again.
+                            </p>
+                            
+                            <p style="margin-top: 16px;">Respectfully yours,</p>
+                            
+                            <div style="margin-top: 20px;">
+                                {% if apology.signature_data %}
+                                <img src="{{ apology.signature_data }}" alt="Your Signature" style="max-width: 150px; max-height: 50px; border: 1px solid #ddd;" />
+                                {% else %}
+                                <div style="color: #999; font-style: italic; font-size: 11px;">(No digital signature)</div>
+                                {% endif %}
+                                <div style="border-top: 1px solid #000; width: 150px; margin-top: 8px; padding-top: 4px; text-align: center; font-size: 12px;">
+                                    {{ apology.letter_printed_name|default:request.user.get_full_name|default:"—" }}
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    {% if apology.remarks %}
+                    <div class="remarks-box" style="margin-top: 12px;">
+                        <strong>Staff Feedback:</strong> {{ apology.remarks }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if apology.verified_by %}
+                    <p style="color: #6b7280; font-size: 0.8rem; margin-top: 8px;">
+                        <i class="fas fa-user-check"></i> 
+                        Reviewed by {{ apology.verified_by.get_full_name|default:apology.verified_by.username }} 
+                        on {{ apology.verified_at|date:"M d, Y g:i A" }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if apology.file %}
+                    <a href="{{ apology.file.url }}" target="_blank" class="ghost-btn" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 0.875rem;">
+                        <i class="fas fa-download"></i> View Uploaded File
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </main>
+
+    <script>
+        // Profile dropdown
+        const profileBtn = document.getElementById('profileBtn');
+        const profileDropdown = document.getElementById('profileDropdown');
+        
+        profileBtn?.addEventListener('click', () => {
+            profileDropdown.classList.toggle('show');
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!profileBtn?.contains(e.target) && !profileDropdown?.contains(e.target)) {
+                profileDropdown?.classList.remove('show');
+            }
+        });
+
+        // Violation selection
+        const violationCards = document.querySelectorAll('.violation-select-card:not(.disabled)');
+        const letterSection = document.getElementById('letterSection');
+        const uploadSection = document.getElementById('uploadSection');
+        const letterViolation = document.getElementById('letterViolation');
+        const selectedViolationId = document.getElementById('selectedViolationId');
+        let selectedViolation = null;
+
+        violationCards.forEach(card => {
+            card.addEventListener('click', () => {
+                // Remove selection from all cards
+                document.querySelectorAll('.violation-select-card').forEach(c => c.classList.remove('selected'));
+                
+                // Select this card
+                card.classList.add('selected');
+                card.querySelector('input[type="radio"]').checked = true;
+                selectedViolation = card.dataset.violationId;
+                
+                // Update hidden form field
+                if (selectedViolationId) {
+                    selectedViolationId.value = selectedViolation;
+                }
+                
+                // Update letter template with violation details
+                if (letterViolation) {
+                    letterViolation.value = card.dataset.violationDesc || '';
+                }
+                
+                // Show letter and upload sections
+                if (letterSection) letterSection.style.display = 'block';
+                if (uploadSection) uploadSection.style.display = 'block';
+                
+                // Enable submit button since violation is selected (file is optional)
+                updateSubmitButton();
+                
+                // Scroll to letter section
+                letterSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Initialize signature canvas
+                setTimeout(initSignatureCanvas, 100);
+            });
+        });
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const removeFile = document.getElementById('removeFile');
+        const submitBtn = document.getElementById('submitBtn');
+        let selectedFile = null;
+
+        uploadArea?.addEventListener('click', () => fileInput.click());
+        
+        uploadArea?.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea?.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea?.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput?.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+            const maxSize = 10 * 1024 * 1024; // 10MB
+
+            if (!allowedTypes.includes(file.type)) {
+                alert('Please upload a PDF or image file (JPEG, PNG).');
+                return;
+            }
+
+            if (file.size > maxSize) {
+                alert('File size must be less than 10MB.');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            uploadArea.style.display = 'none';
+            filePreview.style.display = 'flex';
+            
+            // Update file icon based on type
+            const icon = filePreview.querySelector('i');
+            if (file.type === 'application/pdf') {
+                icon.className = 'fas fa-file-pdf';
+            } else {
+                icon.className = 'fas fa-file-image';
+            }
+            
+            updateSubmitButton();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        removeFile?.addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            uploadArea.style.display = 'block';
+            filePreview.style.display = 'none';
+            updateSubmitButton();
+        });
+
+        function updateSubmitButton() {
+            if (submitBtn) {
+                // Only require violation selection, file upload is optional
+                submitBtn.disabled = !selectedViolation;
+            }
+        }
+
+        // Form submission - capture letter form data before submitting
+        document.getElementById('apologyForm')?.addEventListener('submit', (e) => {
+            if (!selectedViolation) {
+                e.preventDefault();
+                alert('Please select a violation first.');
+                return;
+            }
+            
+            // Capture letter form data from Step 2 fields
+            const letterDate = document.getElementById('letterDate');
+            const letterCampus = document.getElementById('letterCampus');
+            const letterName = document.getElementById('letterName');
+            const letterAddress = document.getElementById('letterAddress');
+            const letterProgram = document.getElementById('letterProgram');
+            const letterViolation = document.getElementById('letterViolation');
+            const letterPrintedName = document.getElementById('letterPrintedName');
+            
+            // Populate hidden fields
+            document.getElementById('hiddenLetterDate').value = letterDate?.value || '';
+            document.getElementById('hiddenLetterCampus').value = letterCampus?.value || '';
+            document.getElementById('hiddenLetterName').value = letterName?.value || '';
+            document.getElementById('hiddenLetterAddress').value = letterAddress?.value || '';
+            document.getElementById('hiddenLetterProgram').value = letterProgram?.value || '';
+            document.getElementById('hiddenLetterViolations').value = letterViolation?.value || '';
+            document.getElementById('hiddenLetterPrintedName').value = letterPrintedName?.value || '';
+            
+            // Capture signature as base64 image
+            if (canvas) {
+                const signatureData = canvas.toDataURL('image/png');
+                document.getElementById('hiddenSignatureData').value = signatureData;
+            }
+            
+            // Validate that at least the name is filled
+            if (!letterName?.value?.trim()) {
+                e.preventDefault();
+                alert('Please fill out the letter form with your full name in Step 2.');
+                letterSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+        });
+
+        // Signature Canvas
+        let canvas, ctx, isDrawing = false, lastX = 0, lastY = 0;
+
+        function initSignatureCanvas() {
+            canvas = document.getElementById('signatureCanvas');
+            if (!canvas) return;
+            
+            ctx = canvas.getContext('2d');
+            
+            // Set canvas size to match container
+            const container = canvas.parentElement;
+            canvas.width = container.offsetWidth;
+            canvas.height = container.offsetHeight;
+            
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Mouse events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            // Touch events for mobile
+            canvas.addEventListener('touchstart', handleTouchStart);
+            canvas.addEventListener('touchmove', handleTouchMove);
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.stroke();
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            isDrawing = true;
+            lastX = touch.clientX - rect.left;
+            lastY = touch.clientY - rect.top;
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (!isDrawing) return;
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            [lastX, lastY] = [x, y];
+        }
+
+        function clearSignature() {
+            if (ctx && canvas) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // Also init on page load if letter section is visible
+        if (letterSection && letterSection.style.display !== 'none') {
+            initSignatureCanvas();
+        }
+    </script>
+</body>
+</html>

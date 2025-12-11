@@ -6,7 +6,7 @@ from django.utils import timezone
 
 class User(AbstractUser):
 	class Role(models.TextChoices):
-		FACULTY_ADMIN = "faculty_admin", "Faculty(Admin)"
+		OSA_COORDINATOR = "osa_coordinator", "OSA Coordinator"
 		STAFF = "staff", "Staff"
 		STUDENT = "student", "Student"
 
@@ -45,12 +45,17 @@ class Student(models.Model):
 		return f"{self.student_id} - {self.user.get_full_name() or self.user.username}"
 
 
-class Faculty(models.Model):
-	user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="faculty_profile")
+class OSACoordinator(models.Model):
+	"""OSA Coordinator profile (formerly Faculty)"""
+	user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="osa_coordinator_profile")
 	employee_id = models.CharField(max_length=20, unique=True)
 	position = models.CharField(max_length=100, blank=True)
 	contact_number = models.CharField(max_length=15, blank=True)
 	office_location = models.CharField(max_length=100, blank=True)
+
+	class Meta:
+		verbose_name = "OSA Coordinator"
+		verbose_name_plural = "OSA Coordinators"
 
 	def __str__(self) -> str:  # pragma: no cover
 		return f"{self.employee_id} - {self.user.get_full_name() or self.user.username}"
@@ -147,12 +152,12 @@ class Message(models.Model):
 
 
 class ChatMessage(models.Model):
-	"""Room-based chat messages persisted for the staff↔faculty room.
+	"""Room-based chat messages persisted for the staff↔OSA Coordinator room.
 
 	Used by the realtime chat consumer to provide history and persistence.
 	"""
 	sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_messages")
-	room = models.CharField(max_length=100, default="staff-faculty")
+	room = models.CharField(max_length=100, default="staff-osa")
 	content = models.TextField()
 	created_at = models.DateTimeField(auto_now_add=True)
 
@@ -247,12 +252,22 @@ class ApologyLetter(models.Model):
 
 	violation = models.ForeignKey(Violation, on_delete=models.CASCADE, related_name="apology_letters")
 	student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="apology_letters")
-	file = models.FileField(upload_to="apology_letters/%Y/%m/")
+	file = models.FileField(upload_to="apology_letters/%Y/%m/", blank=True, null=True)
 	submitted_at = models.DateTimeField(auto_now_add=True)
 	status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
 	verified_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="verified_apologies")
 	verified_at = models.DateTimeField(null=True, blank=True)
 	remarks = models.TextField(blank=True, help_text="Staff notes/feedback")
+	
+	# Letter form data fields (Step 2 - Official CHMSU Form)
+	letter_date = models.CharField(max_length=100, blank=True, help_text="Date on the letter")
+	letter_campus = models.CharField(max_length=200, blank=True, help_text="Campus name")
+	letter_full_name = models.CharField(max_length=200, blank=True, help_text="Student full name")
+	letter_home_address = models.CharField(max_length=500, blank=True, help_text="Home address")
+	letter_program = models.CharField(max_length=300, blank=True, help_text="Program, Major, Year & Section")
+	letter_violations = models.TextField(blank=True, help_text="Specific violation/s")
+	letter_printed_name = models.CharField(max_length=200, blank=True, help_text="Printed name for signature")
+	signature_data = models.TextField(blank=True, help_text="Base64 encoded signature image")
 
 	class Meta:
 		ordering = ["-submitted_at"]

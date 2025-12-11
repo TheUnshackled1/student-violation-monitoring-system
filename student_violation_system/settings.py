@@ -95,7 +95,7 @@ JAZZMIN_SETTINGS = {
         
         # External URLs open in new window
         {"name": "Staff Dashboard", "url": "/staff/dashboard/", "new_window": True},
-        {"name": "Faculty Dashboard", "url": "/faculty/dashboard/", "new_window": True},
+        {"name": "OSA Coordinator Dashboard", "url": "/faculty/dashboard/", "new_window": True},
         
         # Model admin to link to (Alarm.URLs.Alarm.URLs & target can be nested)
         {"model": "violations.Student"},
@@ -136,7 +136,7 @@ JAZZMIN_SETTINGS = {
         "violations.User",
         "violations.Student", 
         "violations.Staff",
-        "violations.Faculty",
+        "violations.OSACoordinator",
         "violations.Violation",
         "violations.ApologyLetter",
         "violations.IDConfiscation",
@@ -165,7 +165,7 @@ JAZZMIN_SETTINGS = {
         "violations.User": "fas fa-user-shield",
         "violations.Student": "fas fa-user-graduate",
         "violations.Staff": "fas fa-user-tie",
-        "violations.Faculty": "fas fa-chalkboard-teacher",
+        "violations.OSACoordinator": "fas fa-chalkboard-teacher",
         "violations.Violation": "fas fa-exclamation-triangle",
         "violations.ApologyLetter": "fas fa-envelope-open-text",
         "violations.IDConfiscation": "fas fa-id-card",
