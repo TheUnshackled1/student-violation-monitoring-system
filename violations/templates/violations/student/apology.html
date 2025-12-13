@@ -486,27 +486,29 @@
                 
                 <div class="letter-body">
                     <p style="margin-bottom: 24px;">
-                        Date: <input type="text" class="letter-field" id="letterDate" value="{% now 'F d, Y' %}" />
+                        Date: <input type="text" class="letter-field" id="letterDate" placeholder="Enter date" style="min-width: 120px; width: 120px;" />
                     </p>
                     
                     <p style="margin-bottom: 4px;"><strong>The Student Formator</strong></p>
                     <p style="margin-bottom: 16px;">
-                        <input type="text" class="letter-field" id="letterCampus" value="{{ student.department|default:'' }}" placeholder="Campus" /> Campus
+                        <input type="text" class="letter-field" id="letterCampus" placeholder="Campus" style="min-width: 80px; width: 80px;" /> Campus
                     </p>
                     
                     <p style="margin-bottom: 16px;">SIR/MADAM:</p>
                     
                     <p style="margin-bottom: 16px;">
-                        I, <input type="text" class="letter-field" id="letterName" value="{{ request.user.get_full_name|default:'' }}" placeholder="Full Name" />, from 
-                        <input type="text" class="letter-field wide" id="letterAddress" placeholder="Home Address" /> (Home Address) of
-                        <input type="text" class="letter-field wide" id="letterProgram" value="{{ student.program|default:'' }}" placeholder="Program, Major, Year & Section" /> (Program, Major, Year & Section)
+                        I, <input type="text" class="letter-field" id="letterName" placeholder="Full Name" style="min-width: 150px; width: 150px;" />,<strong>(NAME)</strong> from 
+                        <input type="text" class="letter-field" id="letterAddress" placeholder="Home Address" style="min-width: 200px; width: 200px;" /> <strong>(Home Address)</strong> of
+                        <input type="text" class="letter-field" id="letterProgram" placeholder="Program, Major, Year & Section" style="min-width: 250px; width: 250px;" /> <strong>(Program, Major, Year & Section)</strong>
                     </p>
                     
                     <p style="margin-bottom: 16px;">has violated the Student Code of Conduct.</p>
                     
-                    <p style="margin-bottom: 16px;">
-                        Specific Violation/s: <input type="text" class="letter-field full" id="letterViolation" placeholder="Enter specific violation/s" />
-                    </p>
+                    <div style="margin-bottom: 16px;">
+                        <p style="margin-bottom: 8px;">Specific Violation/s:</p>
+                        <textarea class="letter-field" id="letterViolation" placeholder="Enter specific violation/s (minimum 300 words)" rows="8" style="width: 100%; min-height: 150px; resize: vertical; box-sizing: border-box;"></textarea>
+                        <p style="font-size: 11px; color: #666; margin-top: 4px;">Minimum 300 words required. <span id="wordCount">0</span> words</p>
+                    </div>
                     
                     <p class="letter-paragraph">
                         I sincerely apologize for my recent violation of the university's Rules & Regulations and 
@@ -530,8 +532,8 @@
                             <button type="button" class="clear-signature" onclick="clearSignature()">Clear</button>
                         </div>
                         <div style="border-top: 1px solid #000; width: 250px; margin-top: 8px; padding-top: 4px; text-align: center;">
-                            <input type="text" class="letter-field" id="letterPrintedName" value="{{ request.user.get_full_name|default:'' }}" placeholder="Printed Name" style="text-align: center; border-bottom: none;" />
-                            <div style="font-size: 12px; color: #666;">Signature over printed name</div>
+                            <input type="text" class="letter-field" id="letterPrintedName" placeholder="Your Signature" style="text-align: center; border-bottom: none;" />
+                            <div style="font-size: 12px; color: #666;">Signature is a Must!</div>
                         </div>
                     </div>
                     
@@ -559,9 +561,9 @@
             </div>
         </div>
 
-        <!-- Step 3: Upload Signed Letter - OPTIONAL -->
+        <!-- Step 3: Upload Photo of Signed Letter - REQUIRED -->
         <div class="form-card no-print" id="uploadSection" style="display: none;">
-            <h3 class="form-title"><i class="fas fa-cloud-upload-alt"></i> Step 3: Upload Signed Letter (Optional)</h3>
+            <h3 class="form-title"><i class="fas fa-camera"></i> Step 3: Upload Photo of Signed Letter <span style="color: #dc2626;">*Required</span></h3>
             
             <form method="post" enctype="multipart/form-data" id="apologyForm">
                 {% csrf_token %}
@@ -577,27 +579,108 @@
                 <input type="hidden" name="letter_printed_name" id="hiddenLetterPrintedName" value="" />
                 <input type="hidden" name="signature_data" id="hiddenSignatureData" value="" />
                 
-                <div class="upload-area" id="uploadArea">
-                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                    <p style="color: #6b7280; margin-bottom: 8px;">
-                        Drag and drop your signed letter here or click to browse
+                <div class="upload-area" id="uploadArea" style="cursor: default;">
+                    <i class="fas fa-camera upload-icon"></i>
+                    <p style="color: #1f2937; margin-bottom: 12px; font-weight: 600;">
+                        Take a photo of your signed letter
                     </p>
+                    
+                    <!-- Three buttons: Webcam, Mobile Camera, and Gallery -->
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px;">
+                        <button type="button" id="webcamBtn" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; font-size: 1rem;">
+                            <i class="fas fa-video"></i> Use Webcam
+                        </button>
+                        <button type="button" id="galleryBtn" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; font-size: 1rem;">
+                            <i class="fas fa-images"></i> Choose File
+                        </button>
+                    </div>
+                    
                     <p style="color: #9ca3af; font-size: 0.875rem;">
-                        Accepted formats: PDF, JPEG, PNG (Max 10MB)
+                        Accepted formats: JPEG, PNG only (Max 10MB)<br>
+                        <span style="color: #dc2626;">PDF, Word, and other document formats are NOT accepted</span>
                     </p>
+                    
+                    <!-- Hidden file inputs - one for camera, one for gallery -->
                     <input type="file" name="apology_file" id="fileInput" 
-                           accept=".pdf,.jpg,.jpeg,.png" style="display: none;" />
+                           accept="image/jpeg,image/png,image/jpg" capture="environment" style="display: none;" required />
+                    <input type="file" id="galleryInput" 
+                           accept="image/jpeg,image/png,image/jpg" style="display: none;" />
+                </div>
+                
+                <!-- Webcam Modal for Desktop/Laptop with Face Detection -->
+                <div id="webcamModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;">
+                    <div style="background: white; border-radius: 12px; padding: 24px; max-width: 700px; width: 95%; text-align: center;">
+                        <h3 style="margin-bottom: 16px; color: #1f2937;"><i class="fas fa-camera"></i> Take Photo with Webcam</h3>
+                        
+                        <!-- Face Detection Status -->
+                        <div id="faceDetectionStatus" style="margin-bottom: 12px; padding: 10px 16px; border-radius: 8px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i class="fas fa-spinner fa-spin" id="detectionSpinner" style="display: none;"></i>
+                            <span id="detectionText">Initializing camera...</span>
+                        </div>
+                        
+                        <!-- Head Size Indicator -->
+                        <div id="headSizeIndicator" style="display: none; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 0.8rem; color: #6b7280;">Head Size:</span>
+                                <span id="headSizeLabel" style="font-weight: 600; font-size: 0.875rem;">--</span>
+                            </div>
+                            <div style="background: #e5e7eb; border-radius: 999px; height: 8px; overflow: hidden;">
+                                <div id="headSizeBar" style="height: 100%; width: 0%; background: #10b981; transition: all 0.3s;"></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #9ca3af; margin-top: 2px;">
+                                <span>Too Far</span>
+                                <span>Ideal (15-35%)</span>
+                                <span>Too Close</span>
+                            </div>
+                        </div>
+                        
+                        <div style="position: relative; margin-bottom: 16px;">
+                            <video id="webcamVideo" autoplay playsinline style="width: 100%; max-height: 400px; border-radius: 8px; background: #000;"></video>
+                            <!-- Face Detection Overlay Canvas -->
+                            <canvas id="faceOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 8px;"></canvas>
+                            <canvas id="webcamCanvas" style="display: none;"></canvas>
+                        </div>
+                        <div id="webcamPreview" style="display: none; margin-bottom: 16px;">
+                            <img id="capturedImage" style="width: 100%; max-height: 400px; border-radius: 8px; object-fit: contain;" />
+                        </div>
+                        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                            <button type="button" id="captureBtn" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-camera"></i> Capture Photo
+                            </button>
+                            <button type="button" id="retakeBtn" style="display: none; background: #f59e0b; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500; display: none; align-items: center; gap: 8px;">
+                                <i class="fas fa-redo"></i> Retake
+                            </button>
+                            <button type="button" id="usePhotoBtn" style="display: none; background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500; align-items: center; gap: 8px;">
+                                <i class="fas fa-check"></i> Use This Photo
+                            </button>
+                            <button type="button" id="closeWebcamBtn" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                        <p id="webcamError" style="color: #dc2626; margin-top: 12px; display: none;"></p>
+                    </div>
                 </div>
                 
                 <div class="file-preview" id="filePreview" style="display: none;">
-                    <i class="fas fa-file"></i>
-                    <div class="file-info">
+                    <img id="fileThumbnail" src="" alt="Preview" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid #e5e7eb;" title="Click to view full size" onclick="openImagePreview()" />
+                    <div class="file-info" style="flex: 1;">
                         <div class="file-name" id="fileName"></div>
                         <div class="file-size" id="fileSize"></div>
+                        <button type="button" onclick="openImagePreview()" style="background: none; border: none; color: #4f46e5; cursor: pointer; font-size: 0.875rem; padding: 0; margin-top: 4px; text-decoration: underline;">
+                            <i class="fas fa-eye"></i> Click to review photo
+                        </button>
                     </div>
                     <span class="remove-file" id="removeFile" title="Remove file">
                         <i class="fas fa-times-circle fa-lg"></i>
                     </span>
+                </div>
+                
+                <!-- Image Preview Modal -->
+                <div id="imagePreviewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; justify-content: center; align-items: center; cursor: pointer;" onclick="closeImagePreview()">
+                    <div style="position: relative; max-width: 90%; max-height: 90%;">
+                        <img id="previewImage" src="" alt="Full Preview" style="max-width: 100%; max-height: 85vh; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" />
+                        <p style="text-align: center; color: white; margin-top: 12px; font-size: 0.9rem;">Click anywhere to close</p>
+                    </div>
                 </div>
                 
                 <!-- Submit Button -->
@@ -701,7 +784,7 @@
                             
                             <p style="margin-bottom: 4px;"><strong>The Student Formator</strong></p>
                             <p style="margin-bottom: 12px;">
-                                <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_campus|default:student.department|default:"—" }}</span> Campus
+                                <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_campus|default:"—" }}</span> Campus
                             </p>
                             
                             <p style="margin-bottom: 12px;">SIR/MADAM:</p>
@@ -839,7 +922,348 @@
         const submitBtn = document.getElementById('submitBtn');
         let selectedFile = null;
 
-        uploadArea?.addEventListener('click', () => fileInput.click());
+        // Camera buttons
+        const cameraBtn = document.getElementById('cameraBtn');
+        const galleryBtn = document.getElementById('galleryBtn');
+        const galleryInput = document.getElementById('galleryInput');
+        const webcamBtn = document.getElementById('webcamBtn');
+        
+        // Mobile Camera button - opens camera directly on mobile
+        cameraBtn?.addEventListener('click', () => {
+            fileInput.click(); // This has capture="environment" to open camera
+        });
+        
+        // Gallery button - opens file picker without camera
+        galleryBtn?.addEventListener('click', () => {
+            galleryInput.click();
+        });
+        
+        // Handle gallery input file selection
+        galleryInput?.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+                // Copy file to main input for form submission
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(e.target.files[0]);
+                fileInput.files = dataTransfer.files;
+            }
+        });
+        
+        // ===== WEBCAM FUNCTIONALITY WITH FACE DETECTION =====
+        const webcamModal = document.getElementById('webcamModal');
+        const webcamVideo = document.getElementById('webcamVideo');
+        const webcamCanvas = document.getElementById('webcamCanvas');
+        const faceOverlay = document.getElementById('faceOverlay');
+        const capturedImage = document.getElementById('capturedImage');
+        const webcamPreview = document.getElementById('webcamPreview');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const usePhotoBtn = document.getElementById('usePhotoBtn');
+        const closeWebcamBtn = document.getElementById('closeWebcamBtn');
+        const webcamError = document.getElementById('webcamError');
+        const faceDetectionStatus = document.getElementById('faceDetectionStatus');
+        const detectionSpinner = document.getElementById('detectionSpinner');
+        const detectionText = document.getElementById('detectionText');
+        const headSizeIndicator = document.getElementById('headSizeIndicator');
+        const headSizeLabel = document.getElementById('headSizeLabel');
+        const headSizeBar = document.getElementById('headSizeBar');
+        let webcamStream = null;
+        let capturedBlob = null;
+        let faceDetectionInterval = null;
+        
+        // Face detection function - calls Python backend
+        async function detectFace() {
+            if (!webcamStream || webcamPreview.style.display === 'block') return;
+            
+            // Capture current frame
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = webcamVideo.videoWidth;
+            tempCanvas.height = webcamVideo.videoHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(webcamVideo, 0, 0);
+            
+            const imageData = tempCanvas.toDataURL('image/jpeg', 0.7);
+            
+            try {
+                detectionSpinner.style.display = 'inline';
+                
+                const response = await fetch('{% url "violations:detect_face" %}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const result = await response.json();
+                detectionSpinner.style.display = 'none';
+                
+                if (result.success) {
+                    updateFaceDetectionUI(result);
+                    drawFaceOverlay(result.faces);
+                } else {
+                    detectionText.textContent = 'Detection error: ' + (result.error || 'Unknown');
+                    faceDetectionStatus.style.background = '#fee2e2';
+                }
+            } catch (err) {
+                detectionSpinner.style.display = 'none';
+                console.error('Face detection error:', err);
+            }
+        }
+        
+        // Update UI based on face detection results
+        function updateFaceDetectionUI(result) {
+            headSizeIndicator.style.display = 'block';
+            
+            const statusColors = {
+                'no_face': { bg: '#fee2e2', text: '#dc2626', icon: 'fa-exclamation-circle' },
+                'too_far': { bg: '#fef3c7', text: '#d97706', icon: 'fa-arrow-up' },
+                'small': { bg: '#fef9c3', text: '#ca8a04', icon: 'fa-search-plus' },
+                'ideal': { bg: '#d1fae5', text: '#059669', icon: 'fa-check-circle' },
+                'large': { bg: '#fef9c3', text: '#ca8a04', icon: 'fa-search-minus' },
+                'too_close': { bg: '#fee2e2', text: '#dc2626', icon: 'fa-arrow-down' }
+            };
+            
+            const status = statusColors[result.head_size] || statusColors['no_face'];
+            faceDetectionStatus.style.background = status.bg;
+            faceDetectionStatus.style.color = status.text;
+            detectionText.innerHTML = `<i class="fas ${status.icon}"></i> ${result.guidance}`;
+            
+            // Update head size label and bar
+            const sizeLabels = {
+                'no_face': 'No Face',
+                'too_far': 'Too Far',
+                'small': 'Small',
+                'ideal': 'Ideal ✓',
+                'large': 'Large',
+                'too_close': 'Too Close'
+            };
+            headSizeLabel.textContent = sizeLabels[result.head_size] + ` (${result.head_percentage}%)`;
+            headSizeLabel.style.color = status.text;
+            
+            // Calculate bar width (0-100%)
+            // Map percentage: 0-5% = too far, 5-15% = small, 15-35% = ideal, 35-50% = large, 50%+ = too close
+            let barWidth = Math.min(100, result.head_percentage * 2);
+            headSizeBar.style.width = barWidth + '%';
+            
+            // Color the bar based on status
+            if (result.head_size === 'ideal') {
+                headSizeBar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+            } else if (result.head_size === 'no_face') {
+                headSizeBar.style.background = '#dc2626';
+                headSizeBar.style.width = '0%';
+            } else if (result.head_size === 'too_far' || result.head_size === 'small') {
+                headSizeBar.style.background = '#f59e0b';
+            } else {
+                headSizeBar.style.background = '#f59e0b';
+            }
+        }
+        
+        // Draw face detection overlay
+        function drawFaceOverlay(faces) {
+            if (!faceOverlay) return;
+            
+            const ctx = faceOverlay.getContext('2d');
+            
+            // Match overlay size to video display size
+            const videoRect = webcamVideo.getBoundingClientRect();
+            faceOverlay.width = videoRect.width;
+            faceOverlay.height = videoRect.height;
+            
+            // Clear previous drawings
+            ctx.clearRect(0, 0, faceOverlay.width, faceOverlay.height);
+            
+            if (!faces || faces.length === 0) return;
+            
+            // Calculate scale factors
+            const scaleX = faceOverlay.width / webcamVideo.videoWidth;
+            const scaleY = faceOverlay.height / webcamVideo.videoHeight;
+            
+            faces.forEach(face => {
+                const x = face.x * scaleX;
+                const y = face.y * scaleY;
+                const w = face.width * scaleX;
+                const h = face.height * scaleY;
+                
+                // Draw face rectangle
+                ctx.strokeStyle = face.percentage >= 15 && face.percentage <= 35 ? '#10b981' : '#f59e0b';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x, y, w, h);
+                
+                // Draw corner accents
+                const cornerSize = 15;
+                ctx.fillStyle = ctx.strokeStyle;
+                
+                // Top-left corner
+                ctx.fillRect(x, y, cornerSize, 3);
+                ctx.fillRect(x, y, 3, cornerSize);
+                
+                // Top-right corner
+                ctx.fillRect(x + w - cornerSize, y, cornerSize, 3);
+                ctx.fillRect(x + w - 3, y, 3, cornerSize);
+                
+                // Bottom-left corner
+                ctx.fillRect(x, y + h - 3, cornerSize, 3);
+                ctx.fillRect(x, y + h - cornerSize, 3, cornerSize);
+                
+                // Bottom-right corner
+                ctx.fillRect(x + w - cornerSize, y + h - 3, cornerSize, 3);
+                ctx.fillRect(x + w - 3, y + h - cornerSize, 3, cornerSize);
+                
+                // Show percentage label
+                ctx.font = 'bold 14px Arial';
+                ctx.fillStyle = 'white';
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                const label = `${face.percentage}%`;
+                ctx.strokeText(label, x + 5, y - 8);
+                ctx.fillText(label, x + 5, y - 8);
+            });
+        }
+        
+        // Open webcam modal
+        webcamBtn?.addEventListener('click', async () => {
+            webcamModal.style.display = 'flex';
+            webcamPreview.style.display = 'none';
+            webcamVideo.style.display = 'block';
+            if (faceOverlay) faceOverlay.style.display = 'block';
+            captureBtn.style.display = 'inline-flex';
+            retakeBtn.style.display = 'none';
+            usePhotoBtn.style.display = 'none';
+            webcamError.style.display = 'none';
+            headSizeIndicator.style.display = 'none';
+            
+            // Reset status
+            faceDetectionStatus.style.background = '#f3f4f6';
+            faceDetectionStatus.style.color = '#374151';
+            detectionText.textContent = 'Initializing camera...';
+            
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user', // Front camera for face detection
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }, 
+                    audio: false 
+                });
+                webcamVideo.srcObject = webcamStream;
+                
+                // Wait for video to be ready, then start face detection
+                webcamVideo.onloadedmetadata = () => {
+                    detectionText.textContent = 'Camera ready. Detecting face...';
+                    // Start face detection every 500ms
+                    faceDetectionInterval = setInterval(detectFace, 500);
+                };
+            } catch (err) {
+                console.error('Webcam error:', err);
+                webcamError.textContent = 'Could not access camera. Please check permissions or try "Choose File" instead.';
+                webcamError.style.display = 'block';
+                detectionText.textContent = 'Camera access denied';
+                faceDetectionStatus.style.background = '#fee2e2';
+            }
+        });
+        
+        // Capture photo from webcam
+        captureBtn?.addEventListener('click', () => {
+            if (!webcamStream) return;
+            
+            // Stop face detection when capturing
+            if (faceDetectionInterval) {
+                clearInterval(faceDetectionInterval);
+                faceDetectionInterval = null;
+            }
+            
+            webcamCanvas.width = webcamVideo.videoWidth;
+            webcamCanvas.height = webcamVideo.videoHeight;
+            const ctx = webcamCanvas.getContext('2d');
+            ctx.drawImage(webcamVideo, 0, 0);
+            
+            // Convert to blob
+            webcamCanvas.toBlob((blob) => {
+                capturedBlob = blob;
+                capturedImage.src = URL.createObjectURL(blob);
+                
+                // Show preview, hide video and overlay
+                webcamVideo.style.display = 'none';
+                if (faceOverlay) faceOverlay.style.display = 'none';
+                webcamPreview.style.display = 'block';
+                captureBtn.style.display = 'none';
+                retakeBtn.style.display = 'inline-flex';
+                usePhotoBtn.style.display = 'inline-flex';
+                
+                // Update status
+                detectionText.innerHTML = '<i class="fas fa-check-circle"></i> Photo captured! Review and use or retake.';
+                faceDetectionStatus.style.background = '#d1fae5';
+                faceDetectionStatus.style.color = '#059669';
+            }, 'image/jpeg', 0.9);
+        });
+        
+        // Retake photo
+        retakeBtn?.addEventListener('click', () => {
+            webcamPreview.style.display = 'none';
+            webcamVideo.style.display = 'block';
+            if (faceOverlay) faceOverlay.style.display = 'block';
+            captureBtn.style.display = 'inline-flex';
+            retakeBtn.style.display = 'none';
+            usePhotoBtn.style.display = 'none';
+            capturedBlob = null;
+            
+            // Restart face detection
+            detectionText.textContent = 'Detecting face...';
+            faceDetectionStatus.style.background = '#f3f4f6';
+            faceDetectionStatus.style.color = '#374151';
+            faceDetectionInterval = setInterval(detectFace, 500);
+        });
+        
+        // Use captured photo
+        usePhotoBtn?.addEventListener('click', () => {
+            if (!capturedBlob) return;
+            
+            // Create a file from the blob
+            const file = new File([capturedBlob], 'signed_letter_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+            
+            // Handle the file
+            handleFile(file);
+            
+            // Set the file to the input
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+            
+            // Close modal and stop webcam
+            closeWebcam();
+        });
+        
+        // Close webcam modal
+        closeWebcamBtn?.addEventListener('click', closeWebcam);
+        
+        function closeWebcam() {
+            webcamModal.style.display = 'none';
+            
+            // Stop face detection
+            if (faceDetectionInterval) {
+                clearInterval(faceDetectionInterval);
+                faceDetectionInterval = null;
+            }
+            
+            // Clear face overlay
+            if (faceOverlay) {
+                const ctx = faceOverlay.getContext('2d');
+                ctx.clearRect(0, 0, faceOverlay.width, faceOverlay.height);
+            }
+            
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            capturedBlob = null;
+        }
+        
+        // Close modal when clicking outside
+        webcamModal?.addEventListener('click', (e) => {
+            if (e.target === webcamModal) {
+                closeWebcam();
+            }
+        });
         
         uploadArea?.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -866,11 +1290,19 @@
         });
 
         function handleFile(file) {
-            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
             const maxSize = 10 * 1024 * 1024; // 10MB
 
+            // Check if file is PDF or document format (not allowed)
+            if (file.type === 'application/pdf' || 
+                file.type === 'application/msword' || 
+                file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                alert('PDF, Word documents, and other document formats are NOT accepted. Please upload a photo (JPEG or PNG) of your signed letter.');
+                return;
+            }
+
             if (!allowedTypes.includes(file.type)) {
-                alert('Please upload a PDF or image file (JPEG, PNG).');
+                alert('Please upload an image file (JPEG or PNG only). Take a photo of your signed letter using your phone or camera.');
                 return;
             }
 
@@ -885,15 +1317,28 @@
             uploadArea.style.display = 'none';
             filePreview.style.display = 'flex';
             
-            // Update file icon based on type
-            const icon = filePreview.querySelector('i');
-            if (file.type === 'application/pdf') {
-                icon.className = 'fas fa-file-pdf';
-            } else {
-                icon.className = 'fas fa-file-image';
-            }
+            // Set thumbnail preview
+            const thumbnail = document.getElementById('fileThumbnail');
+            const previewImg = document.getElementById('previewImage');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                thumbnail.src = e.target.result;
+                previewImg.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
             
             updateSubmitButton();
+        }
+        
+        // Image preview modal functions
+        function openImagePreview() {
+            const modal = document.getElementById('imagePreviewModal');
+            modal.style.display = 'flex';
+        }
+        
+        function closeImagePreview() {
+            const modal = document.getElementById('imagePreviewModal');
+            modal.style.display = 'none';
         }
 
         function formatFileSize(bytes) {
@@ -922,6 +1367,14 @@
             if (!selectedViolation) {
                 e.preventDefault();
                 alert('Please select a violation first.');
+                return;
+            }
+            
+            // Validate that a photo is uploaded (required)
+            if (!selectedFile) {
+                e.preventDefault();
+                alert('Please upload a photo of your signed letter. This is required.');
+                uploadArea?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
             
@@ -956,7 +1409,33 @@
                 letterSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 return;
             }
+            
+            // Validate minimum 300 words for violation description
+            const violationText = letterViolation?.value?.trim() || '';
+            const wordCount = violationText ? violationText.split(/\s+/).filter(word => word.length > 0).length : 0;
+            if (wordCount < 300) {
+                e.preventDefault();
+                alert('The Specific Violation/s field requires a minimum of 300 words. You have ' + wordCount + ' words.');
+                letterViolation?.focus();
+                letterSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
         });
+
+        // Word counter for violation textarea
+        const violationTextarea = document.getElementById('letterViolation');
+        const wordCountSpan = document.getElementById('wordCount');
+        
+        function updateWordCount() {
+            if (violationTextarea && wordCountSpan) {
+                const text = violationTextarea.value.trim();
+                const words = text ? text.split(/\s+/).filter(word => word.length > 0).length : 0;
+                wordCountSpan.textContent = words;
+                wordCountSpan.style.color = words >= 300 ? '#059669' : '#dc2626';
+            }
+        }
+        
+        violationTextarea?.addEventListener('input', updateWordCount);
 
         // Signature Canvas
         let canvas, ctx, isDrawing = false, lastX = 0, lastY = 0;

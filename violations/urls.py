@@ -12,6 +12,9 @@ urlpatterns = [
     
     # Text-to-Speech API (Python-based welcome voice)
     path('api/welcome-tts/', views.welcome_tts_view, name='welcome_tts'),
+    
+    # Face Detection API (for webcam head size detection)
+    path('api/detect-face/', views.detect_face_view, name='detect_face'),
     path('login/', views.login_view, name='login'),           # Explicit login path (renders login page)
     path('login/student/', views.student_login_auth, name='student_login'),  # Student login (by ID)
     path('login/credentials/', views.credentials_login_auth, name='credentials_login'),  # Staff/Faculty login (email+password)

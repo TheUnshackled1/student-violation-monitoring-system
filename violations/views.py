@@ -13,6 +13,8 @@ from io import BytesIO
 import tempfile
 import os
 import csv
+import base64
+import json
 
 from .models import (
 	User, Student as StudentModel, Staff as StaffModel, OSACoordinator as OSACoordinatorModel,
@@ -106,6 +108,124 @@ def welcome_tts_view(request):
 		"error": "No Python TTS engine available",
 		"hint": "Install one of: gTTS (pip install gTTS) or pyttsx3 (pip install pyttsx3)."
 	}, status=501)
+
+
+############################################
+# Face Detection API (for webcam head size detection)
+############################################
+
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def detect_face_view(request):
+	"""Detect face in image and return bounding box and head size info.
+	
+	Accepts POST with JSON body: { "image": "data:image/jpeg;base64,..." }
+	Returns: { "faces": [...], "head_size": "small|medium|large|too_far|too_close" }
+	"""
+	if request.method != 'POST':
+		return JsonResponse({"error": "POST required"}, status=405)
+	
+	try:
+		import cv2
+		import numpy as np
+	except ImportError:
+		return JsonResponse({"error": "OpenCV not installed"}, status=501)
+	
+	try:
+		data = json.loads(request.body)
+		image_data = data.get('image', '')
+		
+		# Remove data URL prefix if present
+		if ',' in image_data:
+			image_data = image_data.split(',')[1]
+		
+		# Decode base64 image
+		image_bytes = base64.b64decode(image_data)
+		nparr = np.frombuffer(image_bytes, np.uint8)
+		img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+		
+		if img is None:
+			return JsonResponse({"error": "Could not decode image"}, status=400)
+		
+		# Get image dimensions
+		height, width = img.shape[:2]
+		frame_area = width * height
+		
+		# Convert to grayscale for face detection
+		gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+		
+		# Load Haar cascade for face detection
+		cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+		face_cascade = cv2.CascadeClassifier(cascade_path)
+		
+		# Detect faces
+		faces = face_cascade.detectMultiScale(
+			gray,
+			scaleFactor=1.1,
+			minNeighbors=5,
+			minSize=(30, 30)
+		)
+		
+		face_list = []
+		head_size = "no_face"
+		head_percentage = 0
+		
+		for (x, y, w, h) in faces:
+			face_area = w * h
+			percentage = (face_area / frame_area) * 100
+			
+			face_list.append({
+				"x": int(x),
+				"y": int(y),
+				"width": int(w),
+				"height": int(h),
+				"percentage": round(percentage, 2)
+			})
+			
+			# Determine head size based on percentage of frame
+			# Ideal for ID photo: face should be 15-35% of frame
+			if percentage < 5:
+				head_size = "too_far"
+			elif percentage < 15:
+				head_size = "small"
+			elif percentage <= 35:
+				head_size = "ideal"
+			elif percentage <= 50:
+				head_size = "large"
+			else:
+				head_size = "too_close"
+			
+			head_percentage = percentage
+		
+		return JsonResponse({
+			"success": True,
+			"faces": face_list,
+			"face_count": len(face_list),
+			"head_size": head_size,
+			"head_percentage": round(head_percentage, 2),
+			"frame_width": width,
+			"frame_height": height,
+			"guidance": get_head_size_guidance(head_size)
+		})
+		
+	except json.JSONDecodeError:
+		return JsonResponse({"error": "Invalid JSON"}, status=400)
+	except Exception as e:
+		return JsonResponse({"error": str(e)}, status=500)
+
+
+def get_head_size_guidance(head_size):
+	"""Return user-friendly guidance based on head size detection."""
+	guidance = {
+		"no_face": "No face detected. Please position your face in front of the camera.",
+		"too_far": "You are too far from the camera. Please move closer.",
+		"small": "Move a bit closer to the camera for better detection.",
+		"ideal": "Perfect! Your position is ideal for the photo. Stay still and smile!",
+		"large": "You are a bit close. Move back slightly.",
+		"too_close": "You are too close to the camera. Please move back."
+	}
+	return guidance.get(head_size, "Adjust your position.")
 
 
 ############################################
