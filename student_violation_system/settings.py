@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    # "jazzmin",  # Jazzmin MUST be before django.contrib.admin
+    "jazzmin",  # Jazzmin MUST be before django.contrib.admin
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # "channels",  # WebSocket support for realtime features (temporarily commented)
     "violations",  # Add the violations app
+    
 ]
 
 # =============================================================================
