@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # "channels",  # WebSocket support for realtime features (temporarily commented)
     "violations",  # Add the violations app
-    
+        
 ]
 
 # =============================================================================
