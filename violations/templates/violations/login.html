@@ -601,6 +601,18 @@
 							<a href="{% url 'violations:signup' %}" class="signup-link">Sign Up</a>
 						</div>
 
+						<!-- Portal Links -->
+						<div class="portal-links" style="margin-top:24px; padding-top:16px; border-top:1px solid #e5e7eb; text-align:center; display:flex; justify-content:center; gap:24px; flex-wrap:wrap;">
+							<a href="{% url 'violations:guard_login' %}" style="color:#6b7280; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:color 0.2s;">
+								<i class="fas fa-shield-alt"></i>
+								<span>Security Guard Portal</span>
+							</a>
+							<a href="{% url 'violations:formator_login' %}" style="color:#6b7280; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:color 0.2s;">
+								<i class="fas fa-user-tie"></i>
+								<span>Student Formator Portal</span>
+							</a>
+						</div>
+
 
 					</form>
 				</section>

@@ -4,32 +4,38 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Student Details - {{ student.user.get_full_name|default:student.user.username }}</title>
+  <title>Student Profile - {{ student.user.get_full_name|default:student.student_id }}</title>
   <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 </head>
 <body class="role-staff">
-  <header class="top-nav">
-    <div class="top-left">
-      <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
-      <span class="header-title">Student Details</span>
-    </div>
-    <div class="top-right">
-      <a href="{% url 'violations:staff_dashboard' %}" class="ghost-btn" style="color:#fff; border-color: rgba(255,255,255,.6)"><i class="fas fa-arrow-left"></i> Back</a>
-      <button class="icon-btn" id="notifBtn" aria-label="Notifications" style="margin-left:8px;">
-        <i class="fas fa-bell"></i>
-      </button>
-      <div class="profile-menu">
-        <button class="profile-btn" id="profileBtn">
-          <span class="avatar">{{ request.user.first_name|default:request.user.username|first|upper }}</span>
-          <span class="name">{{ request.user.first_name|default:request.user.username }}</span>
-          <i class="fas fa-chevron-down"></i>
-        </button>
-        <div class="dropdown" id="profileDropdown">
-          <a href="#">View Profile</a>
-          <a href="{% url 'violations:auth_logout' %}">Logout</a>
+  <!-- Official Top Navigation -->
+  <header class="official-top-nav">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <div class="brand-logo">
+          <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU" />
         </div>
+        <div class="brand-text">
+          <span class="brand-university">CHMSU</span>
+          <span class="brand-title">OSA Staff Portal</span>
+        </div>
+      </div>
+
+      <div class="nav-center">
+        <span class="nav-department">Office of Student Affairs</span>
+        <span class="nav-system">Student Profile Record</span>
+      </div>
+
+      <div class="nav-actions">
+        <button class="nav-icon-btn" onclick="window.print()" title="Print Profile">
+          <i class="fas fa-print"></i>
+        </button>
+        <a href="{% url 'violations:staff_dashboard' %}" class="nav-icon-btn" title="Back to Dashboard">
+          <i class="fas fa-home"></i>
+        </a>
       </div>
     </div>
   </header>
@@ -38,83 +44,1091 @@
   <div class="background-image"></div>
 
   <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
-    <section class="card" style="margin-bottom: 16px;">
-      <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
-        <div class="brand-logo-circle" style="width:64px; height:64px; flex:0 0 auto;">
-          {% if student.profile_image %}
-            <img src="{{ student.profile_image.url }}" alt="{{ student.user.get_full_name|default:student.user.username }}" />
-          {% else %}
-            <img src="{% static 'violations/images/user_avatar.png' %}" alt="{{ student.user.get_full_name|default:student.user.username }}" />
-          {% endif %}
+    
+    <!-- Student Profile Card -->
+    <section class="official-profile-section">
+      <div class="profile-header">
+        <div class="profile-header-logo">
+          <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU Logo">
         </div>
-        <div style="flex:1 1 auto; min-width:240px;">
-          <h2 style="margin:0 0 6px;">{{ student.user.get_full_name|default:student.user.username }}</h2>
-          <div style="display:flex; gap:12px; flex-wrap:wrap; color:#667085;">
-            <span><strong>ID:</strong> {{ student.student_id }}</span>
-            <span><strong>Email:</strong> {{ student.user.email|default:'—' }}</span>
-            <span><strong>Contact:</strong> {{ student.contact_number|default:'—' }}</span>
+        <div class="profile-header-text">
+          <p class="profile-republic">Republic of the Philippines</p>
+          <h1 class="profile-university">CARLOS HILADO MEMORIAL STATE UNIVERSITY</h1>
+          <p class="profile-address">Talisay City, Negros Occidental</p>
+          <p class="profile-office">Office of Student Affairs</p>
+        </div>
+        <div class="profile-header-logo">
+          <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU Logo">
+        </div>
+      </div>
+
+      <div class="profile-title-bar">
+        <h2 class="profile-title"><i class="fas fa-user-graduate"></i> STUDENT PROFILE RECORD</h2>
+        <p class="profile-subtitle">Academic Year {{ academic_year|default:"2024-2025" }}</p>
+      </div>
+
+      <!-- Student Info Section -->
+      <div class="student-profile-content">
+        <div class="profile-photo-section">
+          <div class="profile-photo-frame">
+            {% if student.profile_image %}
+              <img src="{{ student.profile_image.url }}" alt="{{ student.user.get_full_name|default:student.student_id }}" />
+            {% else %}
+              <div class="photo-placeholder">
+                <i class="fas fa-user"></i>
+              </div>
+            {% endif %}
+          </div>
+          <div class="profile-id-badge">
+            <span class="id-label">Student ID</span>
+            <span class="id-value">{{ student.student_id }}</span>
+          </div>
+          <div class="profile-status-badge {% if student.enrollment_status == 'Enrolled' or student.enrollment_status == 'Active' %}status-active{% elif student.enrollment_status == 'Graduated' %}status-graduated{% else %}status-inactive{% endif %}">
+            {{ student.enrollment_status|default:"Active" }}
           </div>
         </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          {% if student.user.email %}
-            <a class="ghost-btn" href="mailto:{{ student.user.email }}"><i class="fas fa-envelope"></i> Email</a>
-          {% endif %}
-          {% if student.contact_number %}
-            <a class="ghost-btn" href="tel:{{ student.contact_number }}"><i class="fas fa-phone"></i> Call</a>
-          {% endif %}
+
+        <div class="profile-details-section">
+          <div class="profile-name-header">
+            <h3 class="student-full-name">{{ student.user.get_full_name|default:student.student_id }}</h3>
+            <div class="quick-actions no-print">
+              {% if student.user.email %}
+                <a class="quick-action-btn" href="mailto:{{ student.user.email }}" title="Send Email">
+                  <i class="fas fa-envelope"></i>
+                </a>
+              {% endif %}
+              {% if student.contact_number %}
+                <a class="quick-action-btn" href="tel:{{ student.contact_number }}" title="Call Student">
+                  <i class="fas fa-phone"></i>
+                </a>
+              {% endif %}
+              <button class="quick-action-btn message-student-btn" 
+                      data-student-id="{{ student.student_id }}"
+                      data-student-name="{{ student.user.get_full_name|default:student.student_id }}"
+                      title="Send Message">
+                <i class="fas fa-comment"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-info-grid">
+            <div class="info-group">
+              <div class="info-label"><i class="fas fa-graduation-cap"></i> Program</div>
+              <div class="info-value">{{ student.program|default:"Not Specified" }}</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label"><i class="fas fa-layer-group"></i> Year Level</div>
+              <div class="info-value">{{ student.year_level|default:"—" }}</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label"><i class="fas fa-building"></i> Department</div>
+              <div class="info-value">{{ student.department|default:"Not Specified" }}</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label"><i class="fas fa-envelope"></i> Email Address</div>
+              <div class="info-value">{{ student.user.email|default:"Not Provided" }}</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label"><i class="fas fa-phone"></i> Contact Number</div>
+              <div class="info-value">{{ student.contact_number|default:"Not Provided" }}</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label"><i class="fas fa-calendar-alt"></i> Date Registered</div>
+              <div class="info-value">{{ student.user.date_joined|date:"F d, Y"|default:"—" }}</div>
+            </div>
+          </div>
+
+          <div class="guardian-section">
+            <h4 class="section-subtitle"><i class="fas fa-user-shield"></i> Guardian Information</h4>
+            <div class="guardian-info-grid">
+              <div class="info-group">
+                <div class="info-label">Guardian Name</div>
+                <div class="info-value">{{ student.guardian_name|default:"Not Provided" }}</div>
+              </div>
+              <div class="info-group">
+                <div class="info-label">Guardian Contact</div>
+                <div class="info-value">{{ student.guardian_contact|default:"Not Provided" }}</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div style="display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; margin-top:12px;">
-        <div class="stat-card small"><div class="label">Program</div><div class="value">{{ student.program|default:'—' }}</div></div>
-        <div class="stat-card small"><div class="label">Year Level</div><div class="value">{{ student.year_level }}</div></div>
-        <div class="stat-card small"><div class="label">Department</div><div class="value">{{ student.department|default:'—' }}</div></div>
-        <div class="stat-card small"><div class="label">Enrollment</div><div class="value">{{ student.enrollment_status }}</div></div>
-        <div class="stat-card small"><div class="label">Guardian</div><div class="value">{{ student.guardian_name|default:'—' }}</div></div>
-        <div class="stat-card small"><div class="label">Guardian Contact</div><div class="value">{{ student.guardian_contact|default:'—' }}</div></div>
-      </div>
     </section>
 
-    <!-- Violation Summary Stats -->
-    <section class="dashboard-grid" style="margin-bottom: 16px;">
-      <div class="dash-card">
-        <div class="card-icon"><i class="fas fa-list-check"></i></div>
-        <div class="card-title">Total Violations</div>
-        <div class="card-metric">{{ vstats.total|default:'0' }}</div>
+    <!-- Violation Statistics Section -->
+    <section class="official-stats-section" style="margin-top:20px;">
+      <div class="stats-title-bar">
+        <h2 class="stats-title"><i class="fas fa-chart-bar"></i> VIOLATION RECORD SUMMARY</h2>
+        <p class="stats-subtitle">As of {% now "F d, Y" %}</p>
       </div>
-      <div class="dash-card">
-        <div class="card-icon"><i class="fas fa-bell"></i></div>
-        <div class="card-title">Pending</div>
-        <div class="card-metric">{{ vstats.pending|default:'0' }}</div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-total">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Violations</span>
+            <span class="stat-value">{{ vstats.total|default:'0' }}</span>
+            <span class="stat-desc">All recorded cases</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-pending">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Pending</span>
+            <span class="stat-value">{{ vstats.pending|default:'0' }}</span>
+            <span class="stat-desc">Awaiting resolution</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-resolved">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Resolved</span>
+            <span class="stat-value">{{ vstats.resolved|default:'0' }}</span>
+            <span class="stat-desc">Successfully closed</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-dismissed">
+            <i class="fas fa-times-circle"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Dismissed</span>
+            <span class="stat-value">{{ vstats.dismissed|default:'0' }}</span>
+            <span class="stat-desc">Not sustained</span>
+          </div>
+        </div>
       </div>
-      <div class="dash-card">
-        <div class="card-icon"><i class="fas fa-check-circle"></i></div>
-        <div class="card-title">Resolved</div>
-        <div class="card-metric">{{ vstats.resolved|default:'0' }}</div>
+
+      {% if vstats.latest_incident %}
+      <div class="latest-incident-bar">
+        <i class="fas fa-clock-rotate-left"></i>
+        <span>Latest Incident: <strong>{{ vstats.latest_incident|date:"F d, Y - g:i A" }}</strong></span>
       </div>
-      <div class="dash-card">
-        <div class="card-icon"><i class="fas fa-circle-xmark"></i></div>
-        <div class="card-title">Dismissed</div>
-        <div class="card-metric">{{ vstats.dismissed|default:'0' }}</div>
-      </div>
-      <div class="dash-card">
-        <div class="card-icon"><i class="fas fa-clock-rotate-left"></i></div>
-        <div class="card-title">Latest Incident</div>
-        <div class="card-desc">{% if vstats.latest_incident %}{{ vstats.latest_incident|date:"M d, Y g:i A" }}{% else %}—{% endif %}</div>
-      </div>
+      {% endif %}
     </section>
 
+    <!-- Violations History Table -->
+    <section class="official-directory-section" style="margin-top:20px;">
+      <div class="directory-title-bar">
+        <h2 class="directory-title"><i class="fas fa-list-alt"></i> VIOLATION HISTORY</h2>
+        <p class="directory-subtitle">Complete record of violations</p>
+      </div>
+
+      <div class="directory-table-wrapper">
+        <table class="directory-table">
+          <thead>
+            <tr>
+              <th class="col-seq">#</th>
+              <th class="col-date">Incident Date</th>
+              <th class="col-type">Violation Type</th>
+              <th class="col-desc">Description</th>
+              <th class="col-status">Status</th>
+              <th class="col-staff">Reported By</th>
+              <th class="col-actions no-print">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in violations %}
+            <tr>
+              <td class="col-seq">{{ forloop.counter }}</td>
+              <td class="col-date">
+                {{ v.incident_at|date:"M d, Y" }}
+                <div class="time-sub">{{ v.incident_at|date:"g:i A" }}</div>
+              </td>
+              <td class="col-type">
+                {% if v.violation_type %}
+                  <span class="type-badge type-{{ v.violation_type.severity|default:'minor' }}">{{ v.violation_type.name }}</span>
+                {% else %}
+                  <span class="type-badge">{{ v.type|default:"General" }}</span>
+                {% endif %}
+              </td>
+              <td class="col-desc">
+                <div class="description-text">{{ v.description|truncatechars:60 }}</div>
+                {% if v.location %}
+                <div class="location-sub"><i class="fas fa-map-marker-alt"></i> {{ v.location }}</div>
+                {% endif %}
+              </td>
+              <td class="col-status">
+                {% if v.status == 'resolved' %}
+                  <span class="status-badge status-resolved"><i class="fas fa-check"></i> Resolved</span>
+                {% elif v.status == 'dismissed' %}
+                  <span class="status-badge status-dismissed"><i class="fas fa-ban"></i> Dismissed</span>
+                {% elif v.status == 'under_review' %}
+                  <span class="status-badge status-review"><i class="fas fa-search"></i> Under Review</span>
+                {% else %}
+                  <span class="status-badge status-pending"><i class="fas fa-clock"></i> Pending</span>
+                {% endif %}
+              </td>
+              <td class="col-staff">{{ v.reported_by.get_full_name|default:'System' }}</td>
+              <td class="col-actions no-print">
+                <div class="action-buttons">
+                  <a class="action-btn action-view" href="{% url 'violations:staff_violation_detail' v.id %}" title="View Details">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="empty-state">
+                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                <p>No Violations Recorded</p>
+                <span>This student has a clean disciplinary record</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer -->
+      <div class="directory-footer">
+        <p><i class="fas fa-info-circle"></i> This student profile is system-generated. For official records, please contact the Office of Student Affairs.</p>
+        <p class="print-only">Generated on: {% now "F d, Y - g:i A" %}</p>
+      </div>
+    </section>
   </main>
 
-  <aside class="notif-panel" id="notifPanel" aria-hidden="true">
-    <div class="notif-header">
-      <h3>Notifications</h3>
-      <button class="icon-btn" id="notifClose"><i class="fas fa-times"></i></button>
-    </div>
-    <ul class="notif-list">
-      <li>Updates will appear here.</li>
-    </ul>
-  </aside>
-
   <script src="{% static 'violations/js/script.js' %}"></script>
+  
+  <style>
+    /* Official Top Navigation Styles */
+    .official-top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10000;
+      background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 50%, #1a472a 100%);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      border-bottom: 3px solid #fbbf24;
+    }
+
+    .nav-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      border-radius: 50%;
+      background: white;
+      padding: 2px;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-university {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fbbf24;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .brand-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .nav-department {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 10px;
+      color: #fbbf24;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .nav-system {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #ffffff;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .nav-icon-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* Official Profile Section */
+    .official-profile-section {
+      background: #ffffff;
+      border: 2px solid #1a472a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px 30px;
+      background: linear-gradient(180deg, #f8faf8 0%, #ffffff 100%);
+      border-bottom: 3px double #1a472a;
+    }
+
+    .profile-header-logo img {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+    }
+
+    .profile-header-text {
+      text-align: center;
+      flex: 1;
+    }
+
+    .profile-republic {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 11px;
+      color: #374151;
+      margin: 0;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .profile-university {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: #1a472a;
+      margin: 4px 0;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .profile-address {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 12px;
+      color: #4b5563;
+      margin: 2px 0;
+      font-style: italic;
+    }
+
+    .profile-office {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a472a;
+      margin: 6px 0 0 0;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .profile-title-bar {
+      background: #1a472a;
+      color: #ffffff;
+      padding: 14px 25px;
+      text-align: center;
+    }
+
+    .profile-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .profile-subtitle {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      margin: 5px 0 0 0;
+      opacity: 0.9;
+    }
+
+    /* Student Profile Content */
+    .student-profile-content {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 30px;
+      padding: 30px;
+    }
+
+    .profile-photo-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .profile-photo-frame {
+      width: 180px;
+      height: 180px;
+      border: 4px solid #1a472a;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f3f4f6;
+    }
+
+    .profile-photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .photo-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+      color: #9ca3af;
+      font-size: 60px;
+    }
+
+    .profile-id-badge {
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-align: center;
+      width: 100%;
+    }
+
+    .id-label {
+      display: block;
+      font-family: 'Poppins', sans-serif;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.9;
+    }
+
+    .id-value {
+      display: block;
+      font-family: 'Poppins', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .profile-status-badge {
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .profile-status-badge.status-active {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #059669;
+    }
+
+    .profile-status-badge.status-graduated {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      color: #2563eb;
+    }
+
+    .profile-status-badge.status-inactive {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      color: #dc2626;
+    }
+
+    .profile-details-section {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .profile-name-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .student-full-name {
+      font-family: 'Poppins', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #1a472a;
+      margin: 0;
+    }
+
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .quick-action-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .quick-action-btn:hover {
+      background: #1a472a;
+      color: #ffffff;
+      border-color: #1a472a;
+    }
+
+    .profile-info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .info-group {
+      background: #f8fafc;
+      padding: 14px 18px;
+      border-radius: 8px;
+      border-left: 4px solid #1a472a;
+    }
+
+    .info-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .info-label i {
+      color: #1a472a;
+      font-size: 12px;
+    }
+
+    .info-value {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: #1f2937;
+    }
+
+    .guardian-section {
+      background: #f0fdf4;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #bbf7d0;
+    }
+
+    .section-subtitle {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a472a;
+      margin: 0 0 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .guardian-info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    /* Official Statistics Section */
+    .official-stats-section {
+      background: #ffffff;
+      border: 2px solid #1a472a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .stats-title-bar {
+      background: #1a472a;
+      color: #ffffff;
+      padding: 14px 25px;
+      text-align: center;
+    }
+
+    .stats-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .stats-subtitle {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      margin: 5px 0 0 0;
+      opacity: 0.9;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+    }
+
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 20px;
+      background: #ffffff;
+      border-right: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+    }
+
+    .stat-card:last-child {
+      border-right: none;
+    }
+
+    .stat-card:hover {
+      background: #f0fdf4;
+    }
+
+    .stat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .stat-icon-total {
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+    }
+
+    .stat-icon-pending {
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+      color: #ffffff;
+    }
+
+    .stat-icon-resolved {
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      color: #ffffff;
+    }
+
+    .stat-icon-dismissed {
+      background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+      color: #ffffff;
+    }
+
+    .stat-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-family: 'Poppins', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a472a;
+      line-height: 1.2;
+    }
+
+    .stat-desc {
+      font-family: 'Poppins', sans-serif;
+      font-size: 10px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .latest-incident-bar {
+      background: #fef3c7;
+      padding: 12px 25px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #92400e;
+      border-top: 1px solid #fde68a;
+    }
+
+    .latest-incident-bar i {
+      font-size: 16px;
+    }
+
+    /* Official Directory Section */
+    .official-directory-section {
+      background: #ffffff;
+      border: 2px solid #1a472a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .directory-title-bar {
+      background: #1a472a;
+      color: #ffffff;
+      padding: 14px 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .directory-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .directory-subtitle {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      margin: 0;
+      opacity: 0.85;
+    }
+
+    .directory-table-wrapper {
+      overflow-x: auto;
+    }
+
+    .directory-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .directory-table th {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 14px 16px;
+      text-align: left;
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #1a472a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #1a472a;
+    }
+
+    .directory-table td {
+      padding: 14px 16px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+    }
+
+    .directory-table tbody tr:hover {
+      background: #f0fdf4;
+    }
+
+    .col-seq { width: 50px; text-align: center; color: #9ca3af; }
+
+    .time-sub, .location-sub {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    .location-sub i {
+      margin-right: 4px;
+    }
+
+    .description-text {
+      color: #374151;
+    }
+
+    .type-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .type-minor { background: #fef3c7; color: #d97706; }
+    .type-major { background: #fee2e2; color: #dc2626; }
+    .type-severe { background: #fce7f3; color: #db2777; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .status-pending {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      color: #d97706;
+    }
+
+    .status-review {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      color: #2563eb;
+    }
+
+    .status-resolved {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #059669;
+    }
+
+    .status-dismissed {
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      color: #6b7280;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 6px;
+    }
+
+    .action-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .action-view {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+
+    .action-view:hover {
+      background: #bfdbfe;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px !important;
+      color: #9ca3af;
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .empty-state p {
+      font-size: 16px;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0 0 8px 0;
+    }
+
+    .empty-state span {
+      font-size: 13px;
+    }
+
+    /* Footer */
+    .directory-footer {
+      background: #f9fafb;
+      padding: 12px 20px;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    .directory-footer p {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      color: #6b7280;
+      margin: 0;
+    }
+
+    .directory-footer i {
+      color: #1a472a;
+      margin-right: 4px;
+    }
+
+    .print-only {
+      display: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .stat-card {
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .student-profile-content {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-photo-section {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .profile-photo-frame {
+        width: 140px;
+        height: 140px;
+      }
+
+      .profile-info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .profile-header {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+      }
+
+      .profile-header-logo:last-child {
+        display: none;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-card {
+        border-right: none;
+      }
+
+      .nav-center {
+        display: none;
+      }
+
+      .student-profile-content {
+        padding: 20px;
+      }
+
+      .profile-name-header {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+      }
+
+      .student-full-name {
+        font-size: 20px;
+      }
+
+      .guardian-info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      .no-print { display: none !important; }
+      .official-top-nav { display: none; }
+      .print-only { display: block; }
+      
+      body {
+        background: #ffffff;
+      }
+
+      .official-profile-section,
+      .official-stats-section,
+      .official-directory-section {
+        box-shadow: none;
+        page-break-inside: avoid;
+      }
+
+      .profile-photo-frame {
+        border-width: 2px;
+      }
+    }
+  </style>
 </body>
 </html>

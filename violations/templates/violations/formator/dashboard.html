@@ -1,0 +1,1099 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Formator Dashboard - CHMSU SVMS</title>
+  <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+<body class="role-formator">
+  <!-- Official Top Navigation -->
+  <header class="official-top-nav">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <div class="brand-logo">
+          <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU" />
+        </div>
+        <div class="brand-text">
+          <span class="brand-university">CHMSU</span>
+          <span class="brand-title">Student Formator Portal</span>
+        </div>
+      </div>
+
+      <div class="nav-center">
+        <span class="nav-department">Office of Student Affairs</span>
+        <span class="nav-system">Student Formation Dashboard</span>
+      </div>
+
+      <div class="nav-actions">
+        <div class="formator-badge">
+          <i class="fas fa-user-tie"></i>
+          <span>{{ formator_code }}</span>
+        </div>
+        <a href="{% url 'violations:formator_logout' %}" class="nav-icon-btn logout-btn" title="Logout">
+          <i class="fas fa-sign-out-alt"></i>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <div class="background-overlay"></div>
+  <div class="background-image"></div>
+
+  <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
+    
+    <!-- Welcome Section -->
+    <section class="formator-welcome-section">
+      <div class="welcome-content">
+        <div class="welcome-icon">
+          <i class="fas fa-user-tie"></i>
+        </div>
+        <div class="welcome-text">
+          <h1>Welcome, {{ formator_code }}!</h1>
+          <p>Student Formation Dashboard • {{ current_date }}</p>
+        </div>
+      </div>
+      <div class="welcome-time">
+        <div class="time-display" id="currentTime">--:--:-- --</div>
+        <div class="date-display">{% now "l, F d, Y" %}</div>
+      </div>
+    </section>
+
+    <!-- Quick Stats Section -->
+    <section class="official-stats-section" style="margin-top:20px;">
+      <div class="stats-title-bar">
+        <h2 class="stats-title"><i class="fas fa-chart-bar"></i> OVERVIEW</h2>
+        <p class="stats-subtitle">As of {% now "F d, Y" %}</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-total">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Students</span>
+            <span class="stat-value">{{ total_students }}</span>
+            <span class="stat-desc">Enrolled in the system</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Active Violations</span>
+            <span class="stat-value">{{ active_violations }}</span>
+            <span class="stat-desc">Pending resolution</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-today">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Apology Letters</span>
+            <span class="stat-value">{{ pending_apologies }}</span>
+            <span class="stat-desc">Pending review</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-alert">
+            <i class="fas fa-bell"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Alerts</span>
+            <span class="stat-value">{{ active_alerts }}</span>
+            <span class="stat-desc">Requiring attention</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Student Lookup Section -->
+    <section class="official-directory-section" style="margin-top:20px;">
+      <div class="directory-title-bar">
+        <h2 class="directory-title"><i class="fas fa-search"></i> STUDENT LOOKUP</h2>
+        <p class="directory-subtitle">Search for student information</p>
+      </div>
+      
+      <div class="student-lookup-container">
+        <form method="GET" action="" class="lookup-form">
+          <div class="lookup-input-wrapper">
+            <i class="fas fa-id-card"></i>
+            <input type="text" name="student_id" placeholder="Enter Student ID..." value="{{ search_id|default:'' }}" />
+          </div>
+          <button type="submit" class="lookup-btn">
+            <i class="fas fa-search"></i>
+            <span>Search</span>
+          </button>
+        </form>
+
+        {% if searched_student %}
+        <div class="lookup-result">
+          <div class="result-header">
+            <i class="fas fa-check-circle"></i>
+            <span>Student Found</span>
+          </div>
+          <div class="student-result-card">
+            <div class="result-photo">
+              {% if searched_student.profile_image %}
+                <img src="{{ searched_student.profile_image.url }}" alt="Student Photo" />
+              {% else %}
+                <div class="photo-placeholder">
+                  <i class="fas fa-user"></i>
+                </div>
+              {% endif %}
+            </div>
+            <div class="result-info">
+              <h3>{{ searched_student.user.get_full_name|default:searched_student.student_id }}</h3>
+              <div class="result-details">
+                <span><i class="fas fa-id-badge"></i> {{ searched_student.student_id }}</span>
+                <span><i class="fas fa-graduation-cap"></i> {{ searched_student.program|default:"N/A" }}</span>
+                <span><i class="fas fa-layer-group"></i> Year {{ searched_student.year_level }}</span>
+                <span><i class="fas fa-building"></i> {{ searched_student.department|default:"N/A" }}</span>
+              </div>
+              <div class="result-status">
+                <span class="enrollment-badge status-{{ searched_student.enrollment_status|lower }}">
+                  <i class="fas fa-circle"></i> {{ searched_student.enrollment_status }}
+                </span>
+                {% if searched_student.violation_count > 0 %}
+                  <span class="violation-count-badge">
+                    <i class="fas fa-exclamation-circle"></i> {{ searched_student.violation_count }} Violation{{ searched_student.violation_count|pluralize }}
+                  </span>
+                {% else %}
+                  <span class="clean-record-badge">
+                    <i class="fas fa-check-circle"></i> Clean Record
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% elif search_id %}
+        <div class="lookup-result lookup-not-found">
+          <div class="result-header">
+            <i class="fas fa-times-circle"></i>
+            <span>Student Not Found</span>
+          </div>
+          <p>No student found with ID "{{ search_id }}".</p>
+          <p class="hint">Please verify the Student ID and try again.</p>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Recent Violations Section -->
+    <section class="official-directory-section" style="margin-top:20px;">
+      <div class="directory-title-bar">
+        <h2 class="directory-title"><i class="fas fa-list-alt"></i> RECENT VIOLATIONS</h2>
+        <p class="directory-subtitle">Latest reported incidents</p>
+      </div>
+
+      <div class="directory-table-wrapper">
+        <table class="directory-table">
+          <thead>
+            <tr>
+              <th class="col-seq">#</th>
+              <th class="col-date">Date & Time</th>
+              <th class="col-student">Student</th>
+              <th class="col-type">Violation Type</th>
+              <th class="col-status">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in recent_violations %}
+            <tr>
+              <td class="col-seq">{{ forloop.counter }}</td>
+              <td class="col-date">
+                {{ v.incident_at|date:"M d, Y" }}
+                <div class="time-sub">{{ v.incident_at|date:"g:i A" }}</div>
+              </td>
+              <td class="col-student">
+                <span class="student-name">{{ v.student.user.get_full_name|default:v.student.student_id }}</span>
+                <div class="student-id-sub">{{ v.student.student_id }}</div>
+              </td>
+              <td class="col-type">
+                {% if v.violation_type %}
+                  <span class="type-badge type-{{ v.violation_type.severity|default:'minor' }}">{{ v.violation_type.name }}</span>
+                {% else %}
+                  <span class="type-badge type-{{ v.type }}">{{ v.get_type_display|default:"General" }}</span>
+                {% endif %}
+              </td>
+              <td class="col-status">
+                {% if v.status == 'resolved' %}
+                  <span class="status-badge status-resolved"><i class="fas fa-check"></i> Resolved</span>
+                {% elif v.status == 'dismissed' %}
+                  <span class="status-badge status-dismissed"><i class="fas fa-ban"></i> Dismissed</span>
+                {% elif v.status == 'under_review' %}
+                  <span class="status-badge status-review"><i class="fas fa-search"></i> Under Review</span>
+                {% else %}
+                  <span class="status-badge status-pending"><i class="fas fa-clock"></i> Pending</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="empty-state">
+                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                <p>No Recent Violations</p>
+                <span>All clear for now</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="directory-footer">
+        <p><i class="fas fa-info-circle"></i> This is a read-only view. Contact OSA Staff for detailed information.</p>
+      </div>
+    </section>
+
+    <!-- Students with Violations Alert Section -->
+    <section class="official-directory-section" style="margin-top:20px; margin-bottom: 40px;">
+      <div class="directory-title-bar">
+        <h2 class="directory-title"><i class="fas fa-exclamation-circle"></i> STUDENTS REQUIRING ATTENTION</h2>
+        <p class="directory-subtitle">Students with multiple violations</p>
+      </div>
+
+      <div class="directory-table-wrapper">
+        <table class="directory-table">
+          <thead>
+            <tr>
+              <th class="col-seq">#</th>
+              <th class="col-student">Student</th>
+              <th class="col-program">Program</th>
+              <th class="col-violations">Violations</th>
+              <th class="col-status">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in students_with_violations %}
+            <tr>
+              <td class="col-seq">{{ forloop.counter }}</td>
+              <td class="col-student">
+                <span class="student-name">{{ student.user.get_full_name|default:student.student_id }}</span>
+                <div class="student-id-sub">{{ student.student_id }}</div>
+              </td>
+              <td class="col-program">
+                {{ student.program|default:"N/A" }}
+                <div class="time-sub">Year {{ student.year_level }}</div>
+              </td>
+              <td class="col-violations">
+                <span class="violation-count-highlight">{{ student.violation_count }}</span>
+              </td>
+              <td class="col-status">
+                {% if student.violation_count >= 3 %}
+                  <span class="alert-badge alert-critical"><i class="fas fa-exclamation-triangle"></i> Critical</span>
+                {% elif student.violation_count == 2 %}
+                  <span class="alert-badge alert-warning"><i class="fas fa-exclamation-circle"></i> Warning</span>
+                {% else %}
+                  <span class="alert-badge alert-notice"><i class="fas fa-info-circle"></i> Notice</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="empty-state">
+                <i class="fas fa-smile" style="color: #10b981;"></i>
+                <p>No Students Requiring Attention</p>
+                <span>All students have clean or minimal records</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="directory-footer">
+        <p><i class="fas fa-info-circle"></i> Students with 3 or more violations require immediate counseling.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="{% static 'violations/js/script.js' %}"></script>
+  <script>
+    // Live clock
+    function updateClock() {
+      const now = new Date();
+      const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+      document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', options);
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+  </script>
+  
+  <style>
+    /* Official Top Navigation Styles */
+    .official-top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10000;
+      background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 50%, #1a472a 100%);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      border-bottom: 3px solid #fbbf24;
+    }
+
+    .nav-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      border-radius: 50%;
+      background: white;
+      padding: 2px;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-university {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fbbf24;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .brand-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .nav-department {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 10px;
+      color: #fbbf24;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .nav-system {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #ffffff;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .formator-badge {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 8px 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #ffffff;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .formator-badge i {
+      color: #fbbf24;
+    }
+
+    .nav-icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .nav-icon-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .logout-btn:hover {
+      background: #dc2626;
+      border-color: #dc2626;
+    }
+
+    /* Welcome Section */
+    .formator-welcome-section {
+      background: #ffffff;
+      border: 2px solid #1a472a;
+      border-radius: 12px;
+      padding: 24px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .welcome-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .welcome-icon {
+      width: 70px;
+      height: 70px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 28px;
+    }
+
+    .welcome-text h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a472a;
+      margin: 0 0 4px 0;
+    }
+
+    .welcome-text p {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #6b7280;
+      margin: 0;
+    }
+
+    .welcome-time {
+      text-align: right;
+    }
+
+    .time-display {
+      font-family: 'Poppins', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: #1a472a;
+    }
+
+    .date-display {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    /* Official Stats Section */
+    .official-stats-section {
+      background: #ffffff;
+      border: 2px solid #1a472a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .stats-title-bar {
+      background: #1a472a;
+      color: #ffffff;
+      padding: 14px 25px;
+      text-align: center;
+    }
+
+    .stats-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .stats-subtitle {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      margin: 5px 0 0 0;
+      opacity: 0.9;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+    }
+
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 20px;
+      background: #ffffff;
+      border-right: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+    }
+
+    .stat-card:last-child {
+      border-right: none;
+    }
+
+    .stat-card:hover {
+      background: #f0fdf4;
+    }
+
+    .stat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .stat-icon-total {
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+    }
+
+    .stat-icon-warning {
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+      color: #ffffff;
+    }
+
+    .stat-icon-today {
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+      color: #ffffff;
+    }
+
+    .stat-icon-alert {
+      background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+      color: #ffffff;
+    }
+
+    .stat-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-family: 'Poppins', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a472a;
+      line-height: 1.2;
+    }
+
+    .stat-desc {
+      font-family: 'Poppins', sans-serif;
+      font-size: 10px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    /* Student Lookup Section */
+    .student-lookup-container {
+      padding: 30px;
+    }
+
+    .lookup-form {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .lookup-input-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .lookup-input-wrapper i {
+      position: absolute;
+      left: 16px;
+      color: #9ca3af;
+      font-size: 18px;
+    }
+
+    .lookup-input-wrapper input {
+      width: 100%;
+      padding: 14px 16px 14px 48px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+
+    .lookup-input-wrapper input:focus {
+      outline: none;
+      border-color: #1a472a;
+      box-shadow: 0 0 0 4px rgba(26, 71, 42, 0.1);
+    }
+
+    .lookup-btn {
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .lookup-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(26, 71, 42, 0.3);
+    }
+
+    /* Lookup Result */
+    .lookup-result {
+      background: #f0fdf4;
+      border: 2px solid #bbf7d0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .lookup-result.lookup-not-found {
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+
+    .result-header {
+      background: #dcfce7;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #059669;
+    }
+
+    .lookup-not-found .result-header {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .lookup-not-found p {
+      padding: 16px 20px 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      color: #374151;
+      margin: 0;
+    }
+
+    .lookup-not-found .hint {
+      padding: 0 20px 16px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .student-result-card {
+      display: flex;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .result-photo {
+      width: 120px;
+      height: 120px;
+      border: 3px solid #1a472a;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .result-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .result-photo .photo-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #e5e7eb;
+      color: #9ca3af;
+      font-size: 40px;
+    }
+
+    .result-info h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a472a;
+      margin: 0 0 12px 0;
+    }
+
+    .result-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .result-details span {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .result-details i {
+      color: #1a472a;
+    }
+
+    .result-status {
+      display: flex;
+      gap: 12px;
+    }
+
+    .enrollment-badge, .violation-count-badge, .clean-record-badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .enrollment-badge.status-active {
+      background: #d1fae5;
+      color: #059669;
+    }
+
+    .enrollment-badge.status-graduated {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+
+    .enrollment-badge.status-inactive {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .violation-count-badge {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .clean-record-badge {
+      background: #d1fae5;
+      color: #059669;
+    }
+
+    /* Directory Section */
+    .official-directory-section {
+      background: #ffffff;
+      border: 2px solid #1a472a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .directory-title-bar {
+      background: #1a472a;
+      color: #ffffff;
+      padding: 14px 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .directory-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .directory-subtitle {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      margin: 0;
+      opacity: 0.85;
+    }
+
+    .directory-table-wrapper {
+      overflow-x: auto;
+    }
+
+    .directory-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .directory-table th {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 14px 16px;
+      text-align: left;
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #1a472a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #1a472a;
+    }
+
+    .directory-table td {
+      padding: 14px 16px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+    }
+
+    .directory-table tbody tr:hover {
+      background: #f0fdf4;
+    }
+
+    .col-seq { width: 50px; text-align: center; color: #9ca3af; }
+
+    .student-name {
+      font-weight: 500;
+      color: #1a472a;
+    }
+
+    .student-id-sub, .time-sub {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .type-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .type-minor { background: #fef3c7; color: #d97706; }
+    .type-major { background: #fee2e2; color: #dc2626; }
+    .type-severe { background: #fce7f3; color: #db2777; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .status-pending { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #d97706; }
+    .status-review { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #2563eb; }
+    .status-resolved { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #059669; }
+    .status-dismissed { background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); color: #6b7280; }
+
+    /* Alert Badges */
+    .alert-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .alert-critical {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      color: #dc2626;
+    }
+
+    .alert-warning {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      color: #d97706;
+    }
+
+    .alert-notice {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      color: #2563eb;
+    }
+
+    .violation-count-highlight {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px !important;
+      color: #9ca3af;
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .empty-state p {
+      font-size: 16px;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0 0 8px 0;
+    }
+
+    .empty-state span {
+      font-size: 13px;
+    }
+
+    .directory-footer {
+      background: #f9fafb;
+      padding: 12px 20px;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    .directory-footer p {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      color: #6b7280;
+      margin: 0;
+    }
+
+    .directory-footer i {
+      color: #1a472a;
+      margin-right: 4px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .stat-card {
+        border-bottom: 1px solid #e5e7eb;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-card {
+        border-right: none;
+      }
+
+      .nav-center {
+        display: none;
+      }
+
+      .formator-welcome-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+      }
+
+      .welcome-content {
+        flex-direction: column;
+      }
+
+      .welcome-time {
+        text-align: center;
+      }
+
+      .lookup-form {
+        flex-direction: column;
+      }
+
+      .student-result-card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .result-details {
+        justify-content: center;
+      }
+
+      .result-status {
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</body>
+</html>

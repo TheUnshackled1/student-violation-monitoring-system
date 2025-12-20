@@ -60,10 +60,6 @@
 
             <!-- Right: Actions -->
             <div class="nav-actions">
-                <button class="nav-icon-btn" id="notifBtn" aria-label="Messages" title="Messages">
-                    <i class="fas fa-envelope"></i>
-                    {% if unread_count %}<span class="nav-badge">{{ unread_count }}</span>{% endif %}
-                </button>
                 <button class="nav-icon-btn" id="trashBtn" aria-label="Trash" title="Deleted Messages">
                     <i class="fas fa-trash-alt"></i>
                     {% if trashed_messages %}<span class="nav-badge nav-badge-gray">{{ trashed_messages|length }}</span>{% endif %}

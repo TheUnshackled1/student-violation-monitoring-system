@@ -1,0 +1,347 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guard Login - CHMSU SVMS</title>
+  <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+<body class="guard-login-page">
+  <div class="guard-login-container">
+    <!-- Header -->
+    <div class="guard-login-header">
+      <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU Logo" class="guard-logo" />
+      <div class="guard-header-text">
+        <p class="guard-republic">Republic of the Philippines</p>
+        <h1 class="guard-university">CARLOS HILADO MEMORIAL STATE UNIVERSITY</h1>
+        <p class="guard-address">Talisay City, Negros Occidental</p>
+      </div>
+      <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU Logo" class="guard-logo" />
+    </div>
+
+    <!-- Login Card -->
+    <div class="guard-login-card">
+      <div class="guard-card-header">
+        <div class="guard-icon">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <h2>Security Guard Portal</h2>
+        <p>Campus Security Access</p>
+      </div>
+
+      <form method="post" class="guard-login-form">
+        {% csrf_token %}
+        
+        {% if error %}
+        <div class="guard-error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <div class="guard-input-group">
+          <label for="guard_code"><i class="fas fa-id-badge"></i> Guard Code</label>
+          <input 
+            type="text" 
+            id="guard_code" 
+            name="guard_code" 
+            placeholder="Enter your guard code (e.g., Guard1)"
+            value="{{ guard_code }}"
+            autocomplete="off"
+            autofocus
+            required 
+          />
+          <span class="guard-input-hint">Valid codes: Guard1, Guard2, Guard3</span>
+        </div>
+
+        <button type="submit" class="guard-login-btn">
+          <i class="fas fa-sign-in-alt"></i>
+          <span>Access Dashboard</span>
+        </button>
+      </form>
+
+      <div class="guard-login-footer">
+        <a href="{% url 'violations:login' %}" class="guard-back-link">
+          <i class="fas fa-arrow-left"></i> Back to Main Login
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="guard-page-footer">
+      <p>&copy; {{ current_year|default:"2025" }} CHMSU - Office of Student Affairs</p>
+      <p>Student Violation Management System</p>
+    </div>
+  </div>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body.guard-login-page {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 50%, #1a472a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Poppins', sans-serif;
+      padding: 20px;
+    }
+
+    .guard-login-container {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    /* Header */
+    .guard-login-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .guard-logo {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+
+    .guard-header-text {
+      text-align: center;
+      color: #ffffff;
+    }
+
+    .guard-republic {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    .guard-university {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      margin: 4px 0;
+      color: #fbbf24;
+    }
+
+    .guard-address {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 11px;
+      font-style: italic;
+      opacity: 0.85;
+    }
+
+    /* Login Card */
+    .guard-login-card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .guard-card-header {
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      padding: 30px;
+      text-align: center;
+      color: #ffffff;
+    }
+
+    .guard-icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 36px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .guard-card-header h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .guard-card-header p {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    /* Form */
+    .guard-login-form {
+      padding: 30px;
+    }
+
+    .guard-error-message {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      color: #dc2626;
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      border-left: 4px solid #dc2626;
+    }
+
+    .guard-input-group {
+      margin-bottom: 24px;
+    }
+
+    .guard-input-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    .guard-input-group label i {
+      color: #1a472a;
+      margin-right: 6px;
+    }
+
+    .guard-input-group input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.2s;
+      text-transform: capitalize;
+    }
+
+    .guard-input-group input:focus {
+      outline: none;
+      border-color: #1a472a;
+      box-shadow: 0 0 0 4px rgba(26, 71, 42, 0.1);
+    }
+
+    .guard-input-group input::placeholder {
+      color: #9ca3af;
+      font-weight: 400;
+    }
+
+    .guard-input-hint {
+      display: block;
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 6px;
+    }
+
+    .guard-login-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s;
+    }
+
+    .guard-login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(26, 71, 42, 0.4);
+    }
+
+    .guard-login-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Footer */
+    .guard-login-footer {
+      padding: 20px 30px;
+      background: #f8fafc;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    .guard-back-link {
+      color: #6b7280;
+      text-decoration: none;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s;
+    }
+
+    .guard-back-link:hover {
+      color: #1a472a;
+    }
+
+    .guard-page-footer {
+      text-align: center;
+      margin-top: 24px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .guard-page-footer p {
+      font-size: 12px;
+      margin: 4px 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 560px) {
+      .guard-login-header {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .guard-logo:last-child {
+        display: none;
+      }
+
+      .guard-university {
+        font-size: 12px;
+      }
+
+      .guard-card-header {
+        padding: 24px;
+      }
+
+      .guard-icon {
+        width: 70px;
+        height: 70px;
+        font-size: 30px;
+      }
+
+      .guard-login-form {
+        padding: 24px;
+      }
+    }
+  </style>
+</body>
+</html>

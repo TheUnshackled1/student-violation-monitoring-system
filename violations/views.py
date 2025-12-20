@@ -1443,12 +1443,10 @@ def staff_add_student_view(request):
 	"""Staff: Add a new student to the system."""
 	if request.method == 'POST':
 		# Get form data
-		student_id = request.POST.get('student_id', '').strip()
-		username = request.POST.get('username', '').strip()
+		student_id = request.POST.get('student_id', '').strip()		
 		first_name = request.POST.get('first_name', '').strip()
 		last_name = request.POST.get('last_name', '').strip()
 		email = request.POST.get('email', '').strip()
-		password = request.POST.get('password', '').strip()
 		contact_number = request.POST.get('contact_number', '').strip()
 		program = request.POST.get('program', '').strip()
 		year_level = request.POST.get('year_level', '').strip()
@@ -1456,8 +1454,11 @@ def staff_add_student_view(request):
 		guardian_name = request.POST.get('guardian_name', '').strip()
 		guardian_contact = request.POST.get('guardian_contact', '').strip()
 		
+		# Use student_id as username (students login with student ID)
+		username = student_id
+		
 		# Validate required fields
-		if not all([student_id, username, first_name, last_name, password, program, year_level]):
+		if not all([student_id, first_name, last_name, program, year_level]):
 			messages.error(request, "Please fill in all required fields.")
 			return redirect('violations:staff_dashboard')
 		
@@ -1468,7 +1469,7 @@ def staff_add_student_view(request):
 		
 		# Check if username already exists
 		if User.objects.filter(username__iexact=username).exists():
-			messages.error(request, f"Username '{username}' is already taken.")
+			messages.error(request, f"A user with this Student ID already exists.")
 			return redirect('violations:staff_dashboard')
 		
 		# Check if email already exists (if provided)
@@ -1477,11 +1478,11 @@ def staff_add_student_view(request):
 			return redirect('violations:staff_dashboard')
 		
 		try:
-			# Create the user account
+			# Create the user account (no password needed - student logs in via Student ID)
 			user = User.objects.create_user(
 				username=username,
 				email=email or None,
-				password=password,
+				password=None,  # No password - student ID login
 				first_name=first_name,
 				last_name=last_name,
 				role=User.Role.STUDENT
@@ -1954,3 +1955,286 @@ def staff_resolve_alert_view(request, alert_id):
 		return JsonResponse({"error": "Alert not found"}, status=404)
 	except Exception as e:
 		return JsonResponse({"error": str(e)}, status=400)
+
+
+############################################
+# Guard Portal Views
+############################################
+
+# Valid guard codes - simple authentication
+VALID_GUARD_CODES = ['Guard1', 'Guard2', 'Guard3']
+
+
+def guard_login_view(request):
+	"""Guard login page - simple code-based authentication."""
+	# Check if already logged in as guard
+	if request.session.get('guard_code'):
+		return redirect('violations:guard_dashboard')
+	
+	error = None
+	guard_code = ''
+	
+	if request.method == 'POST':
+		guard_code = request.POST.get('guard_code', '').strip()
+		
+		# Normalize the input (capitalize first letter of each word)
+		normalized_code = guard_code.title()
+		
+		if normalized_code in VALID_GUARD_CODES:
+			# Set session for guard
+			request.session['guard_code'] = normalized_code
+			request.session['guard_login_time'] = timezone.now().isoformat()
+			return redirect('violations:guard_dashboard')
+		else:
+			error = 'Invalid guard code. Please enter a valid code (Guard1, Guard2, or Guard3).'
+	
+	return render(request, 'violations/guard/login.html', {
+		'error': error,
+		'guard_code': guard_code,
+		'current_year': timezone.now().year,
+	})
+
+
+def guard_logout_view(request):
+	"""Guard logout - clear session."""
+	if 'guard_code' in request.session:
+		del request.session['guard_code']
+	if 'guard_login_time' in request.session:
+		del request.session['guard_login_time']
+	return redirect('violations:guard_login')
+
+
+def guard_required(view_func):
+	"""Decorator to ensure guard is logged in via session."""
+	def wrapper(request, *args, **kwargs):
+		if not request.session.get('guard_code'):
+			return redirect('violations:guard_login')
+		return view_func(request, *args, **kwargs)
+	return wrapper
+
+
+@guard_required
+def guard_dashboard_view(request):
+	"""Guard dashboard - view-only access to student info and violations."""
+	guard_code = request.session.get('guard_code', 'Guard')
+	
+	# Get statistics for this specific guard
+	total_students = StudentModel.objects.count()
+	
+	# Count violations reported by this specific guard
+	my_reports = Violation.objects.filter(reported_by_guard=guard_code)
+	my_reports_count = my_reports.count()
+	
+	# Today's incidents reported by this guard
+	today = timezone.now().date()
+	today_incidents = Violation.objects.filter(
+		reported_by_guard=guard_code,
+		created_at__date=today
+	).count()
+	
+	# Pending reports (not yet resolved) for this guard
+	pending_reports = Violation.objects.filter(
+		reported_by_guard=guard_code,
+		status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW]
+	).count()
+	
+	# Incident reports issued by this guard (last 10)
+	my_incident_reports = Violation.objects.filter(
+		reported_by_guard=guard_code
+	).select_related(
+		'student', 'student__user', 'violation_type'
+	).order_by('-created_at')[:10]
+	
+	# Student lookup
+	search_id = request.GET.get('student_id', '').strip()
+	searched_student = None
+	
+	if search_id:
+		searched_student = StudentModel.objects.select_related('user').filter(
+			student_id__iexact=search_id
+		).first()
+		
+		if searched_student:
+			# Add violation count
+			searched_student.violation_count = Violation.objects.filter(
+				student=searched_student
+			).count()
+	
+	ctx = {
+		'guard_code': guard_code,
+		'current_date': timezone.now().strftime('%B %d, %Y'),
+		'total_students': total_students,
+		'my_reports_count': my_reports_count,
+		'today_incidents': today_incidents,
+		'pending_reports': pending_reports,
+		'my_incident_reports': my_incident_reports,
+		'search_id': search_id,
+		'searched_student': searched_student,
+	}
+	
+	return render(request, 'violations/guard/dashboard.html', ctx)
+
+
+@guard_required
+def guard_report_incident_view(request):
+	"""Guard can report an incident/violation they caught."""
+	guard_code = request.session.get('guard_code', 'Guard')
+	
+	if request.method == 'POST':
+		student_id = request.POST.get('student_id', '').strip()
+		violation_type_id = request.POST.get('violation_type', '')
+		severity = request.POST.get('severity', 'minor')
+		location = request.POST.get('location', '').strip()
+		description = request.POST.get('description', '').strip()
+		
+		# Validate student exists
+		try:
+			student = StudentModel.objects.get(student_id=student_id)
+		except StudentModel.DoesNotExist:
+			return JsonResponse({
+				'success': False,
+				'error': f'Student with ID "{student_id}" not found.'
+			})
+		
+		# Get violation type if provided
+		violation_type = None
+		if violation_type_id:
+			try:
+				violation_type = ViolationType.objects.get(id=violation_type_id)
+				# Use the severity from the violation type
+				severity = violation_type.severity
+			except ViolationType.DoesNotExist:
+				pass
+		
+		# Create the violation/incident report
+		violation = Violation.objects.create(
+			student=student,
+			reported_by_guard=guard_code,
+			violation_type=violation_type,
+			incident_at=timezone.now(),
+			type=severity,
+			location=location,
+			description=description,
+			status=Violation.Status.REPORTED,
+		)
+		
+		return JsonResponse({
+			'success': True,
+			'message': f'Incident report #{violation.id} submitted successfully!',
+			'violation_id': violation.id,
+		})
+	
+	# GET request - return violation types for the form
+	violation_types = list(ViolationType.objects.values('id', 'name', 'severity', 'category'))
+	return JsonResponse({'violation_types': violation_types})
+
+
+############################################
+# Student Formator Portal
+############################################
+
+VALID_FORMATOR_CODES = ['FormatorHead']
+
+
+def formator_login_view(request):
+	"""Formator login - code-based authentication (no password)."""
+	error = None
+	formator_code = ''
+	
+	if request.method == 'POST':
+		formator_code = request.POST.get('formator_code', '').strip()
+		
+		# Check if valid formator code (case-insensitive match)
+		normalized_code = formator_code.title().replace(' ', '')
+		
+		# Check against valid codes
+		if normalized_code in VALID_FORMATOR_CODES or formator_code.lower() == 'formatorhead':
+			# Set session for formator
+			request.session['formator_code'] = 'FormatorHead'
+			request.session['formator_login_time'] = timezone.now().isoformat()
+			return redirect('violations:formator_dashboard')
+		else:
+			error = 'Invalid formator code. Please enter a valid code.'
+	
+	return render(request, 'violations/formator/login.html', {
+		'error': error,
+		'formator_code': formator_code,
+		'current_year': timezone.now().year,
+	})
+
+
+def formator_logout_view(request):
+	"""Formator logout - clear session."""
+	if 'formator_code' in request.session:
+		del request.session['formator_code']
+	if 'formator_login_time' in request.session:
+		del request.session['formator_login_time']
+	return redirect('violations:formator_login')
+
+
+def formator_required(view_func):
+	"""Decorator to ensure formator is logged in via session."""
+	def wrapper(request, *args, **kwargs):
+		if not request.session.get('formator_code'):
+			return redirect('violations:formator_login')
+		return view_func(request, *args, **kwargs)
+	return wrapper
+
+
+@formator_required
+def formator_dashboard_view(request):
+	"""Formator dashboard - view student info, violations, and alerts."""
+	formator_code = request.session.get('formator_code', 'Formator')
+	
+	# Get statistics
+	total_students = StudentModel.objects.count()
+	active_violations = Violation.objects.filter(
+		status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW]
+	).count()
+	
+	# Pending apology letters
+	from .models import ApologyLetter
+	pending_apologies = ApologyLetter.objects.filter(status='pending').count()
+	
+	# Active alerts
+	active_alerts = StaffAlert.objects.filter(resolved=False).count()
+	
+	# Recent violations (last 10)
+	recent_violations = Violation.objects.select_related(
+		'student', 'student__user', 'violation_type'
+	).order_by('-created_at')[:10]
+	
+	# Students with violations (sorted by count, top 10)
+	students_with_violations = StudentModel.objects.annotate(
+		violation_count=Count('violations')
+	).filter(violation_count__gt=0).order_by('-violation_count')[:10]
+	
+	# Student lookup
+	search_id = request.GET.get('student_id', '').strip()
+	searched_student = None
+	
+	if search_id:
+		searched_student = StudentModel.objects.select_related('user').filter(
+			student_id__iexact=search_id
+		).first()
+		
+		if searched_student:
+			# Add violation count
+			searched_student.violation_count = Violation.objects.filter(
+				student=searched_student
+			).count()
+	
+	ctx = {
+		'formator_code': formator_code,
+		'current_date': timezone.now().strftime('%B %d, %Y'),
+		'total_students': total_students,
+		'active_violations': active_violations,
+		'pending_apologies': pending_apologies,
+		'active_alerts': active_alerts,
+		'recent_violations': recent_violations,
+		'students_with_violations': students_with_violations,
+		'search_id': search_id,
+		'searched_student': searched_student,
+	}
+	
+	return render(request, 'violations/formator/dashboard.html', ctx)

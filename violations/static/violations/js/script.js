@@ -33,21 +33,35 @@ function announceRoleSelection(role) {
         const utterance = new SpeechSynthesisUtterance(utteranceText);
 
         // 🎙️ Adjust to make it sound more “Jarvis-like”
-        utterance.rate = 0.95;   // slightly slower
-        utterance.pitch = 3.9;  // deeper tone
-        utterance.volume = 2;   // full volume
+        utterance.rate = 0.95;   // slightly slower (valid: 0.1 - 10)
+        utterance.pitch = 0.8;   // deeper tone (valid: 0 - 2, lower = deeper)
+        utterance.volume = 1;    // full volume (valid: 0 - 1)
 
         // 🔍 Try to pick a male / deep voice from available list
         const voices = window.speechSynthesis.getVoices();
         const jarvisVoice = voices.find(v =>
             v.name.toLowerCase().includes('male') ||
             v.name.toLowerCase().includes('jarvis') ||
-            v.name.toLowerCase().includes('google uk english male')
+            v.name.toLowerCase().includes('google uk english male') ||
+            v.name.toLowerCase().includes('david') ||
+            v.name.toLowerCase().includes('mark')
         );
         if (jarvisVoice) utterance.voice = jarvisVoice;
 
         window.speechSynthesis.speak(utterance);
-    } catch (err) {}
+    } catch (err) {
+        console.error('TTS Error:', err);
+    }
+}
+
+// Pre-load voices on page load (some browsers require this)
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.getVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+        };
+    }
 }
 
             (function(){

@@ -79,6 +79,17 @@ urlpatterns = [
     path('staff/schedule-meeting/<int:alert_id>/', views.staff_schedule_meeting_view, name='staff_schedule_meeting'),
     path('staff/resolve-alert/<int:alert_id>/', views.staff_resolve_alert_view, name='staff_resolve_alert'),
 
+    # Guard Portal
+    path('guard/login/', views.guard_login_view, name='guard_login'),
+    path('guard/logout/', views.guard_logout_view, name='guard_logout'),
+    path('guard/dashboard/', views.guard_dashboard_view, name='guard_dashboard'),
+    path('guard/report-incident/', views.guard_report_incident_view, name='guard_report_incident'),
+
+    # Student Formator Portal
+    path('formator/login/', views.formator_login_view, name='formator_login'),
+    path('formator/logout/', views.formator_logout_view, name='formator_logout'),
+    path('formator/dashboard/', views.formator_dashboard_view, name='formator_dashboard'),
+
     # Authentication (Django built-ins for testing/demo)
     path('auth/login/', auth_views.LoginView.as_view(template_name='violations/auth/login.html'), name='auth_login'),
     path('auth/logout/', views.logout_view, name='auth_logout'),

@@ -267,6 +267,12 @@ class Violation(models.Model):
 
 	student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="violations")
 	reported_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="violations_reported")
+	reported_by_guard = models.CharField(
+		max_length=20, 
+		blank=True, 
+		null=True,
+		help_text="Guard code if reported by security guard (Guard1, Guard2, Guard3)"
+	)
 	violation_type = models.ForeignKey(
 		ViolationType, 
 		null=True, 

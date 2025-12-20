@@ -4,25 +4,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Violation Reports - OSA Staff</title>
+  <title>Reports - OSA Staff</title>
   <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
   <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 </head>
 <body class="role-staff">
-  <header class="top-nav">
-    <div class="top-left">
-      <a href="{% url 'violations:staff_dashboard' %}" style="display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;">
-        <img src="{% static 'violations/images/chmsu_logo.png' %}" class="header-logo" alt="CHMSU" />
-        <span class="header-title">Violation Reports</span>
-      </a>
-    </div>
-    <div class="top-right">
-      <a href="{% url 'violations:staff_dashboard' %}" class="icon-btn"><i class="fas fa-home"></i></a>
-      <a href="{% url 'violations:staff_export_report' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="login-button">
-        <i class="fas fa-download"></i> Export CSV
-      </a>
+  <!-- Official Top Navigation -->
+  <header class="official-top-nav">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <div class="brand-logo">
+          <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU" />
+        </div>
+        <div class="brand-text">
+          <span class="brand-university">CHMSU</span>
+          <span class="brand-title">OSA Staff Portal</span>
+        </div>
+      </div>
+
+      <div class="nav-center">
+        <span class="nav-department">Office of Student Affairs</span>
+        <span class="nav-system">Violation Reports & Analytics</span>
+      </div>
+
+      <div class="nav-actions">
+        <button class="nav-icon-btn" onclick="window.print()" title="Print Report">
+          <i class="fas fa-print"></i>
+        </button>
+        <a href="{% url 'violations:staff_dashboard' %}" class="nav-icon-btn" title="Back to Dashboard">
+          <i class="fas fa-home"></i>
+        </a>
+      </div>
     </div>
   </header>
 
@@ -30,62 +44,135 @@
   <div class="background-image"></div>
 
   <main class="container" style="position:relative; z-index:3; margin-top: calc(var(--header-height) + 24px);">
-    <!-- Date Filter -->
-    <section class="card" style="margin-bottom:20px;">
-      <form method="get" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-        <div style="flex:0 0 180px;">
-          <label style="display:block; margin-bottom:4px; font-weight:500;">Start Date</label>
-          <input type="date" name="start_date" value="{{ start_date }}"
-                 style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+    
+    <!-- Official Statistics Section -->
+    <section class="official-stats-section">
+      <div class="stats-header">
+        <div class="stats-header-logo">
+          <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU Logo">
         </div>
-        <div style="flex:0 0 180px;">
-          <label style="display:block; margin-bottom:4px; font-weight:500;">End Date</label>
-          <input type="date" name="end_date" value="{{ end_date }}"
-                 style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+        <div class="stats-header-text">
+          <p class="stats-republic">Republic of the Philippines</p>
+          <h1 class="stats-university">CARLOS HILADO MEMORIAL STATE UNIVERSITY</h1>
+          <p class="stats-address">Talisay City, Negros Occidental</p>
+          <p class="stats-office">Office of Student Affairs</p>
         </div>
-        <button type="submit" class="login-button"><i class="fas fa-filter"></i> Generate Report</button>
-        <a href="{% url 'violations:staff_reports' %}" class="ghost-btn">Clear</a>
-      </form>
+        <div class="stats-header-logo">
+          <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU Logo">
+        </div>
+      </div>
+
+      <div class="stats-title-bar">
+        <h2 class="stats-title"><i class="fas fa-chart-bar"></i> VIOLATION REPORTS SUMMARY</h2>
+        <p class="stats-subtitle">
+          {% if start_date and end_date %}
+            Report Period: {{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}
+          {% else %}
+            As of {% now "F d, Y" %}
+          {% endif %}
+        </p>
+      </div>
+
+      <!-- Date Filter -->
+      <div class="report-filter-bar no-print">
+        <form method="get" class="filter-form">
+          <div class="filter-group">
+            <label><i class="fas fa-calendar-alt"></i> From:</label>
+            <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}" class="filter-date">
+          </div>
+          <div class="filter-group">
+            <label><i class="fas fa-calendar-alt"></i> To:</label>
+            <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}" class="filter-date">
+          </div>
+          <button type="submit" class="filter-btn"><i class="fas fa-filter"></i> Generate Report</button>
+          <a href="{% url 'violations:staff_reports' %}" class="filter-btn-clear"><i class="fas fa-redo"></i> Reset</a>
+        </form>
+      </div>
+
+      <!-- Main Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-total">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Violations</span>
+            <span class="stat-value">{{ total_violations }}</span>
+            <span class="stat-desc">All recorded cases</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-pending">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Pending</span>
+            <span class="stat-value">{{ pending_count }}</span>
+            <span class="stat-desc">Awaiting resolution</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-progress">
+            <i class="fas fa-spinner"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">In Progress</span>
+            <span class="stat-value">{{ in_progress_count }}</span>
+            <span class="stat-desc">Being processed</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-resolved">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Resolved</span>
+            <span class="stat-value">{{ resolved_count }}</span>
+            <span class="stat-desc">Successfully closed</span>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- Summary Stats -->
-    <section class="dashboard-grid" style="margin-bottom:20px;">
-      <div class="dash-card">
-        <div class="card-icon"><i class="fas fa-exclamation-triangle"></i></div>
-        <div class="card-title">Total Violations</div>
-        <div class="card-metric">{{ total_violations }}</div>
+    <!-- Violation Breakdown Section -->
+    <section class="official-directory-section" style="margin-top:20px;">
+      <div class="directory-title-bar">
+        <h2 class="directory-title"><i class="fas fa-chart-pie"></i> VIOLATION TYPE BREAKDOWN</h2>
+        <p class="directory-subtitle">Distribution by category</p>
       </div>
-      <div class="dash-card">
-        <div class="card-icon"><i class="fas fa-balance-scale"></i></div>
-        <div class="card-title">By Type</div>
-        <div style="display:flex; gap:16px; margin-top:8px;">
-          <div>
-            <span class="badge badge-danger">Major: {{ by_type.major|default:0 }}</span>
+
+      <div class="breakdown-container">
+        {% for type_data in violation_types %}
+        <div class="breakdown-item">
+          <div class="breakdown-bar">
+            <div class="breakdown-fill" style="width: {{ type_data.percentage }}%; background: {{ type_data.color|default:'#1a472a' }};"></div>
           </div>
-          <div>
-            <span class="badge badge-warning">Minor: {{ by_type.minor|default:0 }}</span>
+          <div class="breakdown-info">
+            <span class="breakdown-name">{{ type_data.type }}</span>
+            <span class="breakdown-count">{{ type_data.count }} cases ({{ type_data.percentage }}%)</span>
           </div>
         </div>
-      </div>
-      <div class="dash-card">
-        <div class="card-icon"><i class="fas fa-tasks"></i></div>
-        <div class="card-title">By Status</div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
-          <span class="badge badge-info">Reported: {{ by_status.reported|default:0 }}</span>
-          <span class="badge badge-warning">Review: {{ by_status.under_review|default:0 }}</span>
-          <span class="badge badge-success">Resolved: {{ by_status.resolved|default:0 }}</span>
-          <span class="badge badge-secondary">Dismissed: {{ by_status.dismissed|default:0 }}</span>
+        {% empty %}
+        <div class="empty-breakdown">
+          <i class="fas fa-chart-pie"></i>
+          <p>No violation data available for this period</p>
         </div>
+        {% endfor %}
       </div>
     </section>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+    <!-- Analytics Cards -->
+    <div class="analytics-row" style="margin-top:20px;">
       <!-- Top Offenders -->
-      <section class="card">
-        <h3 style="margin:0 0 16px;"><i class="fas fa-users"></i> Top Offenders</h3>
-        {% if top_offenders %}
-        <div class="table-responsive">
-          <table class="table">
+      <section class="analytics-card">
+        <div class="analytics-header">
+          <h3><i class="fas fa-user-times"></i> Top Offenders</h3>
+        </div>
+        <div class="analytics-content">
+          <table class="analytics-table">
             <thead>
               <tr>
                 <th>#</th>
@@ -94,109 +181,943 @@
               </tr>
             </thead>
             <tbody>
-              {% for o in top_offenders %}
+              {% for student in top_offenders %}
               <tr>
                 <td>{{ forloop.counter }}</td>
                 <td>
-                  <a href="{% url 'violations:staff_student_detail' o.student__student_id %}" style="color:var(--chmsu-dark-green);">
-                    {{ o.student__user__first_name }} {{ o.student__user__last_name }}
-                  </a>
-                  <div style="font-size:12px; color:#667085;">{{ o.student__student_id }}</div>
+                  {% if student.student__student_id %}
+                  <a href="{% url 'violations:staff_student_detail' student.student__student_id %}">{{ student.student__user__first_name }} {{ student.student__user__last_name }}</a>
+                  <div class="student-id-sub">{{ student.student__student_id }}</div>
+                  {% else %}
+                  <span>Unknown Student</span>
+                  {% endif %}
                 </td>
-                <td><span class="badge badge-danger">{{ o.count }}</span></td>
+                <td><span class="count-badge">{{ student.count }}</span></td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="empty-cell">No data available</td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-        {% else %}
-        <p style="color:#667085; text-align:center;">No data available.</p>
-        {% endif %}
       </section>
 
       <!-- Monthly Trend -->
-      <section class="card">
-        <h3 style="margin:0 0 16px;"><i class="fas fa-chart-line"></i> Monthly Trend</h3>
-        {% if monthly_trend %}
-        <div style="max-height:300px; overflow:auto;">
-          {% for item in monthly_trend %}
-          <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #e5e7eb;">
-            <span>{{ item.month }}</span>
-            <span class="badge badge-info">{{ item.count }} violations</span>
-          </div>
-          {% endfor %}
+      <section class="analytics-card">
+        <div class="analytics-header">
+          <h3><i class="fas fa-chart-line"></i> Monthly Trend</h3>
         </div>
-        {% else %}
-        <p style="color:#667085; text-align:center;">No data available.</p>
-        {% endif %}
+        <div class="analytics-content">
+          <div class="trend-chart">
+            {% for month in monthly_trend %}
+            <div class="trend-bar-container">
+              <div class="trend-bar" style="height: {{ month.height }}%;">
+                <span class="trend-value">{{ month.count }}</span>
+              </div>
+              <span class="trend-label">{{ month.month }}</span>
+            </div>
+            {% empty %}
+            <div class="empty-trend">
+              <i class="fas fa-chart-line"></i>
+              <p>No trend data available</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
       </section>
     </div>
 
-    <!-- Recent Violations -->
-    <section class="card">
-      <h3 style="margin:0 0 16px;"><i class="fas fa-list"></i> Recent Violations (Last 50)</h3>
-      <div class="table-responsive">
-        <table class="table">
+    <!-- Recent Violations Table -->
+    <section class="official-directory-section" style="margin-top:20px;">
+      <div class="directory-title-bar">
+        <h2 class="directory-title"><i class="fas fa-list-alt"></i> RECENT VIOLATIONS</h2>
+        <p class="directory-subtitle">Latest 10 recorded cases</p>
+      </div>
+
+      <div class="directory-table-wrapper">
+        <table class="directory-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Student</th>
-              <th>Description</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Incident Date</th>
+              <th class="col-seq">#</th>
+              <th class="col-name">Student</th>
+              <th class="col-type">Violation Type</th>
+              <th class="col-date">Date</th>
+              <th class="col-status">Status</th>
+              <th class="col-staff">Recorded By</th>
             </tr>
           </thead>
           <tbody>
-            {% for v in violations %}
+            {% for violation in recent_violations %}
             <tr>
-              <td>
-                <a href="{% url 'violations:staff_violation_detail' v.id %}" style="color:var(--chmsu-dark-green);">
-                  #{{ v.id }}
+              <td class="col-seq">{{ forloop.counter }}</td>
+              <td class="col-name">
+                <a href="{% url 'violations:staff_student_detail' violation.student.student_id %}" class="student-link">
+                  {{ violation.student.user.get_full_name|default:violation.student.student_id }}
                 </a>
+                <div class="student-id-sub">{{ violation.student.student_id }}</div>
               </td>
-              <td>
-                {{ v.student.user.get_full_name|default:v.student.student_id }}
-                <div style="font-size:12px; color:#667085;">{{ v.student.student_id }}</div>
+              <td class="col-type">
+                {% if violation.violation_type %}
+                  <span class="type-badge type-{{ violation.violation_type.severity|default:'minor' }}">{{ violation.violation_type.name }}</span>
+                {% else %}
+                  <span class="type-badge">{{ violation.type|default:"—" }}</span>
+                {% endif %}
               </td>
-              <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                {{ v.description|truncatewords:10 }}
+              <td class="col-date">{{ violation.date_reported|date:"M d, Y" }}<br><span class="time-sub">{{ violation.date_reported|date:"g:i A" }}</span></td>
+              <td class="col-status">
+                {% if violation.status == 'resolved' %}
+                  <span class="status-badge status-resolved"><i class="fas fa-check"></i> Resolved</span>
+                {% elif violation.status == 'in_progress' %}
+                  <span class="status-badge status-progress"><i class="fas fa-spinner"></i> In Progress</span>
+                {% else %}
+                  <span class="status-badge status-pending"><i class="fas fa-clock"></i> Pending</span>
+                {% endif %}
               </td>
-              <td>
-                <span class="badge {% if v.type == 'major' %}badge-danger{% else %}badge-warning{% endif %}">
-                  {{ v.type|upper }}
-                </span>
-              </td>
-              <td>
-                <span class="badge 
-                  {% if v.status == 'reported' %}badge-info
-                  {% elif v.status == 'under_review' %}badge-warning
-                  {% elif v.status == 'resolved' %}badge-success
-                  {% else %}badge-secondary{% endif %}">
-                  {{ v.get_status_display }}
-                </span>
-              </td>
-              <td>{{ v.incident_at|date:"M d, Y" }}</td>
+              <td class="col-staff">{{ violation.reported_by.get_full_name|default:'System' }}</td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="6" style="text-align:center; color:#667085;">No violations found.</td>
+              <td colspan="6" class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No violations recorded</p>
+                <span>There are no violation records for this period</span>
+              </td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
+
+      <!-- Footer -->
+      <div class="directory-footer">
+        <p><i class="fas fa-info-circle"></i> This report is system-generated. For official records, please contact the Office of Student Affairs.</p>
+        <p class="print-only">Generated on: {% now "F d, Y - g:i A" %}</p>
+      </div>
     </section>
   </main>
 
   <script src="{% static 'violations/js/script.js' %}"></script>
+  
   <style>
-    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
-    .badge-danger { background: #fee2e2; color: #dc2626; }
-    .badge-warning { background: #fef3c7; color: #d97706; }
-    .badge-success { background: #d1fae5; color: #059669; }
-    .badge-info { background: #dbeafe; color: #2563eb; }
-    .badge-secondary { background: #f3f4f6; color: #6b7280; }
+    /* Official Top Navigation Styles */
+    .official-top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10000;
+      background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 50%, #1a472a 100%);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      border-bottom: 3px solid #fbbf24;
+    }
+
+    .nav-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      border-radius: 50%;
+      background: white;
+      padding: 2px;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-university {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fbbf24;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .brand-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .nav-department {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 10px;
+      color: #fbbf24;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .nav-system {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #ffffff;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .nav-icon-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* Official Statistics Section */
+    .official-stats-section {
+      background: #ffffff;
+      border: 2px solid #1a472a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .stats-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px 30px;
+      background: linear-gradient(180deg, #f8faf8 0%, #ffffff 100%);
+      border-bottom: 3px double #1a472a;
+    }
+
+    .stats-header-logo img {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+    }
+
+    .stats-header-text {
+      text-align: center;
+      flex: 1;
+    }
+
+    .stats-republic {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 11px;
+      color: #374151;
+      margin: 0;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .stats-university {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: #1a472a;
+      margin: 4px 0;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .stats-address {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 12px;
+      color: #4b5563;
+      margin: 2px 0;
+      font-style: italic;
+    }
+
+    .stats-office {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a472a;
+      margin: 6px 0 0 0;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .stats-title-bar {
+      background: #1a472a;
+      color: #ffffff;
+      padding: 14px 25px;
+      text-align: center;
+    }
+
+    .stats-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .stats-subtitle {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      margin: 5px 0 0 0;
+      opacity: 0.9;
+    }
+
+    /* Date Filter Bar */
+    .report-filter-bar {
+      background: #f8fafc;
+      padding: 16px 25px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .filter-form {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-group label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .filter-date {
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      background: #ffffff;
+      min-width: 160px;
+    }
+
+    .filter-date:focus {
+      outline: none;
+      border-color: #1a472a;
+      box-shadow: 0 0 0 3px rgba(26, 71, 42, 0.1);
+    }
+
+    .filter-btn {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+    }
+
+    .filter-btn-clear {
+      padding: 10px 20px;
+      background: #f3f4f6;
+      color: #6b7280;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .filter-btn-clear:hover {
+      background: #e5e7eb;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+    }
+
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 20px;
+      background: #ffffff;
+      border-right: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+    }
+
+    .stat-card:last-child {
+      border-right: none;
+    }
+
+    .stat-card:hover {
+      background: #f0fdf4;
+    }
+
+    .stat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .stat-icon-total {
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+    }
+
+    .stat-icon-pending {
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+      color: #ffffff;
+    }
+
+    .stat-icon-progress {
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+      color: #ffffff;
+    }
+
+    .stat-icon-resolved {
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      color: #ffffff;
+    }
+
+    .stat-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-family: 'Poppins', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a472a;
+      line-height: 1.2;
+    }
+
+    .stat-desc {
+      font-family: 'Poppins', sans-serif;
+      font-size: 10px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    /* Official Directory Section */
+    .official-directory-section {
+      background: #ffffff;
+      border: 2px solid #1a472a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .directory-title-bar {
+      background: #1a472a;
+      color: #ffffff;
+      padding: 14px 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .directory-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .directory-subtitle {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      margin: 0;
+      opacity: 0.85;
+    }
+
+    /* Breakdown Section */
+    .breakdown-container {
+      padding: 25px;
+    }
+
+    .breakdown-item {
+      margin-bottom: 20px;
+    }
+
+    .breakdown-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .breakdown-bar {
+      height: 24px;
+      background: #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .breakdown-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      border-radius: 12px;
+      transition: width 0.5s ease;
+    }
+
+    .breakdown-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .breakdown-name {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .breakdown-count {
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .empty-breakdown {
+      text-align: center;
+      padding: 40px;
+      color: #9ca3af;
+    }
+
+    .empty-breakdown i {
+      font-size: 36px;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    /* Analytics Row */
+    .analytics-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .analytics-card {
+      background: #ffffff;
+      border: 2px solid #1a472a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .analytics-header {
+      background: #1a472a;
+      color: #ffffff;
+      padding: 12px 20px;
+    }
+
+    .analytics-header h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .analytics-content {
+      padding: 20px;
+    }
+
+    /* Analytics Table */
+    .analytics-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .analytics-table th {
+      background: #f8fafc;
+      padding: 10px 12px;
+      text-align: left;
+      font-family: 'Poppins', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      color: #1a472a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .analytics-table td {
+      padding: 12px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #374151;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .analytics-table tbody tr:hover {
+      background: #f0fdf4;
+    }
+
+    .analytics-table a {
+      color: #1a472a;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .analytics-table a:hover {
+      text-decoration: underline;
+    }
+
+    .count-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      color: #dc2626;
+      font-weight: 600;
+      font-size: 12px;
+      border-radius: 20px;
+    }
+
+    .student-id-sub, .time-sub {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .empty-cell {
+      text-align: center;
+      color: #9ca3af;
+      font-style: italic;
+    }
+
+    /* Trend Chart */
+    .trend-chart {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      height: 180px;
+      padding: 20px 0;
+    }
+
+    .trend-bar-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+
+    .trend-bar {
+      width: 40px;
+      background: linear-gradient(180deg, #1a472a 0%, #2d6a3f 100%);
+      border-radius: 4px 4px 0 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      min-height: 20px;
+      transition: height 0.5s ease;
+    }
+
+    .trend-value {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #ffffff;
+      padding: 4px;
+    }
+
+    .trend-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 10px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+
+    .empty-trend {
+      width: 100%;
+      text-align: center;
+      color: #9ca3af;
+    }
+
+    .empty-trend i {
+      font-size: 32px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    /* Directory Table */
+    .directory-table-wrapper {
+      overflow-x: auto;
+    }
+
+    .directory-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .directory-table th {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 14px 16px;
+      text-align: left;
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #1a472a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #1a472a;
+    }
+
+    .directory-table td {
+      padding: 14px 16px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+    }
+
+    .directory-table tbody tr:hover {
+      background: #f0fdf4;
+    }
+
+    .col-seq { width: 50px; text-align: center; color: #9ca3af; }
+
+    .student-link {
+      color: #1a472a;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .student-link:hover {
+      color: #2d6a3f;
+      text-decoration: underline;
+    }
+
+    .type-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .type-minor { background: #fef3c7; color: #d97706; }
+    .type-major { background: #fee2e2; color: #dc2626; }
+    .type-severe { background: #fce7f3; color: #db2777; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .status-pending {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      color: #d97706;
+    }
+
+    .status-progress {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      color: #2563eb;
+    }
+
+    .status-resolved {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #059669;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px !important;
+      color: #9ca3af;
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .empty-state p {
+      font-size: 16px;
+      font-weight: 500;
+      color: #6b7280;
+      margin: 0 0 8px 0;
+    }
+
+    .empty-state span {
+      font-size: 13px;
+    }
+
+    /* Footer */
+    .directory-footer {
+      background: #f9fafb;
+      padding: 12px 20px;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    .directory-footer p {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      color: #6b7280;
+      margin: 0;
+    }
+
+    .directory-footer i {
+      color: #1a472a;
+      margin-right: 4px;
+    }
+
+    .print-only {
+      display: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .stat-card {
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .analytics-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .stats-header {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+      }
+
+      .stats-header-logo:last-child {
+        display: none;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-card {
+        border-right: none;
+      }
+
+      .nav-center {
+        display: none;
+      }
+
+      .filter-form {
+        flex-direction: column;
+      }
+
+      .filter-group {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    @media print {
+      .no-print { display: none !important; }
+      .official-top-nav { display: none; }
+      .print-only { display: block; }
+      
+      body {
+        background: #ffffff;
+      }
+
+      .official-stats-section,
+      .official-directory-section,
+      .analytics-card {
+        box-shadow: none;
+        page-break-inside: avoid;
+      }
+
+      .analytics-row {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </body>
 </html>
