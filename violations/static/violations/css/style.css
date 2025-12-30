@@ -1,3 +1,12 @@
+/* Make guard logos round with border */
+.guard-logo {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border-radius: 50%;
+    border: 2px solid #fff; /* Optional: white border for contrast */
+    background: #fbbf24;    /* Optional: fallback background color */
+}
 :root {
     --chmsu-green: #2e7d32; /* A slightly lighter, vibrant green */
     --chmsu-dark-green: #1b5e20;
