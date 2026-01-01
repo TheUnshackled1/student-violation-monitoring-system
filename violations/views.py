@@ -2409,15 +2409,14 @@ def guard_report_incident_view(request):
 			})
 	
 	# GET request - check student existence or return violation types
-	check_student_id = request.GET.get('check_student', '')
+	check_student_id = request.GET.get('check_student', '').strip()
 	if check_student_id:
 		# AJAX call to check if student exists
-		exists = StudentModel.objects.filter(student_id=check_student_id).exists()
-		if exists:
-			student = StudentModel.objects.get(student_id=check_student_id)
+		student = StudentModel.objects.filter(student_id__iexact=check_student_id).first()
+		if student:
 			return JsonResponse({
 				'exists': True,
-				'student_name': student.user.get_full_name() or student_id,
+				'student_name': student.user.get_full_name() or student.student_id,
 				'program': student.program,
 				'year_level': student.year_level,
 			})

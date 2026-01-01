@@ -449,6 +449,7 @@
                         <span class="stat-label">Standing {% if student.should_alert_staff %}<span class="alert-indicator"><i class="fas fa-exclamation-triangle"></i></span>{% endif %}</span>
                         <span class="stat-value" style="font-size:14px;">{% if violations|length %}{{ violations|length }} violation{{ violations|length|pluralize }}{% else %}Good{% endif %}</span>
                         <span class="stat-desc">{% if student.should_alert_staff %}Action required{% elif violations|length %}Under monitoring{% else %}No issues{% endif %}</span>
+                        <!-- Debug: Major={{ student.major_violation_count }}, Minor={{ student.minor_violation_count }}, Effective={{ student.effective_major_violations }}, Alert={{ student.should_alert_staff }} -->
                     </div>
                 </div>
             </div>
