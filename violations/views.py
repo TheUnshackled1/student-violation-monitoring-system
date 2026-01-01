@@ -964,6 +964,27 @@ def staff_violations_list_view(request):
 
 
 @role_required({User.Role.STAFF})
+def staff_check_student_view(request):
+	"""Staff: AJAX endpoint to check if a student exists in the database."""
+	student_id = request.GET.get('student_id', '').strip()
+	
+	if not student_id:
+		return JsonResponse({'error': 'Student ID is required'}, status=400)
+	
+	try:
+		student = StudentModel.objects.select_related('user').get(student_id__iexact=student_id)
+		return JsonResponse({
+			'exists': True,
+			'student_id': student.student_id,
+			'student_name': student.user.get_full_name() or student.student_id,
+			'program': student.program,
+			'year_level': student.year_level,
+		})
+	except StudentModel.DoesNotExist:
+		return JsonResponse({'exists': False})
+
+
+@role_required({User.Role.STAFF})
 def staff_violation_create_view(request):
 	"""Staff: Create a new violation record from physical reports."""
 	if request.method == 'POST':
@@ -973,15 +994,79 @@ def staff_violation_create_view(request):
 		violation_type_id = request.POST.get('violation_type_id', '')
 		other_violation = request.POST.get('other_violation', '').strip()
 		other_category = request.POST.get('other_category', '')
+		type_from_other = request.POST.get('type_from_other', '')  # Hidden field from JS
 		location = request.POST.get('location', '').strip()
 		incident_date = request.POST.get('incident_date', '')
 		incident_time = request.POST.get('incident_time', '')
 		
-		# Validate student
+		# New student registration fields
+		first_name = request.POST.get('first_name', '').strip()
+		last_name = request.POST.get('last_name', '').strip()
+		program = request.POST.get('program', '').strip()
+		year_level = request.POST.get('year_level', '1').strip()
+		
+		# Check if student exists by student_id
 		student = StudentModel.objects.filter(student_id__iexact=student_id).first()
+		student_created = False
+		
 		if not student:
-			messages.error(request, f"Student with ID '{student_id}' not found.")
-			return redirect('violations:staff_violation_create')
+			# Auto-register new student if name is provided
+			if not first_name or not last_name:
+				messages.error(request, f"Student with ID '{student_id}' not found. Please provide First Name and Last Name to register.")
+				return redirect('violations:staff_violation_create')
+			
+			# Create a User account for the new student
+			username = student_id.replace('-', '').lower()
+			
+			# Check if user already exists with this username
+			existing_user = User.objects.filter(username=username).first()
+			
+			if existing_user:
+				# Check if this user already has a student profile
+				if hasattr(existing_user, 'student_profile'):
+					# User already has a student profile - use it
+					student = existing_user.student_profile
+					messages.info(request, f"Found existing student record for user '{username}'.")
+				else:
+					# User exists but no student profile - create one
+					try:
+						year_level_int = int(year_level)
+					except (ValueError, TypeError):
+						year_level_int = 1
+					
+					student = StudentModel.objects.create(
+						user=existing_user,
+						student_id=student_id,
+						program=program,
+						year_level=year_level_int,
+						enrollment_status='Active'
+					)
+					student_created = True
+			else:
+				# Create new user and student profile
+				user = User.objects.create_user(
+					username=username,
+					first_name=first_name,
+					last_name=last_name,
+					password=student_id,  # Default password is student ID
+					email=f"{username}@student.chmsu.edu.ph",
+					role=User.Role.STUDENT
+				)
+				
+				# Create the Student profile
+				try:
+					year_level_int = int(year_level)
+				except (ValueError, TypeError):
+					year_level_int = 1
+				
+				student = StudentModel.objects.create(
+					user=user,
+					student_id=student_id,
+					program=program,
+					year_level=year_level_int,
+					enrollment_status='Active'
+				)
+				student_created = True
 		
 		# Parse incident datetime
 		incident_at = timezone.now()
@@ -1005,7 +1090,8 @@ def staff_violation_create_view(request):
 		elif other_violation:
 			# Using "Other Violation" - prepend to description
 			description = f"[Other Violation: {other_violation}]\n\n{description}" if description else f"[Other Violation: {other_violation}]"
-			violation_type = other_category or Violation.Severity.MINOR
+			# Use category from radio button (passed via hidden field)
+			violation_type = type_from_other or other_category or Violation.Severity.MINOR
 		
 		# Default to minor if no type selected
 		if not violation_type:
@@ -1026,7 +1112,12 @@ def staff_violation_create_view(request):
 		# Track offense frequency for this student
 		offense_count = Violation.objects.filter(student=student).count()
 		
-		messages.success(request, f"Violation #{violation.id} created successfully. This is offense #{offense_count} for {student.user.get_full_name() or student.student_id}.")
+		# Build success message
+		student_name = student.user.get_full_name() or student.student_id
+		if student_created:
+			messages.success(request, f"Violation #{violation.id} created successfully. New student \"{student_name}\" ({student_id}) was automatically registered. This is offense #{offense_count}.")
+		else:
+			messages.success(request, f"Violation #{violation.id} created successfully. This is offense #{offense_count} for {student_name}.")
 		return redirect('violations:staff_violations_list')
 	
 	# GET request
@@ -2191,11 +2282,11 @@ def guard_report_incident_view(request):
 			program = request.POST.get('program', '').strip()
 			year_level = request.POST.get('year_level', '1')
 			
-			# Check if student exists, auto-register if not
-			try:
-				student = StudentModel.objects.get(student_id=student_id)
-				student_created = False
-			except StudentModel.DoesNotExist:
+			# Check if student exists by student_id
+			student = StudentModel.objects.filter(student_id__iexact=student_id).first()
+			student_created = False
+			
+			if not student:
 				# Validate required fields for new student
 				if not first_name or not last_name:
 					return JsonResponse({
@@ -2211,34 +2302,54 @@ def guard_report_incident_view(request):
 				# Generate a username based on student_id
 				username = student_id.replace('-', '').lower()
 				
-				# Check if user already exists (unlikely but safe)
-				if User.objects.filter(username=username).exists():
-					username = f"{username}_{timezone.now().strftime('%H%M%S')}"
+				# Check if user already exists with this username
+				existing_user = User.objects.filter(username=username).first()
 				
-				# Create the user with a default password (student_id)
-				user = User.objects.create_user(
-					username=username,
-					first_name=first_name,
-					last_name=last_name,
-					password=student_id,  # Default password is student ID
-					email=f"{username}@student.chmsu.edu.ph",
-					role='student'  # Set the role to student
-				)
-				
-				# Create the Student profile
-				try:
-					year_level_int = int(year_level)
-				except (ValueError, TypeError):
-					year_level_int = 1
-				
-				student = StudentModel.objects.create(
-					user=user,
-					student_id=student_id,
-					program=program,
-					year_level=year_level_int,
-					enrollment_status='Active'
-				)
-				student_created = True
+				if existing_user:
+					# Check if this user already has a student profile
+					if hasattr(existing_user, 'student_profile'):
+						# User already has a student profile - use it
+						student = existing_user.student_profile
+					else:
+						# User exists but no student profile - create one
+						try:
+							year_level_int = int(year_level)
+						except (ValueError, TypeError):
+							year_level_int = 1
+						
+						student = StudentModel.objects.create(
+							user=existing_user,
+							student_id=student_id,
+							program=program,
+							year_level=year_level_int,
+							enrollment_status='Active'
+						)
+						student_created = True
+				else:
+					# Create new user and student profile
+					user = User.objects.create_user(
+						username=username,
+						first_name=first_name,
+						last_name=last_name,
+						password=student_id,  # Default password is student ID
+						email=f"{username}@student.chmsu.edu.ph",
+						role='student'  # Set the role to student
+					)
+					
+					# Create the Student profile
+					try:
+						year_level_int = int(year_level)
+					except (ValueError, TypeError):
+						year_level_int = 1
+					
+					student = StudentModel.objects.create(
+						user=user,
+						student_id=student_id,
+						program=program,
+						year_level=year_level_int,
+						enrollment_status='Active'
+					)
+					student_created = True
 			
 			# Get violation type if provided
 			violation_type = None

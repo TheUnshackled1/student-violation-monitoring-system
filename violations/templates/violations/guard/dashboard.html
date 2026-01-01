@@ -299,13 +299,18 @@
               <label class="field-label">Student ID Number <span class="required">*</span></label>
               <div class="student-id-input-wrapper">
                 <input type="text" id="report_student_id" name="student_id" required 
-                       placeholder="Enter Student ID (e.g., 2024-00001)" 
+                       placeholder="Enter 8-digit Student ID (e.g., 20240001)" 
+                       pattern="\d{8}"
+                       maxlength="8"
+                       minlength="8"
+                       inputmode="numeric"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)"
                        class="form-input">
                 <button type="button" id="checkStudentBtn" class="check-student-btn" onclick="checkStudent()">
                   <i class="fas fa-search"></i> Verify
                 </button>
               </div>
-              <span class="field-hint"><i class="fas fa-info-circle"></i> Enter the student ID and click Verify to check if student exists</span>
+              <span class="field-hint"><i class="fas fa-info-circle"></i> Enter 8-digit Student ID (numbers only) and click Verify</span>
               
               <!-- Student Status Indicator -->
               <div id="studentStatusIndicator" class="student-status-indicator" style="display: none;">

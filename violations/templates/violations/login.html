@@ -547,7 +547,14 @@
 							<label for="student_id">Student ID Number</label>
 							<div class="input-with-icon">
 								<i class="fa-solid fa-id-card"></i>
-								<input type="text" id="student_id" name="student_id" placeholder="e.g., 21-12345" value="{{ prefill_student_id|default:'' }}" required />
+								<input type="text" id="student_id" name="student_id" 
+								       placeholder="Enter 8-digit Student ID (e.g., 20240001)" 
+								       pattern="\d{8}"
+								       maxlength="8"
+								       minlength="8"
+								       inputmode="numeric"
+								       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)"
+								       value="{{ prefill_student_id|default:'' }}" required />
 							</div>
 						</div>
 

@@ -5,6 +5,14 @@ from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.mail import send_mail
+from django.core.validators import RegexValidator
+
+
+# Validator for 8-digit student ID
+student_id_validator = RegexValidator(
+	regex=r'^\d{8}$',
+	message='Student ID must be exactly 8 digits (numbers only).'
+)
 
 
 class User(AbstractUser):
@@ -26,7 +34,12 @@ class User(AbstractUser):
 
 class Student(models.Model):
 	user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="student_profile")
-	student_id = models.CharField(max_length=20, unique=True)
+	student_id = models.CharField(
+		max_length=8, 
+		unique=True, 
+		validators=[student_id_validator],
+		help_text="8-digit student ID number (e.g., 20240001)"
+	)
 	program = models.CharField(max_length=100, blank=True)
 	year_level = models.PositiveIntegerField(default=1)
 	department = models.CharField(max_length=100, blank=True)

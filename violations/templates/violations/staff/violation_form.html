@@ -57,15 +57,90 @@
           <div class="form-row">
             <div class="form-field full-width">
               <label class="field-label">Student ID Number <span class="required">*</span></label>
-              <input type="text" name="student_id" list="studentList" required 
-                     placeholder="Enter Student ID (e.g., 2024-00001)" 
-                     class="form-input">
+              <div class="student-id-input-wrapper">
+                <input type="text" id="student_id_input" name="student_id" list="studentList" required 
+                       placeholder="Enter 8-digit Student ID (e.g., 20240001)" 
+                       pattern="\d{8}"
+                       maxlength="8"
+                       minlength="8"
+                       inputmode="numeric"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)"
+                       class="form-input">
+                <button type="button" id="checkStudentBtn" class="check-student-btn" onclick="checkStudent()">
+                  <i class="fas fa-search"></i> Verify
+                </button>
+              </div>
               <datalist id="studentList">
                 {% for s in students %}
                 <option value="{{ s.student_id }}">{{ s.user.get_full_name|default:s.student_id }} - {{ s.program|default:'N/A' }}</option>
                 {% endfor %}
               </datalist>
-              <span class="field-hint"><i class="fas fa-info-circle"></i> Type to search or select from registered students</span>
+              <span class="field-hint"><i class="fas fa-info-circle"></i> Enter 8-digit Student ID (numbers only) and click Verify</span>
+              
+              <!-- Student Status Indicator -->
+              <div id="studentStatusIndicator" class="student-status-indicator" style="display: none;">
+                <!-- Will be populated by JavaScript -->
+              </div>
+            </div>
+          </div>
+
+          <!-- New Student Registration Fields (shown when student not found) -->
+          <div id="newStudentFields" class="new-student-fields" style="display: none;">
+            <div class="new-student-notice">
+              <i class="fas fa-user-plus"></i>
+              <span>Student not found in database. Please provide the following information to register:</span>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <label class="field-label">First Name <span class="required">*</span></label>
+                <input type="text" id="student_first_name" name="first_name" 
+                       placeholder="Enter first name"
+                       class="form-input">
+              </div>
+              <div class="form-field">
+                <label class="field-label">Last Name <span class="required">*</span></label>
+                <input type="text" id="student_last_name" name="last_name" 
+                       placeholder="Enter last name"
+                       class="form-input">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <label class="field-label">Program/Course</label>
+                <select id="student_program" name="program" class="form-input form-select">
+                  <option value="">— Select Program —</option>
+                  <option value="BSIT">BSIT - Information Technology</option>
+                  <option value="BSCS">BSCS - Computer Science</option>
+                  <option value="BSIS">BSIS - Information Systems</option>
+                  <option value="BSA">BSA - Accountancy</option>
+                  <option value="BSBA">BSBA - Business Administration</option>
+                  <option value="BSEd">BSEd - Secondary Education</option>
+                  <option value="BEEd">BEEd - Elementary Education</option>
+                  <option value="BSCE">BSCE - Civil Engineering</option>
+                  <option value="BSEE">BSEE - Electrical Engineering</option>
+                  <option value="BSME">BSME - Mechanical Engineering</option>
+                  <option value="BSN">BSN - Nursing</option>
+                  <option value="BSCRIM">BSCRIM - Criminology</option>
+                  <option value="Other">Other Program</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="field-label">Year Level</label>
+                <select id="student_year_level" name="year_level" class="form-input form-select">
+                  <option value="1">1st Year</option>
+                  <option value="2">2nd Year</option>
+                  <option value="3">3rd Year</option>
+                  <option value="4">4th Year</option>
+                  <option value="5">5th Year</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="new-student-note">
+              <i class="fas fa-info-circle"></i>
+              <span>A student account will be created with the Student ID as the default password.</span>
             </div>
           </div>
           {% else %}
@@ -269,6 +344,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const otherMinorRadio = document.getElementById('other-minor');
   const form = document.querySelector('.official-form');
   
+  // Student verification tracking
+  let studentVerified = false;
+  let studentExists = false;
+  
   // Store all violation options
   const allOptions = Array.from(violationSelect.querySelectorAll('option[data-category]'));
   
@@ -285,6 +364,103 @@ document.addEventListener('DOMContentLoaded', function() {
       selectElement.style.fontWeight = '';
     }
   }
+  
+  // Check if student exists in database
+  window.checkStudent = function() {
+    const studentIdInput = document.getElementById('student_id_input');
+    const studentId = studentIdInput.value.trim();
+    const statusIndicator = document.getElementById('studentStatusIndicator');
+    const newStudentFields = document.getElementById('newStudentFields');
+    const checkBtn = document.getElementById('checkStudentBtn');
+    
+    if (!studentId) {
+      alert('Please enter a Student ID first.');
+      return;
+    }
+    
+    // Show loading state
+    checkBtn.disabled = true;
+    checkBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+    
+    fetch(`{% url 'violations:staff_check_student' %}?student_id=${encodeURIComponent(studentId)}`)
+      .then(response => response.json())
+      .then(data => {
+        studentVerified = true;
+        
+        if (data.exists) {
+          // Student found
+          studentExists = true;
+          newStudentFields.style.display = 'none';
+          statusIndicator.style.display = 'block';
+          statusIndicator.className = 'student-status-indicator status-found';
+          statusIndicator.innerHTML = `
+            <i class="fas fa-check-circle"></i>
+            <div class="status-details">
+              <span class="status-title">Student Found</span>
+              <span class="status-info">${data.student_name}</span>
+              <span class="status-sub">${data.program || 'N/A'} • Year ${data.year_level || 'N/A'}</span>
+            </div>
+          `;
+        } else {
+          // Student not found - show registration fields
+          studentExists = false;
+          newStudentFields.style.display = 'block';
+          statusIndicator.style.display = 'block';
+          statusIndicator.className = 'student-status-indicator status-not-found';
+          statusIndicator.innerHTML = `
+            <i class="fas fa-user-plus"></i>
+            <div class="status-details">
+              <span class="status-title">New Student</span>
+              <span class="status-info">Not registered in the system</span>
+              <span class="status-sub">Please fill in the details below to register</span>
+            </div>
+          `;
+          // Focus on first name field
+          document.getElementById('student_first_name').focus();
+        }
+      })
+      .catch(err => {
+        console.error('Error checking student:', err);
+        statusIndicator.style.display = 'block';
+        statusIndicator.className = 'student-status-indicator status-error';
+        statusIndicator.innerHTML = `
+          <i class="fas fa-exclamation-circle"></i>
+          <div class="status-details">
+            <span class="status-title">Error</span>
+            <span class="status-info">Could not verify student</span>
+          </div>
+        `;
+      })
+      .finally(() => {
+        checkBtn.disabled = false;
+        checkBtn.innerHTML = '<i class="fas fa-search"></i> Verify';
+      });
+  };
+
+  // Auto-check when student ID changes (with debounce) - only in create mode
+  {% if not edit_mode %}
+  let checkTimeout;
+  const studentIdInput = document.getElementById('student_id_input');
+  if (studentIdInput) {
+    studentIdInput.addEventListener('input', function() {
+      studentVerified = false;
+      studentExists = false;
+      const newStudentFields = document.getElementById('newStudentFields');
+      const statusIndicator = document.getElementById('studentStatusIndicator');
+      if (newStudentFields) newStudentFields.style.display = 'none';
+      if (statusIndicator) statusIndicator.style.display = 'none';
+      
+      // Clear previous timeout
+      clearTimeout(checkTimeout);
+      
+      // Set new timeout for auto-check (after 800ms of no typing)
+      const value = this.value.trim();
+      if (value.length >= 5) { // Only check if at least 5 characters
+        checkTimeout = setTimeout(window.checkStudent, 800);
+      }
+    });
+  }
+  {% endif %}
   
   // Show/hide other category options based on other violation input
   function toggleOtherCategory() {
@@ -361,6 +537,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const hasOtherViolation = otherViolationInput.value.trim() !== '';
     const hasOtherCategory = otherMajorRadio.checked || otherMinorRadio.checked;
     
+    {% if not edit_mode %}
+    // Check if student verification was done
+    if (!studentVerified) {
+      e.preventDefault();
+      alert('Please click "Verify" to check if the student exists in the database.');
+      document.getElementById('checkStudentBtn').focus();
+      return false;
+    }
+    
+    // Validation for new student registration
+    if (!studentExists) {
+      const firstName = document.getElementById('student_first_name').value.trim();
+      const lastName = document.getElementById('student_last_name').value.trim();
+      
+      if (!firstName || !lastName) {
+        e.preventDefault();
+        alert('Please provide First Name and Last Name to register the new student.');
+        if (!firstName) {
+          document.getElementById('student_first_name').focus();
+        } else {
+          document.getElementById('student_last_name').focus();
+        }
+        return false;
+      }
+    }
+    {% endif %}
+    
     // Must have either dropdown selection OR other violation with category
     if (!hasDropdownSelection && !hasOtherViolation) {
       e.preventDefault();
@@ -410,6 +613,200 @@ document.addEventListener('DOMContentLoaded', function() {
   <script src="{% static 'violations/js/script.js' %}"></script>
   <style>
     {% include "violations/staff/partials/official_form_styles.html" %}
+    
+    /* Student ID Input Wrapper with Verify Button */
+    .student-id-input-wrapper {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+    
+    .student-id-input-wrapper .form-input {
+      flex: 1;
+    }
+    
+    .check-student-btn {
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    .check-student-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+    }
+    
+    .check-student-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* Student Status Indicator */
+    .student-status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin-top: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .student-status-indicator i {
+      font-size: 24px;
+    }
+    
+    .student-status-indicator .status-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .student-status-indicator .status-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    
+    .student-status-indicator .status-info {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .student-status-indicator .status-sub {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      opacity: 0.85;
+    }
+    
+    .student-status-indicator.status-found {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      border: 2px solid #059669;
+    }
+    
+    .student-status-indicator.status-found i,
+    .student-status-indicator.status-found .status-title {
+      color: #059669;
+    }
+    
+    .student-status-indicator.status-found .status-info,
+    .student-status-indicator.status-found .status-sub {
+      color: #065f46;
+    }
+    
+    .student-status-indicator.status-not-found {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #d97706;
+    }
+    
+    .student-status-indicator.status-not-found i,
+    .student-status-indicator.status-not-found .status-title {
+      color: #d97706;
+    }
+    
+    .student-status-indicator.status-not-found .status-info,
+    .student-status-indicator.status-not-found .status-sub {
+      color: #92400e;
+    }
+    
+    .student-status-indicator.status-error {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      border: 2px solid #dc2626;
+    }
+    
+    .student-status-indicator.status-error i,
+    .student-status-indicator.status-error .status-title {
+      color: #dc2626;
+    }
+    
+    .student-status-indicator.status-error .status-info {
+      color: #991b1b;
+    }
+    
+    /* New Student Registration Fields */
+    .new-student-fields {
+      margin-top: 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 2px solid #f59e0b;
+      border-radius: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .new-student-notice {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #ffffff;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .new-student-notice i {
+      font-size: 20px;
+      color: #f59e0b;
+    }
+    
+    .new-student-notice span {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #92400e;
+    }
+    
+    .new-student-note {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: #ffffff;
+      border-radius: 8px;
+      margin-top: 16px;
+      border: 1px dashed #d97706;
+    }
+    
+    .new-student-note i {
+      color: #d97706;
+      font-size: 16px;
+    }
+    
+    .new-student-note span {
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      color: #92400e;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .student-id-input-wrapper {
+        flex-direction: column;
+      }
+      
+      .check-student-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   </style>
 </body>
 </html>

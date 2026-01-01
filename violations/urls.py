@@ -53,6 +53,7 @@ urlpatterns = [
     # OSA Staff - Violation Management
     path('staff/violations/', views.staff_violations_list_view, name='staff_violations_list'),
     path('staff/violations/create/', views.staff_violation_create_view, name='staff_violation_create'),
+    path('staff/violations/check-student/', views.staff_check_student_view, name='staff_check_student'),
     path('staff/violations/<int:violation_id>/', views.staff_violation_detail_view, name='staff_violation_detail'),
     path('staff/violations/<int:violation_id>/edit/', views.staff_violation_edit_view, name='staff_violation_edit'),
     path('staff/violations/<int:violation_id>/delete/', views.staff_violation_delete_view, name='staff_violation_delete'),
