@@ -327,49 +327,85 @@
             </div>
             
             <div class="form-row">
-              <div class="form-field">
+              <div class="form-field" style="flex:1;">
                 <label class="field-label">First Name <span class="required">*</span></label>
                 <input type="text" id="student_first_name" name="first_name" 
                        placeholder="Enter First Name" 
                        class="form-input">
               </div>
-              <div class="form-field">
+              <div class="form-field" style="flex:1;">
                 <label class="field-label">Last Name <span class="required">*</span></label>
                 <input type="text" id="student_last_name" name="last_name" 
                        placeholder="Enter Last Name" 
+                       class="form-input">
+              </div>
+              <div class="form-field" style="flex:0 0 100px;">
+                <label class="field-label">Suffix <span style="color:#667085; font-size:10px;">(Optional)</span></label>
+                <input type="text" id="student_suffix" name="suffix" 
+                       placeholder="Jr., Sr."
                        class="form-input">
               </div>
             </div>
             
             <div class="form-row">
               <div class="form-field">
-                <label class="field-label">Program/Course</label>
+                <label class="field-label">Email</label>
+                <input type="email" id="student_email" name="email" 
+                       placeholder="student@email.com"
+                       class="form-input">
+              </div>
+              <div class="form-field">
+                <label class="field-label">Contact Number</label>
+                <input type="text" id="student_contact" name="contact_number" 
+                       placeholder="09xxxxxxxxx"
+                       pattern="\d{11}" maxlength="11" minlength="11"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"
+                       class="form-input">
+                <span class="field-hint" style="font-size:10px;"><i class="fas fa-info-circle"></i> 11-digit phone number</span>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <label class="field-label">College/Program <span class="required">*</span></label>
                 <select id="student_program" name="program" class="form-input form-select">
-                  <option value="">— Select Program —</option>
-                  <option value="BSIT">BSIT - Information Technology</option>
-                  <option value="BSCS">BSCS - Computer Science</option>
-                  <option value="BSIS">BSIS - Information Systems</option>
-                  <option value="BSA">BSA - Accountancy</option>
-                  <option value="BSBA">BSBA - Business Administration</option>
-                  <option value="BSEd">BSEd - Secondary Education</option>
-                  <option value="BEEd">BEEd - Elementary Education</option>
-                  <option value="BSCE">BSCE - Civil Engineering</option>
-                  <option value="BSEE">BSEE - Electrical Engineering</option>
-                  <option value="BSME">BSME - Mechanical Engineering</option>
-                  <option value="BSN">BSN - Nursing</option>
-                  <option value="BSCRIM">BSCRIM - Criminology</option>
-                  <option value="Other">Other Program</option>
+                  <option value="">— Select College —</option>
+                  <option value="CAS">CAS - College of Arts and Sciences</option>
+                  <option value="CBMA">CBMA - College of Business Management and Accountancy</option>
+                  <option value="CCS">CCS - College of Computer Studies</option>
+                  <option value="COEd">COEd - College of Education</option>
+                  <option value="CIT">CIT - College of Industrial Technology</option>
+                  <option value="COE">COE - College of Engineering</option>
                 </select>
               </div>
               <div class="form-field">
-                <label class="field-label">Year Level</label>
+                <label class="field-label">Year Level <span class="required">*</span></label>
                 <select id="student_year_level" name="year_level" class="form-input form-select">
+                  <option value="">— Select Year —</option>
                   <option value="1">1st Year</option>
                   <option value="2">2nd Year</option>
                   <option value="3">3rd Year</option>
                   <option value="4">4th Year</option>
-                  <option value="5">5th Year</option>
                 </select>
+                <span class="field-hint" style="font-size:10px;"><i class="fas fa-info-circle"></i> Auto-promotes after 10 months</span>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <label class="field-label">Guardian Name</label>
+                <input type="text" id="student_guardian_name" name="guardian_name" 
+                       placeholder="Parent/Guardian name"
+                       class="form-input">
+              </div>
+              <div class="form-field">
+                <label class="field-label">Guardian Contact</label>
+                <input type="text" id="student_guardian_contact" name="guardian_contact" 
+                       placeholder="09xxxxxxxxx"
+                       pattern="\d{11}" maxlength="11" minlength="11"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"
+                       class="form-input">
+                <span class="field-hint" style="font-size:10px;"><i class="fas fa-info-circle"></i> 11-digit phone number</span>
               </div>
             </div>
             
@@ -386,25 +422,36 @@
           
           <div class="form-row">
             <div class="form-field">
-              <label class="field-label">Violation Category <span class="required">*</span></label>
-              <select name="type" id="violation-category" class="form-input form-select">
-                <option value="" disabled selected>— Select Category —</option>
-                <option value="minor" style="color: #d97706; font-weight: 600;">Minor Offense</option>
-                <option value="major" style="color: #dc2626; font-weight: 600;">Major Offense</option>
-              </select>
+              <label class="field-label">Specific Violation <span class="required">*</span></label>
+              <div class="input-with-clear">
+                <select name="violation_type_id" id="violation-type" class="form-input form-select">
+                  <option value="" disabled selected>— Select Violation —</option>
+                  {% for vt in violation_types %}
+                  <option value="{{ vt.id }}" 
+                          data-category="{{ vt.category }}"
+                          style="color: {% if vt.category == 'major' %}#dc2626{% else %}#d97706{% endif %}; font-weight: 500;">
+                    {{ vt.display_name }}
+                  </option>
+                  {% endfor %}
+                </select>
+                <button type="button" id="clear-violation-btn" class="clear-field-btn" title="Clear selection" style="display: none;">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <span class="field-hint"><i class="fas fa-info-circle"></i> Select from list or use "Other Violation" below</span>
             </div>
             <div class="form-field">
-              <label class="field-label">Specific Violation <span class="required">*</span></label>
-              <select name="violation_type_id" id="violation-type" class="form-input form-select">
-                <option value="" disabled selected>— Select Violation —</option>
-                {% for vt in violation_types %}
-                <option value="{{ vt.id }}" 
-                        data-category="{{ vt.category }}"
-                        style="color: {% if vt.category == 'major' %}#dc2626{% else %}#d97706{% endif %}; font-weight: 500;">
-                  {% if vt.category == 'major' %}MO:{% else %}MiO:{% endif %} {{ vt.name }}
-                </option>
-                {% endfor %}
-              </select>
+              <label class="field-label">Violation Category</label>
+              <div class="input-with-clear">
+                <div id="category-display" class="category-display-field" style="padding: 12px 16px; border: 1px solid #d0d5dd; border-radius: 8px; background: #f9fafb; font-family: 'Poppins', sans-serif; font-size: 14px; min-height: 46px; display: flex; align-items: center; flex: 1;">
+                  <span style="color: #9ca3af;">Auto-detected from violation</span>
+                </div>
+                <button type="button" id="clear-category-btn" class="clear-field-btn" title="Clear category" style="display: none;">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <input type="hidden" name="type" id="violation-category" value="">
+              <span class="field-hint"><i class="fas fa-info-circle"></i> Automatically set based on selected violation</span>
             </div>
           </div>
 
@@ -454,7 +501,7 @@
         </fieldset>
 
         <!-- Section C: Incident Description -->
-        <fieldset class="form-section">
+        <fieldset class="form-section" id="section-detailed-description">
           <legend><i class="fas fa-file-alt"></i> Section C: Detailed Description</legend>
           
           <div class="form-row">
@@ -466,11 +513,19 @@
               <span class="field-hint"><i class="fas fa-info-circle"></i> Please provide complete and accurate information for proper assessment</span>
             </div>
           </div>
+        </fieldset>
 
+        <!-- Section D: Photo Evidence (Separate from Section C) -->
+        <fieldset class="form-section" id="section-photo-evidence">
+          <legend><i class="fas fa-camera"></i> Section D: Photo Evidence</legend>
+          
           <!-- Camera Capture for Proof -->
-          <div class="form-row">
+          <div class="form-row" id="camera-capture-row">
             <div class="form-field full-width">
-              <label class="field-label"><i class="fas fa-camera"></i> Capture Proof of Violation</label>
+              <label class="field-label" id="camera-capture-label">
+                Capture Proof of Violation 
+                <span class="required" id="photo-required-indicator" style="display: none;">*</span>
+              </label>
               <div class="camera-capture-container">
                 <div class="camera-preview-wrapper">
                   <video id="cameraPreview" class="camera-preview" autoplay playsinline style="display:none;"></video>
@@ -499,7 +554,10 @@
                 </div>
                 <input type="hidden" id="violationProofImage" name="proof_image" />
               </div>
-              <span class="field-hint"><i class="fas fa-info-circle"></i> Optional: Capture a photo as evidence of the violation</span>
+              <span class="field-hint" id="photo-hint">
+                <i class="fas fa-info-circle"></i> 
+                <span id="photo-hint-text">Optional: Capture a photo as evidence of the violation</span>
+              </span>
             </div>
           </div>
         </fieldset>
@@ -568,38 +626,25 @@
       // Reset form
       document.getElementById('reportForm').reset();
       document.getElementById('other-category-row').style.display = 'none';
-      document.getElementById('violation-category').style.color = '';
-      document.getElementById('violation-category').style.fontWeight = '';
-      document.getElementById('violation-type').style.color = '';
-      document.getElementById('violation-type').style.fontWeight = '';
+      // Reset category display
+      const categoryDisplay = document.getElementById('category-display');
+      if (categoryDisplay) {
+        categoryDisplay.innerHTML = '<span style="color: #9ca3af;">Auto-detected from violation</span>';
+      }
+      document.getElementById('violation-category').value = '';
+      // Reset clear buttons
+      document.getElementById('clear-violation-btn').style.display = 'none';
+      document.getElementById('clear-category-btn').style.display = 'none';
+      // Show Section C by default
+      document.getElementById('section-detailed-description').style.display = 'block';
+      document.getElementById('report_description').setAttribute('required', 'required');
       // Reset student verification
       studentVerified = false;
       studentExists = false;
       document.getElementById('newStudentFields').style.display = 'none';
       document.getElementById('studentStatusIndicator').style.display = 'none';
-      // Reset violation type dropdown to show all options
-      resetViolationTypeDropdown();
-    }
-
-    // Reset violation type dropdown to show all options
-    function resetViolationTypeDropdown() {
-      const violationSelect = document.getElementById('violation-type');
-      violationSelect.innerHTML = '<option value="" disabled selected>— Select Violation —</option>';
-      allViolationTypes.forEach(vt => {
-        const option = document.createElement('option');
-        option.value = vt.id;
-        const prefix = vt.category === 'major' ? 'MO:' : 'MiO:';
-        option.textContent = prefix + ' ' + vt.name;
-        option.dataset.category = vt.category;
-        if (vt.category === 'major') {
-          option.style.color = '#dc2626';
-          option.style.fontWeight = '500';
-        } else {
-          option.style.color = '#d97706';
-          option.style.fontWeight = '500';
-        }
-        violationSelect.appendChild(option);
-      });
+      // Reset photo required state
+      updatePhotoRequiredState(false);
     }
 
     function closeReportModal() {
@@ -847,64 +892,116 @@
     // Initialize violation types on page load
     storeViolationTypes();
 
-    // Function to update select color based on category
-    function updateSelectColor(selectElement, category) {
+    // Get Section C element
+    const sectionDetailedDescription = document.getElementById('section-detailed-description');
+    const descriptionTextarea = document.getElementById('report_description');
+    const categoryInput = document.getElementById('violation-category');
+    const categoryDisplay = document.getElementById('category-display');
+    const clearViolationBtn = document.getElementById('clear-violation-btn');
+    const clearCategoryBtn = document.getElementById('clear-category-btn');
+    
+    // Function to update category display based on selected violation
+    function updateCategoryDisplay(category) {
       if (category === 'major') {
-        selectElement.style.color = '#dc2626';
-        selectElement.style.fontWeight = '600';
+        categoryDisplay.innerHTML = `
+          <span style="color: #dc2626; font-weight: 600;">
+            <i class="fas fa-exclamation-triangle"></i> Major Offense
+          </span>
+        `;
+        categoryInput.value = 'major';
+        clearCategoryBtn.style.display = 'flex';
       } else if (category === 'minor') {
-        selectElement.style.color = '#d97706';
-        selectElement.style.fontWeight = '600';
+        categoryDisplay.innerHTML = `
+          <span style="color: #d97706; font-weight: 600;">
+            <i class="fas fa-exclamation-circle"></i> Minor Offense
+          </span>
+        `;
+        categoryInput.value = 'minor';
+        clearCategoryBtn.style.display = 'flex';
       } else {
-        selectElement.style.color = '';
-        selectElement.style.fontWeight = '';
+        categoryDisplay.innerHTML = `<span style="color: #9ca3af;">Auto-detected from violation</span>`;
+        categoryInput.value = '';
+        clearCategoryBtn.style.display = 'none';
       }
     }
-
-    // Filter violations by category
-    function filterViolations() {
-      const categorySelect = document.getElementById('violation-category');
+    
+    // Function to update clear button visibility for violation select
+    function updateClearButtonVisibility() {
       const violationSelect = document.getElementById('violation-type');
-      const selectedCategory = categorySelect.value;
-      
-      // Reset violation select
-      violationSelect.innerHTML = '<option value="" disabled selected>— Select Violation —</option>';
-      updateSelectColor(violationSelect, null);
-      
-      // Add filtered options from stored violation types
-      allViolationTypes.forEach(vt => {
-        if (!selectedCategory || vt.category === selectedCategory) {
-          const option = document.createElement('option');
-          option.value = vt.id;
-          const prefix = vt.category === 'major' ? 'MO:' : 'MiO:';
-          option.textContent = prefix + ' ' + vt.name;
-          option.dataset.category = vt.category;
-          if (vt.category === 'major') {
-            option.style.color = '#dc2626';
-            option.style.fontWeight = '500';
-          } else {
-            option.style.color = '#d97706';
-            option.style.fontWeight = '500';
-          }
-          violationSelect.appendChild(option);
-        }
-      });
+      if (violationSelect.value !== '') {
+        clearViolationBtn.style.display = 'flex';
+      } else {
+        clearViolationBtn.style.display = 'none';
+      }
     }
-
+    
+    // Function to update photo required state
+    function updatePhotoRequiredState(isRequired) {
+      const requiredIndicator = document.getElementById('photo-required-indicator');
+      const hintText = document.getElementById('photo-hint-text');
+      const cameraContainer = document.querySelector('.camera-capture-container');
+      
+      if (isRequired) {
+        requiredIndicator.style.display = 'inline';
+        hintText.textContent = 'Required: You must capture a photo as proof when using Specific Violation';
+        if (cameraContainer) {
+          cameraContainer.style.borderColor = '#f59e0b';
+          cameraContainer.style.borderStyle = 'solid';
+        }
+      } else {
+        requiredIndicator.style.display = 'none';
+        hintText.textContent = 'Optional: Capture a photo as evidence of the violation';
+        if (cameraContainer) {
+          cameraContainer.style.borderColor = '#cbd5e1';
+          cameraContainer.style.borderStyle = 'dashed';
+        }
+      }
+    }
+    
+    // Function to reset/clear violation selection
+    function clearViolationSelection() {
+      const violationSelect = document.getElementById('violation-type');
+      const otherViolationInput = document.getElementById('other-violation');
+      violationSelect.selectedIndex = 0; // Reset to placeholder
+      updateCategoryDisplay(null);
+      updateClearButtonVisibility();
+      // Photo is no longer required when cleared
+      updatePhotoRequiredState(false);
+      // Focus on other violation field for convenience
+      otherViolationInput.focus();
+    }
+    
+    // Clear violation button click handler
+    clearViolationBtn.addEventListener('click', clearViolationSelection);
+    
+    // Clear category button click handler (also clears violation)
+    clearCategoryBtn.addEventListener('click', clearViolationSelection);
+    
+    // Show Section C when using Specific Violation dropdown
+    function showSectionC() {
+      sectionDetailedDescription.style.display = 'block';
+      // Add required back to description
+      if (descriptionTextarea) descriptionTextarea.setAttribute('required', 'required');
+    }
+    
     // Show/hide other category options based on other violation input
     function toggleOtherCategory() {
       const otherViolationInput = document.getElementById('other-violation');
       const otherCategoryRow = document.getElementById('other-category-row');
-      const categorySelect = document.getElementById('violation-category');
       const violationSelect = document.getElementById('violation-type');
       
       if (otherViolationInput.value.trim() !== '') {
         otherCategoryRow.style.display = 'block';
-        // Clear the dropdown selections when using other violation
-        categorySelect.value = '';
-        violationSelect.value = '';
-        updateSelectColor(categorySelect, null);
-        updateSelectColor(violationSelect, null);
+        // Clear the dropdown selection when using other violation
+        violationSelect.selectedIndex = 0;
+        updateCategoryDisplay(null);
+        updateClearButtonVisibility();
+        // Hide Section C when using Other Violation
+        sectionDetailedDescription.style.display = 'none';
+        // Remove required from description when hidden
+        if (descriptionTextarea) descriptionTextarea.removeAttribute('required');
+        // Photo is NOT required when using Other Violation
+        updatePhotoRequiredState(false);
       } else {
         otherCategoryRow.style.display = 'none';
         document.getElementById('other-major').checked = false;
@@ -923,29 +1020,38 @@
         otherCategoryRow.style.display = 'none';
         document.getElementById('other-major').checked = false;
         document.getElementById('other-minor').checked = false;
+        // Show Section C when using Specific Violation
+        showSectionC();
       }
     }
 
-    // Category change handler
-    document.getElementById('violation-category').addEventListener('change', function() {
-      updateSelectColor(this, this.value);
-      filterViolations();
-      // Clear other violation when using dropdowns
-      document.getElementById('other-violation').value = '';
-      document.getElementById('other-category-row').style.display = 'none';
+    // Listen for other category radio buttons
+    document.getElementById('other-major').addEventListener('change', function() {
+      if (this.checked) {
+        updateCategoryDisplay('major');
+      }
+    });
+    
+    document.getElementById('other-minor').addEventListener('change', function() {
+      if (this.checked) {
+        updateCategoryDisplay('minor');
+      }
     });
 
-    // Violation type change handler
+    // Violation type change handler - auto-set category
     document.getElementById('violation-type').addEventListener('change', function() {
       const selected = this.options[this.selectedIndex];
       if (selected && selected.dataset.category) {
-        const categorySelect = document.getElementById('violation-category');
-        categorySelect.value = selected.dataset.category;
-        updateSelectColor(categorySelect, selected.dataset.category);
-        updateSelectColor(this, selected.dataset.category);
+        updateCategoryDisplay(selected.dataset.category);
         // Clear other violation when using dropdowns
         clearOtherViolation();
+        // Photo is required when using Specific Violation
+        updatePhotoRequiredState(true);
+      } else {
+        updateCategoryDisplay(null);
+        updatePhotoRequiredState(false);
       }
+      updateClearButtonVisibility();
     });
 
     // Other violation input handler
@@ -955,13 +1061,12 @@
     document.getElementById('reportForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
-      const categorySelect = document.getElementById('violation-category');
       const violationSelect = document.getElementById('violation-type');
       const otherViolationInput = document.getElementById('other-violation');
       const otherMajorRadio = document.getElementById('other-major');
       const otherMinorRadio = document.getElementById('other-minor');
       
-      const hasDropdownSelection = violationSelect.value !== '' && categorySelect.value !== '';
+      const hasViolationSelected = violationSelect.value !== '';
       const hasOtherViolation = otherViolationInput.value.trim() !== '';
       const hasOtherCategory = otherMajorRadio.checked || otherMinorRadio.checked;
       
@@ -988,15 +1093,34 @@
         }
       }
       
-      // Violation validation
-      if (!hasDropdownSelection && !hasOtherViolation) {
-        alert('Please either select a Violation Category and Specific Violation, OR fill in the Other Violation field.');
+      // Must have either violation selected OR other violation with category
+      if (!hasViolationSelected && !hasOtherViolation) {
+        alert('Please select a Specific Violation OR fill in the Other Violation field.');
         return false;
       }
       
+      // If other violation is filled, must have category selected
       if (hasOtherViolation && !hasOtherCategory) {
         alert('Please select Major or Minor for the Other Violation.');
         return false;
+      }
+      
+      // If using Specific Violation, check that description is filled and photo is captured
+      if (hasViolationSelected && !hasOtherViolation) {
+        const description = descriptionTextarea ? descriptionTextarea.value.trim() : '';
+        if (!description) {
+          alert('Please provide a detailed description of the incident in Section C.');
+          if (descriptionTextarea) descriptionTextarea.focus();
+          return false;
+        }
+        
+        // Photo is required when using Specific Violation
+        const proofImage = document.getElementById('violationProofImage').value;
+        if (!proofImage) {
+          alert('Please capture a photo as proof of the violation. This is required when selecting a Specific Violation from the list.');
+          document.getElementById('startCameraBtn').focus();
+          return false;
+        }
       }
       
       const formData = new FormData(this);
@@ -1004,10 +1128,13 @@
       // If using other violation, set the type from radio button
       if (hasOtherViolation && hasOtherCategory) {
         const selectedCategory = otherMajorRadio.checked ? 'major' : 'minor';
+        categoryInput.value = selectedCategory;
+        formData.set('type', selectedCategory);
         formData.set('severity', selectedCategory);
-        formData.set('description', otherViolationInput.value.trim() + '\n\n' + formData.get('description'));
+        // Use other violation as description since Section C is hidden
+        formData.set('description', otherViolationInput.value.trim());
       } else {
-        formData.set('severity', categorySelect.value);
+        formData.set('severity', categoryInput.value);
         formData.set('violation_type', violationSelect.value);
       }
       
@@ -1177,6 +1304,63 @@
         font-size: 12px;
         padding: 10px 16px;
       }
+    }
+    
+    /* Input with Clear Button */
+    .input-with-clear {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      position: relative;
+    }
+    
+    .input-with-clear .form-input,
+    .input-with-clear .form-select {
+      flex: 1;
+    }
+    
+    .clear-field-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 46px;
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      border: 2px solid #fca5a5;
+      border-radius: 8px;
+      color: #dc2626;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    
+    .clear-field-btn:hover {
+      background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+      border-color: #f87171;
+      transform: scale(1.05);
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+    }
+    
+    .clear-field-btn:active {
+      transform: scale(0.98);
+    }
+    
+    .clear-field-btn i {
+      font-size: 14px;
+    }
+    
+    /* Category Display Field */
+    .category-display-field {
+      padding: 12px 16px;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      background: #f9fafb;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      flex: 1;
     }
 
     /* Official Top Navigation Styles */

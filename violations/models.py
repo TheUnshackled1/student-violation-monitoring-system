@@ -33,6 +33,15 @@ class User(AbstractUser):
 
 
 class Student(models.Model):
+	# College/Program choices
+	class College(models.TextChoices):
+		CAS = "CAS", "CAS - College of Arts and Sciences"
+		CBMA = "CBMA", "CBMA - College of Business Management and Accountancy"
+		CCS = "CCS", "CCS - College of Computer Studies"
+		COEd = "COEd", "COEd - College of Education"
+		CIT = "CIT", "CIT - College of Industrial Technology"
+		COE = "COE", "COE - College of Engineering"
+
 	user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="student_profile")
 	student_id = models.CharField(
 		max_length=8, 
@@ -40,8 +49,10 @@ class Student(models.Model):
 		validators=[student_id_validator],
 		help_text="8-digit student ID number (e.g., 20240001)"
 	)
-	program = models.CharField(max_length=100, blank=True)
+	suffix = models.CharField(max_length=10, blank=True, help_text="Name suffix (Jr., Sr., III, etc.)")
+	program = models.CharField(max_length=100, choices=College.choices, blank=True)
 	year_level = models.PositiveIntegerField(default=1)
+	year_level_assigned_at = models.DateTimeField(null=True, blank=True, help_text="When the current year level was assigned (for auto-promotion)")
 	department = models.CharField(max_length=100, blank=True)
 	enrollment_status = models.CharField(
 		max_length=10,

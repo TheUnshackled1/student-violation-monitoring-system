@@ -1445,8 +1445,18 @@ def staff_violation_create_view(request):
 		# New student registration fields
 		first_name = request.POST.get('first_name', '').strip()
 		last_name = request.POST.get('last_name', '').strip()
+		suffix = request.POST.get('suffix', '').strip()
+		email = request.POST.get('email', '').strip()
+		contact_number = request.POST.get('contact_number', '').strip()
 		program = request.POST.get('program', '').strip()
 		year_level = request.POST.get('year_level', '1').strip()
+		guardian_name = request.POST.get('guardian_name', '').strip()
+		guardian_contact = request.POST.get('guardian_contact', '').strip()
+		
+		# Validate student ID is 8 digits
+		if not student_id.isdigit() or len(student_id) != 8:
+			messages.error(request, "Student ID must be exactly 8 digits.")
+			return redirect('violations:staff_violation_create')
 		
 		# Check if student exists by student_id
 		student = StudentModel.objects.filter(student_id__iexact=student_id).first()
@@ -1456,6 +1466,15 @@ def staff_violation_create_view(request):
 			# Auto-register new student if name is provided
 			if not first_name or not last_name:
 				messages.error(request, f"Student with ID '{student_id}' not found. Please provide First Name and Last Name to register.")
+				return redirect('violations:staff_violation_create')
+			
+			# Validate contact numbers are 11 digits if provided
+			if contact_number and (not contact_number.isdigit() or len(contact_number) != 11):
+				messages.error(request, "Contact number must be exactly 11 digits.")
+				return redirect('violations:staff_violation_create')
+			
+			if guardian_contact and (not guardian_contact.isdigit() or len(guardian_contact) != 11):
+				messages.error(request, "Guardian contact must be exactly 11 digits.")
 				return redirect('violations:staff_violation_create')
 			
 			# Create a User account for the new student
@@ -1480,19 +1499,26 @@ def staff_violation_create_view(request):
 					student = StudentModel.objects.create(
 						user=existing_user,
 						student_id=student_id,
+						suffix=suffix,
 						program=program,
 						year_level=year_level_int,
+						year_level_assigned_at=timezone.now(),
+						department=program,
+						contact_number=contact_number,
+						guardian_name=guardian_name,
+						guardian_contact=guardian_contact,
 						enrollment_status='Active'
 					)
 					student_created = True
 			else:
 				# Create new user and student profile
+				full_last_name = f"{last_name} {suffix}".strip() if suffix else last_name
 				user = User.objects.create_user(
 					username=username,
 					first_name=first_name,
-					last_name=last_name,
+					last_name=full_last_name,
 					password=student_id,  # Default password is student ID
-					email=f"{username}@student.chmsu.edu.ph",
+					email=email or f"{username}@student.chmsu.edu.ph",
 					role=User.Role.STUDENT
 				)
 				
@@ -1505,8 +1531,14 @@ def staff_violation_create_view(request):
 				student = StudentModel.objects.create(
 					user=user,
 					student_id=student_id,
+					suffix=suffix,
 					program=program,
 					year_level=year_level_int,
+					year_level_assigned_at=timezone.now(),
+					department=program,
+					contact_number=contact_number,
+					guardian_name=guardian_name,
+					guardian_contact=guardian_contact,
 					enrollment_status='Active'
 				)
 				student_created = True
@@ -2054,11 +2086,11 @@ def staff_add_student_view(request):
 		student_id = request.POST.get('student_id', '').strip()		
 		first_name = request.POST.get('first_name', '').strip()
 		last_name = request.POST.get('last_name', '').strip()
+		suffix = request.POST.get('suffix', '').strip()
 		email = request.POST.get('email', '').strip()
 		contact_number = request.POST.get('contact_number', '').strip()
 		program = request.POST.get('program', '').strip()
 		year_level = request.POST.get('year_level', '').strip()
-		department = request.POST.get('department', '').strip()
 		guardian_name = request.POST.get('guardian_name', '').strip()
 		guardian_contact = request.POST.get('guardian_contact', '').strip()
 		
@@ -2068,6 +2100,20 @@ def staff_add_student_view(request):
 		# Validate required fields
 		if not all([student_id, first_name, last_name, program, year_level]):
 			messages.error(request, "Please fill in all required fields.")
+			return redirect('violations:staff_dashboard')
+		
+		# Validate student ID is 8 digits
+		if not student_id.isdigit() or len(student_id) != 8:
+			messages.error(request, "Student ID must be exactly 8 digits.")
+			return redirect('violations:staff_dashboard')
+		
+		# Validate contact numbers are 11 digits (if provided)
+		if contact_number and (not contact_number.isdigit() or len(contact_number) != 11):
+			messages.error(request, "Contact number must be exactly 11 digits.")
+			return redirect('violations:staff_dashboard')
+		
+		if guardian_contact and (not guardian_contact.isdigit() or len(guardian_contact) != 11):
+			messages.error(request, "Guardian contact must be exactly 11 digits.")
 			return redirect('violations:staff_dashboard')
 		
 		# Check if student ID already exists
@@ -2092,21 +2138,23 @@ def staff_add_student_view(request):
 				email=email or None,
 				password=None,  # No password - student ID login
 				first_name=first_name,
-				last_name=last_name,
+				last_name=f"{last_name} {suffix}".strip() if suffix else last_name,
 				role=User.Role.STUDENT
 			)
 			
-			# Create the student profile
+			# Create the student profile with year_level_assigned_at for auto-promotion
 			StudentModel.objects.create(
 				user=user,
 				student_id=student_id,
+				suffix=suffix,
 				program=program,
 				year_level=int(year_level),
-				department=department or None,
-				contact_number=contact_number or None,
-				guardian_name=guardian_name or None,
-				guardian_contact=guardian_contact or None,
-				enrollment_status='Enrolled'
+				year_level_assigned_at=timezone.now(),
+				department=program,  # Use program/college as department
+				contact_number=contact_number or '',
+				guardian_name=guardian_name or '',
+				guardian_contact=guardian_contact or '',
+				enrollment_status='Active'
 			)
 			
 			messages.success(request, f"Student '{first_name} {last_name}' ({student_id}) has been added successfully.")
@@ -2722,8 +2770,20 @@ def guard_report_incident_view(request):
 			# Additional fields for new student registration
 			first_name = request.POST.get('first_name', '').strip()
 			last_name = request.POST.get('last_name', '').strip()
+			suffix = request.POST.get('suffix', '').strip()
+			email = request.POST.get('email', '').strip()
+			contact_number = request.POST.get('contact_number', '').strip()
 			program = request.POST.get('program', '').strip()
 			year_level = request.POST.get('year_level', '1')
+			guardian_name = request.POST.get('guardian_name', '').strip()
+			guardian_contact = request.POST.get('guardian_contact', '').strip()
+			
+			# Validate student ID is 8 digits
+			if not student_id.isdigit() or len(student_id) != 8:
+				return JsonResponse({
+					'success': False,
+					'error': 'Student ID must be exactly 8 digits.'
+				})
 			
 			# Check if student exists by student_id
 			student = StudentModel.objects.filter(student_id__iexact=student_id).first()
@@ -2736,6 +2796,19 @@ def guard_report_incident_view(request):
 						'success': False,
 						'error': 'Student not found. Please provide First Name and Last Name to register.',
 						'student_not_found': True
+					})
+				
+				# Validate contact numbers are 11 digits if provided
+				if contact_number and (not contact_number.isdigit() or len(contact_number) != 11):
+					return JsonResponse({
+						'success': False,
+						'error': 'Contact number must be exactly 11 digits.'
+					})
+				
+				if guardian_contact and (not guardian_contact.isdigit() or len(guardian_contact) != 11):
+					return JsonResponse({
+						'success': False,
+						'error': 'Guardian contact must be exactly 11 digits.'
 					})
 				
 				# Create a User account for the new student
@@ -2763,19 +2836,26 @@ def guard_report_incident_view(request):
 						student = StudentModel.objects.create(
 							user=existing_user,
 							student_id=student_id,
+							suffix=suffix,
 							program=program,
 							year_level=year_level_int,
+							year_level_assigned_at=timezone.now(),
+							department=program,
+							contact_number=contact_number,
+							guardian_name=guardian_name,
+							guardian_contact=guardian_contact,
 							enrollment_status='Active'
 						)
 						student_created = True
 				else:
 					# Create new user and student profile
+					full_last_name = f"{last_name} {suffix}".strip() if suffix else last_name
 					user = User.objects.create_user(
 						username=username,
 						first_name=first_name,
-						last_name=last_name,
+						last_name=full_last_name,
 						password=student_id,  # Default password is student ID
-						email=f"{username}@student.chmsu.edu.ph",
+						email=email or f"{username}@student.chmsu.edu.ph",
 						role='student'  # Set the role to student
 					)
 					
@@ -2788,8 +2868,14 @@ def guard_report_incident_view(request):
 					student = StudentModel.objects.create(
 						user=user,
 						student_id=student_id,
+						suffix=suffix,
 						program=program,
 						year_level=year_level_int,
+						year_level_assigned_at=timezone.now(),
+						department=program,
+						contact_number=contact_number,
+						guardian_name=guardian_name,
+						guardian_contact=guardian_contact,
 						enrollment_status='Active'
 					)
 					student_created = True

@@ -2029,19 +2029,30 @@
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
             <div class="form-group" style="grid-column:1/-1;">
               <label for="newStudentId" style="font-weight:500; margin-bottom:6px; display:block;">Student ID <span style="color:#ef4444;">*</span></label>
-              <input type="text" name="student_id" id="newStudentId" required placeholder="e.g., 2024-00001"
-                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
-              <small style="color:#667085; font-size:12px;">Student will use this ID to log in.</small>
+              <input type="text" name="student_id" id="newStudentId" required placeholder="e.g., 20240001"
+                     pattern="\d{8}" maxlength="8" minlength="8" title="Must be exactly 8 digits"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" 
+                     oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)" />
+              <small style="color:#667085; font-size:12px;">8-digit Student ID (numbers only). Student will use this ID to log in.</small>
             </div>
-            <div class="form-group">
-              <label for="newFirstName" style="font-weight:500; margin-bottom:6px; display:block;">First Name <span style="color:#ef4444;">*</span></label>
-              <input type="text" name="first_name" id="newFirstName" required placeholder="First name"
-                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
-            </div>
-            <div class="form-group">
-              <label for="newLastName" style="font-weight:500; margin-bottom:6px; display:block;">Last Name <span style="color:#ef4444;">*</span></label>
-              <input type="text" name="last_name" id="newLastName" required placeholder="Last name"
-                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+            <div class="form-group" style="grid-column:1/-1;">
+              <div style="display:grid; grid-template-columns:1fr 1fr 100px; gap:12px;">
+                <div>
+                  <label for="newFirstName" style="font-weight:500; margin-bottom:6px; display:block;">First Name <span style="color:#ef4444;">*</span></label>
+                  <input type="text" name="first_name" id="newFirstName" required placeholder="First name"
+                         style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+                </div>
+                <div>
+                  <label for="newLastName" style="font-weight:500; margin-bottom:6px; display:block;">Last Name <span style="color:#ef4444;">*</span></label>
+                  <input type="text" name="last_name" id="newLastName" required placeholder="Last name"
+                         style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+                </div>
+                <div>
+                  <label for="newSuffix" style="font-weight:500; margin-bottom:6px; display:block;">Suffix <span style="color:#667085; font-size:11px;">(Optional)</span></label>
+                  <input type="text" name="suffix" id="newSuffix" placeholder="Jr., Sr."
+                         style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+                </div>
+              </div>
             </div>
             <div class="form-group">
               <label for="newEmail" style="font-weight:500; margin-bottom:6px; display:block;">Email</label>
@@ -2051,12 +2062,23 @@
             <div class="form-group">
               <label for="newContact" style="font-weight:500; margin-bottom:6px; display:block;">Contact Number</label>
               <input type="text" name="contact_number" id="newContact" placeholder="09xxxxxxxxx"
-                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+                     pattern="\d{11}" maxlength="11" minlength="11" title="Must be exactly 11 digits"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;"
+                     oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)" />
+              <small style="color:#667085; font-size:12px;">11-digit phone number</small>
             </div>
             <div class="form-group">
-              <label for="newProgram" style="font-weight:500; margin-bottom:6px; display:block;">Program <span style="color:#ef4444;">*</span></label>
-              <input type="text" name="program" id="newProgram" required placeholder="e.g., BSIT, BSCS"
-                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+              <label for="newProgram" style="font-weight:500; margin-bottom:6px; display:block;">College/Program <span style="color:#ef4444;">*</span></label>
+              <select name="program" id="newProgram" required
+                      style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;">
+                <option value="">Select College</option>
+                <option value="CAS">CAS - College of Arts and Sciences</option>
+                <option value="CBMA">CBMA - College of Business Management and Accountancy</option>
+                <option value="CCS">CCS - College of Computer Studies</option>
+                <option value="COEd">COEd - College of Education</option>
+                <option value="CIT">CIT - College of Industrial Technology</option>
+                <option value="COE">COE - College of Engineering</option>
+              </select>
             </div>
             <div class="form-group">
               <label for="newYearLevel" style="font-weight:500; margin-bottom:6px; display:block;">Year Level <span style="color:#ef4444;">*</span></label>
@@ -2068,11 +2090,7 @@
                 <option value="3">3rd Year</option>
                 <option value="4">4th Year</option>
               </select>
-            </div>
-            <div class="form-group" style="grid-column:1/-1;">
-              <label for="newDepartment" style="font-weight:500; margin-bottom:6px; display:block;">Department</label>
-              <input type="text" name="department" id="newDepartment" placeholder="e.g., College of Computer Studies"
-                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+              <small style="color:#667085; font-size:12px;">Auto-promotes after 10 months per year level</small>
             </div>
             <div class="form-group">
               <label for="newGuardianName" style="font-weight:500; margin-bottom:6px; display:block;">Guardian Name</label>
@@ -2081,8 +2099,11 @@
             </div>
             <div class="form-group">
               <label for="newGuardianContact" style="font-weight:500; margin-bottom:6px; display:block;">Guardian Contact</label>
-              <input type="text" name="guardian_contact" id="newGuardianContact" placeholder="Guardian phone"
-                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;" />
+              <input type="text" name="guardian_contact" id="newGuardianContact" placeholder="09xxxxxxxxx"
+                     pattern="\d{11}" maxlength="11" minlength="11" title="Must be exactly 11 digits"
+                     style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;"
+                     oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)" />
+              <small style="color:#667085; font-size:12px;">11-digit phone number</small>
             </div>
           </div>
         </div>

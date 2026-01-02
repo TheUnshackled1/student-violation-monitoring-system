@@ -92,49 +92,85 @@
             </div>
             
             <div class="form-row">
-              <div class="form-field">
+              <div class="form-field" style="flex:1;">
                 <label class="field-label">First Name <span class="required">*</span></label>
                 <input type="text" id="student_first_name" name="first_name" 
                        placeholder="Enter first name"
                        class="form-input">
               </div>
-              <div class="form-field">
+              <div class="form-field" style="flex:1;">
                 <label class="field-label">Last Name <span class="required">*</span></label>
                 <input type="text" id="student_last_name" name="last_name" 
                        placeholder="Enter last name"
+                       class="form-input">
+              </div>
+              <div class="form-field" style="flex:0 0 100px;">
+                <label class="field-label">Suffix <span style="color:#667085; font-size:10px;">(Optional)</span></label>
+                <input type="text" id="student_suffix" name="suffix" 
+                       placeholder="Jr., Sr."
                        class="form-input">
               </div>
             </div>
             
             <div class="form-row">
               <div class="form-field">
-                <label class="field-label">Program/Course</label>
+                <label class="field-label">Email</label>
+                <input type="email" id="student_email" name="email" 
+                       placeholder="student@email.com"
+                       class="form-input">
+              </div>
+              <div class="form-field">
+                <label class="field-label">Contact Number</label>
+                <input type="text" id="student_contact" name="contact_number" 
+                       placeholder="09xxxxxxxxx"
+                       pattern="\d{11}" maxlength="11" minlength="11"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"
+                       class="form-input">
+                <span class="field-hint" style="font-size:10px;"><i class="fas fa-info-circle"></i> 11-digit phone number</span>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <label class="field-label">College/Program <span class="required">*</span></label>
                 <select id="student_program" name="program" class="form-input form-select">
-                  <option value="">— Select Program —</option>
-                  <option value="BSIT">BSIT - Information Technology</option>
-                  <option value="BSCS">BSCS - Computer Science</option>
-                  <option value="BSIS">BSIS - Information Systems</option>
-                  <option value="BSA">BSA - Accountancy</option>
-                  <option value="BSBA">BSBA - Business Administration</option>
-                  <option value="BSEd">BSEd - Secondary Education</option>
-                  <option value="BEEd">BEEd - Elementary Education</option>
-                  <option value="BSCE">BSCE - Civil Engineering</option>
-                  <option value="BSEE">BSEE - Electrical Engineering</option>
-                  <option value="BSME">BSME - Mechanical Engineering</option>
-                  <option value="BSN">BSN - Nursing</option>
-                  <option value="BSCRIM">BSCRIM - Criminology</option>
-                  <option value="Other">Other Program</option>
+                  <option value="">— Select College —</option>
+                  <option value="CAS">CAS - College of Arts and Sciences</option>
+                  <option value="CBMA">CBMA - College of Business Management and Accountancy</option>
+                  <option value="CCS">CCS - College of Computer Studies</option>
+                  <option value="COEd">COEd - College of Education</option>
+                  <option value="CIT">CIT - College of Industrial Technology</option>
+                  <option value="COE">COE - College of Engineering</option>
                 </select>
               </div>
               <div class="form-field">
-                <label class="field-label">Year Level</label>
+                <label class="field-label">Year Level <span class="required">*</span></label>
                 <select id="student_year_level" name="year_level" class="form-input form-select">
+                  <option value="">— Select Year —</option>
                   <option value="1">1st Year</option>
                   <option value="2">2nd Year</option>
                   <option value="3">3rd Year</option>
                   <option value="4">4th Year</option>
-                  <option value="5">5th Year</option>
                 </select>
+                <span class="field-hint" style="font-size:10px;"><i class="fas fa-info-circle"></i> Auto-promotes after 10 months</span>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <label class="field-label">Guardian Name</label>
+                <input type="text" id="student_guardian_name" name="guardian_name" 
+                       placeholder="Parent/Guardian name"
+                       class="form-input">
+              </div>
+              <div class="form-field">
+                <label class="field-label">Guardian Contact</label>
+                <input type="text" id="student_guardian_contact" name="guardian_contact" 
+                       placeholder="09xxxxxxxxx"
+                       pattern="\d{11}" maxlength="11" minlength="11"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"
+                       class="form-input">
+                <span class="field-hint" style="font-size:10px;"><i class="fas fa-info-circle"></i> 11-digit phone number</span>
               </div>
             </div>
             
@@ -179,29 +215,44 @@
 
           <div class="form-row">
             <div class="form-field">
-              <label class="field-label">Violation Category <span class="required">*</span></label>
-              <select name="type" id="violation-category" class="form-input form-select">
-                <option value="" disabled {% if not edit_mode %}selected{% endif %}>— Select Category —</option>
-                {% for val, label in type_choices %}
-                <option value="{{ val }}" 
-                        style="color: {% if val == 'major' %}#dc2626{% else %}#d97706{% endif %}; font-weight: 600;"
-                        {% if edit_mode and violation.type == val %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
+              <label class="field-label">Specific Violation <span class="required">*</span></label>
+              <div class="input-with-clear">
+                <select name="violation_type_id" id="violation-type" class="form-input form-select">
+                  <option value="" disabled {% if not edit_mode or not violation.violation_type %}selected{% endif %}>— Select Violation —</option>
+                  {% for vt in violation_types %}
+                  <option value="{{ vt.id }}" 
+                          data-category="{{ vt.category }}"
+                          style="color: {% if vt.category == 'major' %}#dc2626{% else %}#d97706{% endif %}; font-weight: 500;"
+                          {% if edit_mode and violation.violation_type and violation.violation_type.id == vt.id %}selected{% endif %}>
+                    {{ vt.display_name }}
+                  </option>
+                  {% endfor %}
+                </select>
+                <button type="button" id="clear-violation-btn" class="clear-field-btn" title="Clear selection" style="display: none;">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <span class="field-hint"><i class="fas fa-info-circle"></i> Select from list or use "Other Violation" below</span>
             </div>
             <div class="form-field">
-              <label class="field-label">Specific Violation <span class="required">*</span></label>
-              <select name="violation_type_id" id="violation-type" class="form-input form-select">
-                <option value="" disabled {% if not edit_mode or not violation.violation_type %}selected{% endif %}>— Select Violation —</option>
-                {% for vt in violation_types %}
-                <option value="{{ vt.id }}" 
-                        data-category="{{ vt.category }}"
-                        style="color: {% if vt.category == 'major' %}#dc2626{% else %}#d97706{% endif %}; font-weight: 500;"
-                        {% if edit_mode and violation.violation_type and violation.violation_type.id == vt.id %}selected{% endif %}>
-                  {{ vt.display_name }}
-                </option>
-                {% endfor %}
-              </select>
+              <label class="field-label">Violation Category</label>
+              <div class="input-with-clear">
+                <div id="category-display" class="category-display-field" style="padding: 12px 16px; border: 1px solid #d0d5dd; border-radius: 8px; background: #f9fafb; font-family: 'Poppins', sans-serif; font-size: 14px; min-height: 46px; display: flex; align-items: center; flex: 1;">
+                  {% if edit_mode and violation.type %}
+                    <span style="color: {% if violation.type == 'major' %}#dc2626{% else %}#d97706{% endif %}; font-weight: 600;">
+                      <i class="fas fa-{% if violation.type == 'major' %}exclamation-triangle{% else %}exclamation-circle{% endif %}"></i>
+                      {% if violation.type == 'major' %}Major Offense{% else %}Minor Offense{% endif %}
+                    </span>
+                  {% else %}
+                    <span style="color: #9ca3af;">Auto-detected from violation</span>
+                  {% endif %}
+                </div>
+                <button type="button" id="clear-category-btn" class="clear-field-btn" title="Clear category" style="display: none;">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <input type="hidden" name="type" id="violation-category" value="{% if edit_mode %}{{ violation.type }}{% endif %}">
+              <span class="field-hint"><i class="fas fa-info-circle"></i> Automatically set based on selected violation</span>
             </div>
           </div>
 
@@ -270,7 +321,7 @@
         </fieldset>
 
         <!-- Section C: Violation Description -->
-        <fieldset class="form-section">
+        <fieldset class="form-section" id="section-detailed-description">
           <legend><i class="fas fa-file-alt"></i> Section C: Detailed Description</legend>
           
           <div class="form-row">
@@ -336,34 +387,69 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const categorySelect = document.getElementById('violation-category');
+  const categoryInput = document.getElementById('violation-category');
+  const categoryDisplay = document.getElementById('category-display');
   const violationSelect = document.getElementById('violation-type');
   const otherViolationInput = document.getElementById('other-violation');
   const otherCategoryRow = document.getElementById('other-category-row');
   const otherMajorRadio = document.getElementById('other-major');
   const otherMinorRadio = document.getElementById('other-minor');
   const form = document.querySelector('.official-form');
+  const clearViolationBtn = document.getElementById('clear-violation-btn');
+  const clearCategoryBtn = document.getElementById('clear-category-btn');
   
   // Student verification tracking
   let studentVerified = false;
   let studentExists = false;
   
-  // Store all violation options
-  const allOptions = Array.from(violationSelect.querySelectorAll('option[data-category]'));
-  
-  // Function to update select color based on category
-  function updateSelectColor(selectElement, category) {
+  // Function to update category display based on selected violation
+  function updateCategoryDisplay(category) {
     if (category === 'major') {
-      selectElement.style.color = '#dc2626';
-      selectElement.style.fontWeight = '600';
+      categoryDisplay.innerHTML = `
+        <span style="color: #dc2626; font-weight: 600;">
+          <i class="fas fa-exclamation-triangle"></i> Major Offense
+        </span>
+      `;
+      categoryInput.value = 'major';
+      clearCategoryBtn.style.display = 'flex';
     } else if (category === 'minor') {
-      selectElement.style.color = '#d97706';
-      selectElement.style.fontWeight = '600';
+      categoryDisplay.innerHTML = `
+        <span style="color: #d97706; font-weight: 600;">
+          <i class="fas fa-exclamation-circle"></i> Minor Offense
+        </span>
+      `;
+      categoryInput.value = 'minor';
+      clearCategoryBtn.style.display = 'flex';
     } else {
-      selectElement.style.color = '';
-      selectElement.style.fontWeight = '';
+      categoryDisplay.innerHTML = `<span style="color: #9ca3af;">Auto-detected from violation</span>`;
+      categoryInput.value = '';
+      clearCategoryBtn.style.display = 'none';
     }
   }
+  
+  // Function to update clear button visibility for violation select
+  function updateClearButtonVisibility() {
+    if (violationSelect.value !== '') {
+      clearViolationBtn.style.display = 'flex';
+    } else {
+      clearViolationBtn.style.display = 'none';
+    }
+  }
+  
+  // Function to reset/clear violation selection
+  function clearViolationSelection() {
+    violationSelect.selectedIndex = 0; // Reset to placeholder
+    updateCategoryDisplay(null);
+    updateClearButtonVisibility();
+    // Focus on other violation field for convenience
+    otherViolationInput.focus();
+  }
+  
+  // Clear violation button click handler
+  clearViolationBtn.addEventListener('click', clearViolationSelection);
+  
+  // Clear category button click handler (also clears violation)
+  clearCategoryBtn.addEventListener('click', clearViolationSelection);
   
   // Check if student exists in database
   window.checkStudent = function() {
@@ -462,20 +548,34 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   {% endif %}
   
+  // Get Section C element
+  const sectionDetailedDescription = document.getElementById('section-detailed-description');
+  const descriptionTextarea = document.querySelector('textarea[name="description"]');
+  
   // Show/hide other category options based on other violation input
   function toggleOtherCategory() {
     if (otherViolationInput.value.trim() !== '') {
       otherCategoryRow.style.display = 'block';
-      // Clear the dropdown selections when using other violation
-      categorySelect.value = '';
+      // Clear the dropdown selection when using other violation
       violationSelect.value = '';
-      updateSelectColor(categorySelect, null);
-      updateSelectColor(violationSelect, null);
+      updateCategoryDisplay(null);
+      updateClearButtonVisibility();
+      // Hide Section C when using Other Violation
+      sectionDetailedDescription.style.display = 'none';
+      // Remove required from description when hidden
+      if (descriptionTextarea) descriptionTextarea.removeAttribute('required');
     } else {
       otherCategoryRow.style.display = 'none';
       otherMajorRadio.checked = false;
       otherMinorRadio.checked = false;
     }
+  }
+  
+  // Show Section C when using Specific Violation dropdown
+  function showSectionC() {
+    sectionDetailedDescription.style.display = 'block';
+    // Add required back to description
+    if (descriptionTextarea) descriptionTextarea.setAttribute('required', 'required');
   }
   
   // Clear other violation when dropdown is used
@@ -485,55 +585,43 @@ document.addEventListener('DOMContentLoaded', function() {
       otherCategoryRow.style.display = 'none';
       otherMajorRadio.checked = false;
       otherMinorRadio.checked = false;
+      // Show Section C when using Specific Violation
+      showSectionC();
     }
-  }
-  
-  function filterViolations() {
-    const selectedCategory = categorySelect.value;
-    
-    // Remove all options except the placeholder
-    violationSelect.innerHTML = '<option value="" disabled selected>— Select Violation —</option>';
-    
-    // Add back filtered options
-    allOptions.forEach(option => {
-      if (!selectedCategory || option.dataset.category === selectedCategory) {
-        const newOption = option.cloneNode(true);
-        violationSelect.appendChild(newOption);
-      }
-    });
-    
-    // Reset violation select color
-    updateSelectColor(violationSelect, null);
   }
   
   // Listen for other violation input
   otherViolationInput.addEventListener('input', toggleOtherCategory);
   
-  // Listen for category change
-  categorySelect.addEventListener('change', function() {
-    updateSelectColor(categorySelect, categorySelect.value);
-    filterViolations();
-    // Reset violation selection when category changes
-    violationSelect.value = '';
-    // Clear other violation when using dropdowns
-    clearOtherViolation();
+  // Listen for other category radio buttons
+  otherMajorRadio.addEventListener('change', function() {
+    if (this.checked) {
+      updateCategoryDisplay('major');
+    }
   });
   
-  // When violation is selected, auto-set the category and update colors
+  otherMinorRadio.addEventListener('change', function() {
+    if (this.checked) {
+      updateCategoryDisplay('minor');
+    }
+  });
+  
+  // When violation is selected, auto-set the category
   violationSelect.addEventListener('change', function() {
     const selected = violationSelect.options[violationSelect.selectedIndex];
     if (selected && selected.dataset.category) {
-      categorySelect.value = selected.dataset.category;
-      updateSelectColor(categorySelect, selected.dataset.category);
-      updateSelectColor(violationSelect, selected.dataset.category);
+      updateCategoryDisplay(selected.dataset.category);
       // Clear other violation when using dropdowns
       clearOtherViolation();
+    } else {
+      updateCategoryDisplay(null);
     }
+    updateClearButtonVisibility();
   });
   
   // Form validation
   form.addEventListener('submit', function(e) {
-    const hasDropdownSelection = violationSelect.value !== '' && categorySelect.value !== '';
+    const hasViolationSelected = violationSelect.value !== '';
     const hasOtherViolation = otherViolationInput.value.trim() !== '';
     const hasOtherCategory = otherMajorRadio.checked || otherMinorRadio.checked;
     
@@ -564,10 +652,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     {% endif %}
     
-    // Must have either dropdown selection OR other violation with category
-    if (!hasDropdownSelection && !hasOtherViolation) {
+    // Must have either violation selected OR other violation with category
+    if (!hasViolationSelected && !hasOtherViolation) {
       e.preventDefault();
-      alert('Please either select a Violation Category and Specific Violation, OR fill in the Other Violation field.');
+      alert('Please select a Specific Violation OR fill in the Other Violation field.');
       return false;
     }
     
@@ -581,33 +669,52 @@ document.addEventListener('DOMContentLoaded', function() {
     // If using other violation, set the type from radio button
     if (hasOtherViolation && hasOtherCategory) {
       const selectedCategory = otherMajorRadio.checked ? 'major' : 'minor';
-      // Create hidden input to pass the category
-      let hiddenType = document.querySelector('input[name="type_from_other"]');
-      if (!hiddenType) {
-        hiddenType = document.createElement('input');
-        hiddenType.type = 'hidden';
-        hiddenType.name = 'type_from_other';
-        form.appendChild(hiddenType);
+      categoryInput.value = selectedCategory;
+    }
+    
+    // If using Specific Violation, check that description is filled
+    if (hasViolationSelected && !hasOtherViolation) {
+      const description = descriptionTextarea ? descriptionTextarea.value.trim() : '';
+      if (!description) {
+        e.preventDefault();
+        alert('Please provide a detailed description of the incident in Section C.');
+        if (descriptionTextarea) descriptionTextarea.focus();
+        return false;
       }
-      hiddenType.value = selectedCategory;
     }
     
     return true;
   });
   
-  // Initial setup if category is pre-selected (edit mode)
-  if (categorySelect.value) {
-    updateSelectColor(categorySelect, categorySelect.value);
-    filterViolations();
-    // Restore the previously selected violation in edit mode
-    {% if edit_mode and violation.violation_type %}
-    violationSelect.value = '{{ violation.violation_type.id }}';
-    updateSelectColor(violationSelect, '{{ violation.violation_type.category }}');
-    {% endif %}
-  }
-  
   // Initial check for other violation (edit mode)
   toggleOtherCategory();
+  
+  // Initial setup for edit mode - trigger change event to set category
+  {% if edit_mode and violation.violation_type %}
+  const initialSelected = violationSelect.options[violationSelect.selectedIndex];
+  if (initialSelected && initialSelected.dataset.category) {
+    updateCategoryDisplay(initialSelected.dataset.category);
+  }
+  // Show Section C for specific violation
+  showSectionC();
+  {% elif edit_mode and violation.type %}
+  // If other violation was used (no violation_type but has type)
+  updateCategoryDisplay('{{ violation.type }}');
+  // Hide Section C for other violation in edit mode
+  sectionDetailedDescription.style.display = 'none';
+  if (descriptionTextarea) descriptionTextarea.removeAttribute('required');
+  {% endif %}
+  
+  // Initial clear button visibility
+  updateClearButtonVisibility();
+  
+  // Initial Section C visibility based on current state
+  if (violationSelect.value !== '') {
+    showSectionC();
+  } else if (otherViolationInput.value.trim() !== '') {
+    sectionDetailedDescription.style.display = 'none';
+    if (descriptionTextarea) descriptionTextarea.removeAttribute('required');
+  }
 });
 </script>
   <script src="{% static 'violations/js/script.js' %}"></script>
@@ -806,6 +913,49 @@ document.addEventListener('DOMContentLoaded', function() {
         width: 100%;
         justify-content: center;
       }
+    }
+    
+    /* Input with Clear Button */
+    .input-with-clear {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      position: relative;
+    }
+    
+    .input-with-clear .form-input,
+    .input-with-clear .form-select {
+      flex: 1;
+    }
+    
+    .clear-field-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 46px;
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      border: 2px solid #fca5a5;
+      border-radius: 8px;
+      color: #dc2626;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    
+    .clear-field-btn:hover {
+      background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+      border-color: #f87171;
+      transform: scale(1.05);
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+    }
+    
+    .clear-field-btn:active {
+      transform: scale(0.98);
+    }
+    
+    .clear-field-btn i {
+      font-size: 14px;
     }
   </style>
 </body>
