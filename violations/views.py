@@ -757,6 +757,15 @@ def faculty_my_reports_view(request):
 
 
 @role_required({User.Role.OSA_COORDINATOR})
+def faculty_analytics_view(request):
+	"""
+	OSA Coordinator Analytics Page - Full standalone page view.
+	Renders the analytics dashboard page that loads data via AJAX.
+	"""
+	return render(request, "violations/osa_coordinator/osa_coordinator_analytics.html")
+
+
+@role_required({User.Role.OSA_COORDINATOR})
 def faculty_analytics_api(request):
 	"""
 	Analytics API for OSA Coordinator Dashboard.
