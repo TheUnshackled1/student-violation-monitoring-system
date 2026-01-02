@@ -40,6 +40,7 @@ urlpatterns = [
     path('faculty/dashboard/', views.faculty_dashboard_view, name='faculty_dashboard'),
     path('faculty/report/', views.faculty_report_view, name='faculty_report'),
     path('faculty/my-reports/', views.faculty_my_reports_view, name='faculty_my_reports'),
+    path('faculty/analytics/', views.faculty_analytics_api, name='faculty_analytics'),
     path('faculty/students/<str:student_id>/', views.faculty_student_detail_view, name='faculty_student_detail'),
     path('faculty/message/<int:message_id>/read/', views.faculty_mark_message_read_view, name='faculty_mark_message_read'),
     path('faculty/message/delete/', views.faculty_delete_message_view, name='faculty_delete_message'),

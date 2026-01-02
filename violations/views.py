@@ -756,6 +756,440 @@ def faculty_my_reports_view(request):
 	return render(request, "violations/osa_coordinator/my_reports.html", {"reports": my_reports})
 
 
+@role_required({User.Role.OSA_COORDINATOR})
+def faculty_analytics_api(request):
+	"""
+	Analytics API for OSA Coordinator Dashboard.
+	
+	Returns JSON data for:
+	1. Violation Trends Over Time (daily counts for last 30 days)
+	2. Violation Type Breakdown (counts by Major/Minor)
+	3. Violation Status Distribution
+	4. Top Violation Types from ViolationType catalog
+	5. Department Distribution
+	
+	Analytics Type: Descriptive + Basic Diagnostic
+	No prediction, no complex math - just aggregation and summarization.
+	"""
+	from django.db.models import Count
+	from django.db.models.functions import TruncDate, TruncWeek
+	from datetime import timedelta
+	
+	today = timezone.now().date()
+	thirty_days_ago = today - timedelta(days=30)
+	seven_days_ago = today - timedelta(days=7)
+	
+	# 1. Daily Violation Trends (last 30 days)
+	daily_trends = (
+		Violation.objects.filter(created_at__date__gte=thirty_days_ago)
+		.annotate(date=TruncDate('created_at'))
+		.values('date')
+		.annotate(count=Count('id'))
+		.order_by('date')
+	)
+	
+	# Fill in missing dates with zero counts
+	trends_dict = {item['date']: item['count'] for item in daily_trends}
+	trend_labels = []
+	trend_data = []
+	for i in range(30):
+		date = thirty_days_ago + timedelta(days=i)
+		trend_labels.append(date.strftime('%b %d'))
+		trend_data.append(trends_dict.get(date, 0))
+	
+	# 2. Violation Type Breakdown (Major vs Minor)
+	type_breakdown = (
+		Violation.objects.values('type')
+		.annotate(count=Count('id'))
+		.order_by('type')
+	)
+	type_labels = []
+	type_data = []
+	type_colors = []
+	for item in type_breakdown:
+		if item['type'] == 'major':
+			type_labels.append('Major Offense')
+			type_colors.append('#dc2626')  # Red
+		else:
+			type_labels.append('Minor Offense')
+			type_colors.append('#f59e0b')  # Amber
+		type_data.append(item['count'])
+	
+	# If no data, provide defaults
+	if not type_labels:
+		type_labels = ['Major Offense', 'Minor Offense']
+		type_data = [0, 0]
+		type_colors = ['#dc2626', '#f59e0b']
+	
+	# 3. Violation Status Distribution
+	status_breakdown = (
+		Violation.objects.values('status')
+		.annotate(count=Count('id'))
+		.order_by('status')
+	)
+	status_labels = []
+	status_data = []
+	status_colors = []
+	status_color_map = {
+		'reported': ('#3b82f6', 'Reported'),
+		'under_review': ('#f59e0b', 'Under Review'),
+		'resolved': ('#10b981', 'Resolved'),
+		'dismissed': ('#6b7280', 'Dismissed'),
+	}
+	for item in status_breakdown:
+		color, label = status_color_map.get(item['status'], ('#9ca3af', item['status']))
+		status_labels.append(label)
+		status_data.append(item['count'])
+		status_colors.append(color)
+	
+	# 4. Top Violation Types from ViolationType catalog
+	top_violation_types = (
+		Violation.objects.filter(violation_type__isnull=False)
+		.values('violation_type__name', 'violation_type__category')
+		.annotate(count=Count('id'))
+		.order_by('-count')[:10]
+	)
+	vtype_labels = []
+	vtype_data = []
+	vtype_colors = []
+	for item in top_violation_types:
+		name = item['violation_type__name']
+		if len(name) > 25:
+			name = name[:22] + '...'
+		vtype_labels.append(name)
+		vtype_data.append(item['count'])
+		if item['violation_type__category'] == 'major':
+			vtype_colors.append('#dc2626')
+		else:
+			vtype_colors.append('#f59e0b')
+	
+	# 5. Department Distribution
+	dept_breakdown = (
+		Violation.objects.filter(student__department__isnull=False)
+		.exclude(student__department='')
+		.values('student__department')
+		.annotate(count=Count('id'))
+		.order_by('-count')[:8]
+	)
+	dept_labels = []
+	dept_data = []
+	dept_colors = ['#1a472a', '#2563eb', '#dc2626', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4']
+	for i, item in enumerate(dept_breakdown):
+		dept = item['student__department']
+		if len(dept) > 15:
+			dept = dept[:12] + '...'
+		dept_labels.append(dept)
+		dept_data.append(item['count'])
+	
+	# 6. Summary Statistics
+	total_violations = Violation.objects.count()
+	total_major = Violation.objects.filter(type='major').count()
+	total_minor = Violation.objects.filter(type='minor').count()
+	total_pending = Violation.objects.filter(status__in=['reported', 'under_review']).count()
+	total_resolved = Violation.objects.filter(status='resolved').count()
+	this_week_count = Violation.objects.filter(created_at__date__gte=seven_days_ago).count()
+	this_month_count = Violation.objects.filter(created_at__date__gte=thirty_days_ago).count()
+	
+	# 7. Weekly Comparison (this week vs last week)
+	last_week_start = seven_days_ago - timedelta(days=7)
+	last_week_count = Violation.objects.filter(
+		created_at__date__gte=last_week_start,
+		created_at__date__lt=seven_days_ago
+	).count()
+	
+	if last_week_count > 0:
+		week_change_percent = round(((this_week_count - last_week_count) / last_week_count) * 100, 1)
+	else:
+		week_change_percent = 100 if this_week_count > 0 else 0
+	
+	analytics_data = {
+		'success': True,
+		'generated_at': timezone.now().isoformat(),
+		'summary': {
+			'total_violations': total_violations,
+			'total_major': total_major,
+			'total_minor': total_minor,
+			'total_pending': total_pending,
+			'total_resolved': total_resolved,
+			'this_week': this_week_count,
+			'this_month': this_month_count,
+			'week_change_percent': week_change_percent,
+		},
+		'trends': {
+			'labels': trend_labels,
+			'data': trend_data,
+		},
+		'type_breakdown': {
+			'labels': type_labels,
+			'data': type_data,
+			'colors': type_colors,
+		},
+		'status_breakdown': {
+			'labels': status_labels,
+			'data': status_data,
+			'colors': status_colors,
+		},
+		'top_violation_types': {
+			'labels': vtype_labels,
+			'data': vtype_data,
+			'colors': vtype_colors,
+		},
+		'department_breakdown': {
+			'labels': dept_labels,
+			'data': dept_data,
+			'colors': dept_colors[:len(dept_labels)],
+		},
+		# 8. Prescriptive Analytics - Rule-based recommendations
+		'prescriptive': generate_prescriptive_recommendations(
+			total_violations=total_violations,
+			total_major=total_major,
+			total_minor=total_minor,
+			total_pending=total_pending,
+			week_change_percent=week_change_percent,
+			top_violation_types=list(top_violation_types),
+			dept_breakdown=list(dept_breakdown),
+		),
+	}
+	
+	return JsonResponse(analytics_data)
+
+
+def generate_prescriptive_recommendations(total_violations, total_major, total_minor, 
+                                          total_pending, week_change_percent, 
+                                          top_violation_types, dept_breakdown):
+	"""
+	Generate prescriptive analytics recommendations based on violation data.
+	
+	This function performs rule-based analysis to provide actionable recommendations
+	without using predictive algorithms or automated decision-making.
+	
+	Returns a dictionary containing:
+	- priority_actions: Immediate actions needed
+	- prevention_strategies: Long-term prevention recommendations
+	- department_focus: Department-specific recommendations
+	- violation_insights: Insights about specific violation types
+	"""
+	recommendations = {
+		'priority_actions': [],
+		'prevention_strategies': [],
+		'department_focus': [],
+		'violation_insights': [],
+		'summary_recommendation': '',
+	}
+	
+	# === PRIORITY ACTIONS (Immediate concerns) ===
+	
+	# High pending cases
+	if total_pending > 10:
+		recommendations['priority_actions'].append({
+			'icon': 'fa-clock',
+			'severity': 'high',
+			'title': 'High Volume of Pending Cases',
+			'description': f'There are {total_pending} cases awaiting review. Consider scheduling a dedicated review session.',
+			'action': 'Schedule case review meeting within 3 days',
+		})
+	elif total_pending > 5:
+		recommendations['priority_actions'].append({
+			'icon': 'fa-hourglass-half',
+			'severity': 'medium',
+			'title': 'Moderate Pending Cases',
+			'description': f'{total_pending} cases are pending. Regular review recommended.',
+			'action': 'Review pending cases this week',
+		})
+	
+	# Week-over-week increase
+	if week_change_percent > 50:
+		recommendations['priority_actions'].append({
+			'icon': 'fa-arrow-trend-up',
+			'severity': 'high',
+			'title': 'Significant Increase in Violations',
+			'description': f'Violations increased by {week_change_percent}% compared to last week.',
+			'action': 'Investigate root causes and increase monitoring',
+		})
+	elif week_change_percent > 20:
+		recommendations['priority_actions'].append({
+			'icon': 'fa-chart-line',
+			'severity': 'medium',
+			'title': 'Notable Increase in Violations',
+			'description': f'Violations increased by {week_change_percent}% from last week.',
+			'action': 'Monitor trends and identify contributing factors',
+		})
+	
+	# Major violations ratio
+	if total_violations > 0:
+		major_ratio = (total_major / total_violations) * 100
+		if major_ratio > 40:
+			recommendations['priority_actions'].append({
+				'icon': 'fa-exclamation-triangle',
+				'severity': 'high',
+				'title': 'High Major Offense Ratio',
+				'description': f'{major_ratio:.1f}% of violations are major offenses. This requires immediate attention.',
+				'action': 'Conduct disciplinary review and strengthen enforcement',
+			})
+		elif major_ratio > 25:
+			recommendations['priority_actions'].append({
+				'icon': 'fa-balance-scale',
+				'severity': 'medium',
+				'title': 'Elevated Major Offense Rate',
+				'description': f'{major_ratio:.1f}% of violations are major offenses.',
+				'action': 'Review major offense handling procedures',
+			})
+	
+	# === PREVENTION STRATEGIES (Long-term recommendations) ===
+	
+	# Based on top violation types
+	if top_violation_types:
+		top_violation = top_violation_types[0]
+		vtype_name = top_violation.get('violation_type__name', 'Unknown')
+		vtype_count = top_violation.get('count', 0)
+		vtype_category = top_violation.get('violation_type__category', 'minor')
+		
+		# Dress code related
+		if any(kw in vtype_name.lower() for kw in ['uniform', 'dress', 'attire', 'id', 'identification']):
+			recommendations['prevention_strategies'].append({
+				'icon': 'fa-tshirt',
+				'category': 'Dress Code',
+				'title': 'Strengthen Dress Code Awareness',
+				'description': f'"{vtype_name}" is the most common violation ({vtype_count} cases).',
+				'actions': [
+					'Post visual reminders of dress code policy at entrances',
+					'Conduct orientation on proper uniform/attire guidelines',
+					'Consider peer reminder programs before class hours',
+				]
+			})
+		
+		# Attendance/tardiness related
+		elif any(kw in vtype_name.lower() for kw in ['late', 'tardy', 'absent', 'attendance', 'cutting']):
+			recommendations['prevention_strategies'].append({
+				'icon': 'fa-clock',
+				'category': 'Attendance',
+				'title': 'Address Attendance Issues',
+				'description': f'"{vtype_name}" accounts for {vtype_count} violations.',
+				'actions': [
+					'Review class scheduling for potential conflicts',
+					'Implement early warning system for chronic absenteeism',
+					'Engage with students showing attendance patterns',
+				]
+			})
+		
+		# Behavioral issues
+		elif any(kw in vtype_name.lower() for kw in ['disrespect', 'misconduct', 'behavior', 'fight', 'bully']):
+			recommendations['prevention_strategies'].append({
+				'icon': 'fa-users',
+				'category': 'Behavior',
+				'title': 'Behavioral Intervention Needed',
+				'description': f'"{vtype_name}" is a recurring issue ({vtype_count} cases).',
+				'actions': [
+					'Implement conflict resolution workshops',
+					'Establish peer mediation programs',
+					'Increase counselor availability',
+				]
+			})
+		
+		# Smoking/substance related
+		elif any(kw in vtype_name.lower() for kw in ['smok', 'vape', 'alcohol', 'drug', 'substance']):
+			recommendations['prevention_strategies'].append({
+				'icon': 'fa-ban-smoking',
+				'category': 'Health & Safety',
+				'title': 'Substance-Related Violations',
+				'description': f'"{vtype_name}" requires health-focused intervention ({vtype_count} cases).',
+				'actions': [
+					'Coordinate with health services for awareness campaigns',
+					'Strengthen enforcement in designated areas',
+					'Offer counseling resources for affected students',
+				]
+			})
+		
+		# Default recommendation
+		else:
+			recommendations['prevention_strategies'].append({
+				'icon': 'fa-lightbulb',
+				'category': 'General',
+				'title': f'Address "{vtype_name[:30]}..."' if len(vtype_name) > 30 else f'Address "{vtype_name}"',
+				'description': f'This violation type has {vtype_count} recorded cases.',
+				'actions': [
+					'Review policy clarity and student awareness',
+					'Conduct targeted information sessions',
+					'Monitor for patterns and contributing factors',
+				]
+			})
+	
+	# === DEPARTMENT-SPECIFIC FOCUS ===
+	
+	if dept_breakdown:
+		# Top department with most violations
+		top_dept = dept_breakdown[0]
+		dept_name = top_dept.get('student__department', 'Unknown')
+		dept_count = top_dept.get('count', 0)
+		
+		recommendations['department_focus'].append({
+			'icon': 'fa-building',
+			'department': dept_name,
+			'violation_count': dept_count,
+			'recommendation': f'Coordinate with {dept_name} administration for targeted intervention',
+			'actions': [
+				f'Schedule meeting with {dept_name} dean/coordinator',
+				'Review department-specific violation patterns',
+				'Consider department-level awareness programs',
+			]
+		})
+		
+		# If there's a significant gap between departments
+		if len(dept_breakdown) > 1:
+			second_dept = dept_breakdown[1]
+			if dept_count > second_dept.get('count', 0) * 2:
+				recommendations['department_focus'][0]['priority'] = 'high'
+				recommendations['department_focus'][0]['note'] = f'{dept_name} has significantly more violations than other departments'
+	
+	# === VIOLATION INSIGHTS ===
+	
+	# Minor to major conversion risk
+	if total_minor > 0:
+		students_at_risk = StudentModel.objects.annotate(
+			minor_count=Count('violations', filter=Q(violations__type='minor'))
+		).filter(minor_count__gte=2).count()
+		
+		if students_at_risk > 0:
+			recommendations['violation_insights'].append({
+				'icon': 'fa-user-clock',
+				'title': 'Students Approaching Major Threshold',
+				'description': f'{students_at_risk} student(s) have 2+ minor violations (3 minors = 1 major).',
+				'action': 'Consider preventive counseling for at-risk students',
+			})
+	
+	# Resolution rate insight
+	if total_violations > 0:
+		from .models import Violation as ViolationModel
+		resolved_count = ViolationModel.objects.filter(status='resolved').count()
+		resolution_rate = (resolved_count / total_violations) * 100
+		
+		if resolution_rate < 50:
+			recommendations['violation_insights'].append({
+				'icon': 'fa-tasks',
+				'title': 'Low Resolution Rate',
+				'description': f'Only {resolution_rate:.1f}% of cases are resolved.',
+				'action': 'Review case processing workflow for bottlenecks',
+			})
+		elif resolution_rate > 80:
+			recommendations['violation_insights'].append({
+				'icon': 'fa-check-double',
+				'title': 'Strong Resolution Rate',
+				'description': f'{resolution_rate:.1f}% resolution rate indicates effective case management.',
+				'action': 'Maintain current practices and document best approaches',
+			})
+	
+	# === SUMMARY RECOMMENDATION ===
+	
+	if not recommendations['priority_actions']:
+		recommendations['summary_recommendation'] = 'Current violation levels are manageable. Continue regular monitoring and maintain preventive programs.'
+	elif any(a['severity'] == 'high' for a in recommendations['priority_actions']):
+		recommendations['summary_recommendation'] = 'Immediate attention required. Review priority actions and schedule intervention meetings within this week.'
+	else:
+		recommendations['summary_recommendation'] = 'Some areas need attention. Address medium-priority items within the next two weeks.'
+	
+	return recommendations
+
+
 ############################################
 # OSA Staff - frontend-only
 ############################################
