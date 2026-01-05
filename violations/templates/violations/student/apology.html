@@ -820,16 +820,19 @@
                     
                     <p style="margin-bottom: 4px;"><strong>The Student Formator</strong></p>
                     <p style="margin-bottom: 16px;">
-                        <span class="required-field">*</span> <input type="text" class="letter-field" id="letterCampus" placeholder="Campus" style="min-width: 100px; width: 100px;" required /> Campus
+                        <span class="required-field">*</span> <input type="text" class="letter-field" id="letterCampus" placeholder="Campus" style="min-width: 100px; width: 100px;" pattern="[A-Za-z\s]+" title="Letters only" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')" required /> Campus
                         <span class="field-error-msg" id="campusError">Please enter your campus</span>
                     </p>
                     
                     <p style="margin-bottom: 16px;">SIR/MADAM:</p>
                     
                     <p style="margin-bottom: 16px;">
-                        I, <span class="required-field">*</span> <input type="text" class="letter-field" id="letterName" placeholder="Full Name" style="min-width: 180px; width: 180px;" required />, <strong>(NAME)</strong> from 
-                        <span class="required-field">*</span> <input type="text" class="letter-field" id="letterAddress" placeholder="Home Address" style="min-width: 220px; width: 220px;" required /> <strong>(Home Address)</strong> of
-                        <span class="required-field">*</span> <input type="text" class="letter-field" id="letterProgram" placeholder="Program, Major, Year & Section" style="min-width: 280px; width: 280px;" required /> <strong>(Program, Major, Year & Section)</strong>
+                        I, <span class="required-field">*</span> <input type="text" class="letter-field" id="letterName" placeholder="Full Name" style="min-width: 180px; width: 180px;" pattern="[A-Za-z\s.]+" title="Letters only" oninput="this.value = this.value.replace(/[^A-Za-z\s.]/g, '')" required />
+                        <input type="text" class="letter-field" id="letterSuffix" placeholder="Suffix" style="min-width: 60px; width: 60px;" pattern="[A-Za-z.]+" title="Letters only (e.g., Jr., Sr., III)" oninput="this.value = this.value.replace(/[^A-Za-z.]/g, '')" />, <strong>(Suffix - optional)</strong> from 
+                        <span class="required-field">*</span> <input type="text" class="letter-field" id="letterAddress" placeholder="Home Address" style="min-width: 220px; width: 220px;" required /> <strong>(Home Address)</strong>
+                    </p>
+                    <p style="margin-bottom: 16px; margin-top: 12px;">
+                        of <span class="required-field">*</span> <input type="text" class="letter-field" id="letterProgram" placeholder="Program, Major, Year & Section" style="min-width: 280px; width: 280px;" required /> <strong>(Program, Major, Year & Section)</strong>
                     </p>
                     <div class="no-print" style="margin-bottom: 16px;">
                         <span class="field-error-msg" id="nameError">Please enter your full name</span>
@@ -841,8 +844,8 @@
                     
                     <div style="margin-bottom: 16px;">
                         <p style="margin-bottom: 8px;">Specific Violation/s:</p>
-                        <textarea class="letter-field" id="letterViolation" placeholder="Enter specific violation/s (maximum 300 words)" rows="8" style="width: 100%; min-height: 150px; resize: vertical; box-sizing: border-box;"></textarea>
-                        <p style="font-size: 11px; color: #666; margin-top: 4px;">Maximum 300 words. <span id="wordCount">0</span>/300 words</p>
+                        <textarea class="letter-field" id="letterViolation" rows="8" style="width: 100%; min-height: 150px; resize: vertical; box-sizing: border-box; background-color: #f9fafb; cursor: not-allowed;" readonly></textarea>
+                        <p style="font-size: 11px; color: #666; margin-top: 4px;"><i class="fas fa-info-circle"></i> This field is auto-filled based on the violation issued to you.</p>
                     </div>
                     
                     <p class="letter-paragraph">
@@ -906,6 +909,7 @@
                 <input type="hidden" name="letter_date" id="hiddenLetterDate" value="" />
                 <input type="hidden" name="letter_campus" id="hiddenLetterCampus" value="" />
                 <input type="hidden" name="letter_full_name" id="hiddenLetterName" value="" />
+                <input type="hidden" name="letter_suffix" id="hiddenLetterSuffix" value="" />
                 <input type="hidden" name="letter_home_address" id="hiddenLetterAddress" value="" />
                 <input type="hidden" name="letter_program" id="hiddenLetterProgram" value="" />
                 <input type="hidden" name="letter_violations" id="hiddenLetterViolations" value="" />
@@ -1152,9 +1156,11 @@
                             <p style="margin-bottom: 12px;">SIR/MADAM:</p>
                             
                             <p style="margin-bottom: 12px;">
-                                I, <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_full_name|default:request.user.get_full_name|default:"—" }}</span>, from 
-                                <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_home_address|default:"—" }}</span> (Home Address) of
-                                <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_program|default:student.program|default:"—" }}</span> (Program, Major, Year & Section)
+                                I, <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_full_name|default:request.user.get_full_name|default:"—" }}</span>{% if apology.letter_suffix %} <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_suffix }}</span>{% endif %}, from 
+                                <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_home_address|default:"—" }}</span> (Home Address)
+                            </p>
+                            <p style="margin-bottom: 12px;">
+                                of <span style="background: #f0f9ff; padding: 2px 6px; border-radius: 4px; border-bottom: 1px solid #0369a1;">{{ apology.letter_program|default:student.program|default:"—" }}</span> (Program, Major, Year & Section)
                             </p>
                             
                             <p style="margin-bottom: 12px;">has violated the Student Code of Conduct.</p>
@@ -1895,6 +1901,7 @@
             document.getElementById('hiddenLetterDate').value = letterDate?.value || '';
             document.getElementById('hiddenLetterCampus').value = letterCampus?.value || '';
             document.getElementById('hiddenLetterName').value = letterName?.value || '';
+            document.getElementById('hiddenLetterSuffix').value = document.getElementById('letterSuffix')?.value || '';
             document.getElementById('hiddenLetterAddress').value = letterAddress?.value || '';
             document.getElementById('hiddenLetterProgram').value = letterProgram?.value || '';
             document.getElementById('hiddenLetterViolations').value = letterViolation?.value || '';

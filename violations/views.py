@@ -757,6 +757,108 @@ def faculty_my_reports_view(request):
 
 
 @role_required({User.Role.OSA_COORDINATOR})
+def faculty_activity_logs_view(request):
+	"""
+	OSA Coordinator: View all activity logs across the system.
+	Shows activities from Staff, Students, Guards, and Formators.
+	"""
+	from .models import ActivityLog
+	
+	# Get filter parameters
+	user_role = request.GET.get('role', 'all')
+	action_filter = request.GET.get('action', 'all')
+	date_from = request.GET.get('date_from', '')
+	date_to = request.GET.get('date_to', '')
+	search_query = request.GET.get('search', '')
+	
+	# Base queryset - all activity logs
+	logs = ActivityLog.objects.select_related(
+		'user', 'related_student', 'related_student__user', 
+		'related_violation', 'related_apology'
+	).order_by('-timestamp')
+	
+	# Filter by user role
+	if user_role == 'staff':
+		logs = logs.filter(user__role=User.Role.STAFF)
+	elif user_role == 'student':
+		logs = logs.filter(user__role=User.Role.STUDENT)
+	elif user_role == 'osa_coordinator':
+		logs = logs.filter(user__role=User.Role.OSA_COORDINATOR)
+	elif user_role == 'guard':
+		logs = logs.filter(guard_code__isnull=False).exclude(guard_code='')
+	elif user_role == 'formator':
+		logs = logs.filter(formator_code__isnull=False).exclude(formator_code='')
+	
+	# Filter by action type
+	if action_filter != 'all':
+		logs = logs.filter(action_type=action_filter)
+	
+	# Filter by date range
+	if date_from:
+		try:
+			from datetime import datetime
+			date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d')
+			logs = logs.filter(timestamp__date__gte=date_from_parsed)
+		except ValueError:
+			pass
+	
+	if date_to:
+		try:
+			from datetime import datetime
+			date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d')
+			logs = logs.filter(timestamp__date__lte=date_to_parsed)
+		except ValueError:
+			pass
+	
+	# Search filter
+	if search_query:
+		logs = logs.filter(
+			Q(description__icontains=search_query) |
+			Q(user__username__icontains=search_query) |
+			Q(user__first_name__icontains=search_query) |
+			Q(user__last_name__icontains=search_query) |
+			Q(guard_code__icontains=search_query) |
+			Q(formator_code__icontains=search_query)
+		)
+	
+	# Pagination
+	from django.core.paginator import Paginator
+	paginator = Paginator(logs, 25)  # 25 logs per page
+	page_number = request.GET.get('page', 1)
+	page_obj = paginator.get_page(page_number)
+	
+	# Get action types for filter dropdown
+	action_types = ActivityLog.ActionType.choices
+	
+	# Summary statistics
+	today = timezone.now().date()
+	stats = {
+		'total_logs': ActivityLog.objects.count(),
+		'today_logs': ActivityLog.objects.filter(timestamp__date=today).count(),
+		'staff_logs': ActivityLog.objects.filter(user__role=User.Role.STAFF).count(),
+		'student_logs': ActivityLog.objects.filter(user__role=User.Role.STUDENT).count(),
+		'guard_logs': ActivityLog.objects.exclude(guard_code='').count(),
+		'formator_logs': ActivityLog.objects.exclude(formator_code='').count(),
+	}
+	
+	context = {
+		'page_obj': page_obj,
+		'logs': page_obj,
+		'action_types': action_types,
+		'stats': stats,
+		'current_filters': {
+			'role': user_role,
+			'action': action_filter,
+			'date_from': date_from,
+			'date_to': date_to,
+			'search': search_query,
+		}
+	}
+	
+	return render(request, "violations/osa_coordinator/activity_logs.html", context)
+
+
+@role_required({User.Role.OSA_COORDINATOR})
 def faculty_analytics_view(request):
 	"""
 	OSA Coordinator Analytics Page - Full standalone page view.
@@ -1584,6 +1686,18 @@ def staff_violation_create_view(request):
 			status=Violation.Status.REPORTED,
 		)
 		
+		# Log the activity
+		from .models import ActivityLog
+		student_name = student.user.get_full_name() or student.student_id
+		ActivityLog.log_activity(
+			action_type=ActivityLog.ActionType.VIOLATION_CREATED,
+			description=f"Created violation #{violation.id} for {student_name}: {description[:100]}..." if len(description) > 100 else f"Created violation #{violation.id} for {student_name}: {description}",
+			request=request,
+			user=request.user,
+			related_student=student,
+			related_violation=violation
+		)
+		
 		# Track offense frequency for this student
 		offense_count = Violation.objects.filter(student=student).count()
 		
@@ -1654,6 +1768,18 @@ def staff_violation_edit_view(request, violation_id):
 				pass
 		
 		violation.save()
+		
+		# Log the activity
+		from .models import ActivityLog
+		student_name = violation.student.user.get_full_name() or violation.student.student_id
+		ActivityLog.log_activity(
+			action_type=ActivityLog.ActionType.VIOLATION_UPDATED,
+			description=f"Updated violation #{violation.id} for {student_name}",
+			request=request,
+			user=request.user,
+			related_student=violation.student,
+			related_violation=violation
+		)
 		
 		messages.success(request, f"Violation #{violation.id} updated successfully.")
 		return redirect('violations:staff_violations_list')
@@ -1734,7 +1860,7 @@ def staff_violation_detail_view(request, violation_id):
 @role_required({User.Role.STAFF})
 def staff_verify_violation_view(request, violation_id):
 	"""Staff: Verify/validate a violation record."""
-	violation = get_object_or_404(Violation, id=violation_id)
+	violation = get_object_or_404(Violation.objects.select_related('student', 'student__user'), id=violation_id)
 	
 	if request.method == 'POST':
 		action = request.POST.get('action', 'verified')
@@ -1749,14 +1875,41 @@ def staff_verify_violation_view(request, violation_id):
 		)
 		
 		# Update violation status based on action
+		from .models import ActivityLog
+		student_name = violation.student.user.get_full_name() or violation.student.student_id
+		
 		if action == 'verified':
 			if violation.status == Violation.Status.REPORTED:
 				violation.status = Violation.Status.UNDER_REVIEW
 				violation.save()
+			ActivityLog.log_activity(
+				action_type=ActivityLog.ActionType.VIOLATION_VERIFIED,
+				description=f"Verified violation #{violation.id} for {student_name}",
+				request=request,
+				user=request.user,
+				related_student=violation.student,
+				related_violation=violation
+			)
 			messages.success(request, f"Violation #{violation.id} has been verified.")
 		elif action == 'correction_needed':
+			ActivityLog.log_activity(
+				action_type=ActivityLog.ActionType.VIOLATION_UPDATED,
+				description=f"Marked violation #{violation.id} for correction. Notes: {notes}",
+				request=request,
+				user=request.user,
+				related_student=violation.student,
+				related_violation=violation
+			)
 			messages.warning(request, f"Violation #{violation.id} marked for correction.")
 		elif action == 'escalated':
+			ActivityLog.log_activity(
+				action_type=ActivityLog.ActionType.VIOLATION_UPDATED,
+				description=f"Escalated violation #{violation.id} to supervisor. Notes: {notes}",
+				request=request,
+				user=request.user,
+				related_student=violation.student,
+				related_violation=violation
+			)
 			messages.info(request, f"Violation #{violation.id} escalated to supervisor.")
 		
 		return redirect('violations:staff_violation_detail', violation_id=violation.id)
@@ -1814,6 +1967,7 @@ def staff_apology_letters_view(request):
 @role_required({User.Role.STAFF})
 def staff_verify_apology_view(request, letter_id):
 	"""Staff: Verify or reject an apology letter."""
+	from .models import ActivityLog
 	letter = get_object_or_404(ApologyLetter.objects.select_related('student', 'violation'), id=letter_id)
 	
 	if request.method == 'POST':
@@ -1826,12 +1980,41 @@ def staff_verify_apology_view(request, letter_id):
 		letter.remarks = remarks
 		letter.save()
 		
+		# Log the activity
+		student_name = letter.student.user.get_full_name() or letter.student.student_id
 		if action == ApologyLetter.Status.APPROVED:
-			messages.success(request, f"Apology letter from {letter.student.user.get_full_name() or letter.student.student_id} has been approved.")
+			ActivityLog.log_activity(
+				user=request.user,
+				action_type=ActivityLog.ActionType.APOLOGY_APPROVED,
+				description=f"Approved apology letter from {student_name} for violation #{letter.violation.id}",
+				request=request,
+				related_apology=letter,
+				related_student=letter.student,
+				related_violation=letter.violation
+			)
+			messages.success(request, f"Apology letter from {student_name} has been approved.")
 		elif action == ApologyLetter.Status.REVISION_NEEDED:
-			messages.warning(request, f"Apology letter from {letter.student.user.get_full_name() or letter.student.student_id} requires revision.")
+			ActivityLog.log_activity(
+				user=request.user,
+				action_type=ActivityLog.ActionType.APOLOGY_REVISION,
+				description=f"Requested revision on apology letter from {student_name}. Remarks: {remarks}",
+				request=request,
+				related_apology=letter,
+				related_student=letter.student,
+				related_violation=letter.violation
+			)
+			messages.warning(request, f"Apology letter from {student_name} requires revision.")
 		else:
-			messages.error(request, f"Apology letter from {letter.student.user.get_full_name() or letter.student.student_id} has been rejected.")
+			ActivityLog.log_activity(
+				user=request.user,
+				action_type=ActivityLog.ActionType.APOLOGY_REJECTED,
+				description=f"Rejected apology letter from {student_name}. Remarks: {remarks}",
+				request=request,
+				related_apology=letter,
+				related_student=letter.student,
+				related_violation=letter.violation
+			)
+			messages.error(request, f"Apology letter from {student_name} has been rejected.")
 		
 		return redirect('violations:staff_apology_letters')
 	
@@ -1842,13 +2025,26 @@ def staff_verify_apology_view(request, letter_id):
 @role_required({User.Role.STAFF})
 def staff_send_to_formator_view(request, letter_id):
 	"""Staff: Send apology letter to Student Formator for verification."""
-	letter = get_object_or_404(ApologyLetter, id=letter_id)
+	from .models import ActivityLog
+	letter = get_object_or_404(ApologyLetter.objects.select_related('student', 'student__user', 'violation'), id=letter_id)
 	
 	if request.method == 'POST':
 		letter.formator_status = 'pending'
 		letter.sent_to_formator_at = timezone.now()
 		letter.sent_to_formator_by = request.user
 		letter.save()
+		
+		# Log the activity
+		student_name = letter.student.user.get_full_name() or letter.student.student_id
+		ActivityLog.log_activity(
+			user=request.user,
+			action_type=ActivityLog.ActionType.APOLOGY_SENT_FORMATOR,
+			description=f"Sent apology letter from {student_name} to Student Formator for verification",
+			request=request,
+			related_apology=letter,
+			related_student=letter.student,
+			related_violation=letter.violation
+		)
 		
 		messages.success(request, f"Apology letter has been sent to the Student Formator for verification.")
 		return redirect('violations:staff_verify_apology', letter_id=letter.id)
@@ -2400,6 +2596,7 @@ def student_apology_view(request):
 		letter_date = request.POST.get("letter_date", "").strip()
 		letter_campus = request.POST.get("letter_campus", "").strip()
 		letter_full_name = request.POST.get("letter_full_name", "").strip()
+		letter_suffix = request.POST.get("letter_suffix", "").strip()  # Optional
 		letter_home_address = request.POST.get("letter_home_address", "").strip()
 		letter_program = request.POST.get("letter_program", "").strip()
 		letter_violations = request.POST.get("letter_violations", "").strip()
@@ -2445,12 +2642,25 @@ def student_apology_view(request):
 			existing.letter_date = letter_date
 			existing.letter_campus = letter_campus
 			existing.letter_full_name = letter_full_name
+			existing.letter_suffix = letter_suffix
 			existing.letter_home_address = letter_home_address
 			existing.letter_program = letter_program
 			existing.letter_violations = letter_violations
 			existing.letter_printed_name = letter_printed_name
 			existing.signature_data = signature_data
 			existing.save()
+			
+			# Log activity for resubmitted apology
+			from .models import ActivityLog
+			ActivityLog.log_activity(
+				user=request.user,
+				action_type=ActivityLog.ActionType.APOLOGY_RESUBMITTED,
+				description=f"Resubmitted apology letter for violation #{violation.id}",
+				request=request,
+				related_apology=existing,
+				related_student=student,
+				related_violation=violation
+			)
 			messages.success(request, "Your revised letter of apology has been resubmitted successfully!")
 		else:
 			# Create new apology letter
@@ -2461,6 +2671,7 @@ def student_apology_view(request):
 				letter_date=letter_date,
 				letter_campus=letter_campus,
 				letter_full_name=letter_full_name,
+				letter_suffix=letter_suffix,
 				letter_home_address=letter_home_address,
 				letter_program=letter_program,
 				letter_violations=letter_violations,
@@ -2470,6 +2681,18 @@ def student_apology_view(request):
 			if apology_file:
 				apology_letter.file = apology_file
 			apology_letter.save()
+			
+			# Log activity for new apology submission
+			from .models import ActivityLog
+			ActivityLog.log_activity(
+				user=request.user,
+				action_type=ActivityLog.ActionType.APOLOGY_SUBMITTED,
+				description=f"Submitted apology letter for violation #{violation.id}",
+				request=request,
+				related_apology=apology_letter,
+				related_student=student,
+				related_violation=violation
+			)
 			messages.success(request, "Your letter of apology has been submitted successfully!")
 		
 		return redirect("violations:student_apology")
@@ -2994,6 +3217,19 @@ def guard_report_incident_view(request):
 			else:
 				message = f'Incident report #{violation.id} submitted successfully for {student.user.get_full_name() or student_id}!'
 			
+			# Log the guard activity
+			from .models import ActivityLog
+			student_name = student.user.get_full_name() or student_id
+			ActivityLog.log_activity(
+				action_type=ActivityLog.ActionType.INCIDENT_REPORTED,
+				description=f"Reported incident for {student_name}: {description[:100]}..." if len(description) > 100 else f"Reported incident for {student_name}: {description}",
+				request=request,
+				guard_code=guard_code,
+				related_student=student,
+				related_violation=violation,
+				attached_image=violation.evidence_file if violation.evidence_file else None
+			)
+			
 			return JsonResponse({
 				'success': True,
 				'message': message,
@@ -3186,6 +3422,22 @@ def formator_verify_letter_view(request, letter_id):
 				letter.formator_photo = request.FILES['formator_photo']
 			
 			letter.save()
+			
+			# Log formator activity
+			from .models import ActivityLog
+			formator_code = request.session.get('formator_code', 'Formator')
+			student_name = letter.student.user.get_full_name() or letter.student.student_id
+			ActivityLog.log_activity(
+				action_type=ActivityLog.ActionType.LETTER_SIGNED,
+				description=f"Signed apology letter from {student_name} for violation #{letter.violation.id}",
+				request=request,
+				formator_code=formator_code,
+				related_apology=letter,
+				related_student=letter.student,
+				related_violation=letter.violation,
+				attached_image=letter.formator_photo if letter.formator_photo else None
+			)
+			
 			messages.success(request, 'Letter has been signed successfully. Staff will be notified.')
 			return redirect('violations:formator_dashboard')
 		
@@ -3193,6 +3445,21 @@ def formator_verify_letter_view(request, letter_id):
 			letter.formator_status = 'rejected'
 			letter.formator_remarks = formator_remarks
 			letter.save()
+			
+			# Log formator rejection activity
+			from .models import ActivityLog
+			formator_code = request.session.get('formator_code', 'Formator')
+			student_name = letter.student.user.get_full_name() or letter.student.student_id
+			ActivityLog.log_activity(
+				action_type=ActivityLog.ActionType.LETTER_REJECTED_FORMATOR,
+				description=f"Rejected apology letter from {student_name}. Remarks: {formator_remarks}",
+				request=request,
+				formator_code=formator_code,
+				related_apology=letter,
+				related_student=letter.student,
+				related_violation=letter.violation
+			)
+			
 			messages.warning(request, 'Letter has been rejected.')
 			return redirect('violations:formator_dashboard')
 	

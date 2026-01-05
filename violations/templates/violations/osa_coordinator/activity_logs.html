@@ -1,0 +1,1103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Logs - OSA Coordinator</title>
+    <link rel="stylesheet" href="{% static 'violations/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'violations/css/main.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="role-faculty">
+    <!-- Official Top Navigation -->
+    <header class="official-top-nav">
+        <div class="nav-container">
+            <!-- Left: Logo and Title -->
+            <div class="nav-brand">
+                <div class="brand-logo">
+                    <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU" />
+                </div>
+                <div class="brand-text">
+                    <span class="brand-university">CHMSU</span>
+                    <span class="brand-title">Activity Logs</span>
+                </div>
+            </div>
+
+            <!-- Center: University Name -->
+            <div class="nav-center">
+                <span class="nav-department">Office of Student Affairs</span>
+                <span class="nav-system">System Activity Monitoring</span>
+            </div>
+
+            <!-- Right: Actions -->
+            <div class="nav-actions">
+                <a href="{% url 'violations:faculty_dashboard' %}" class="nav-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Dashboard</span>
+                </a>
+                <div class="nav-divider"></div>
+                <div class="nav-profile">
+                    <button class="nav-profile-btn" id="profileBtn">
+                        <span class="profile-avatar">{{ request.user.first_name|default:request.user.username|first|upper }}</span>
+                        <div class="profile-info">
+                            <span class="profile-name">{{ request.user.first_name|default:request.user.username }}</span>
+                            <span class="profile-role">Coordinator</span>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="nav-dropdown" id="profileDropdown">
+                        <a href="#"><i class="fas fa-user"></i> View Profile</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'violations:auth_logout' %}" class="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <style>
+        /* Official Top Navigation Styles */
+        .official-top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10000;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 50%, #1a472a 100%);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            border-bottom: 3px solid #fbbf24;
+        }
+
+        .nav-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            border-radius: 50%;
+            background: white;
+            padding: 2px;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-university {
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fbbf24;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .brand-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .nav-department {
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 10px;
+            color: rgba(255,255,255,0.8);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .nav-system {
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .nav-back-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-1px);
+        }
+
+        .nav-divider {
+            width: 1px;
+            height: 32px;
+            background: rgba(255,255,255,0.2);
+            margin: 0 4px;
+        }
+
+        .nav-profile {
+            position: relative;
+        }
+
+        .nav-profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 10px 5px 5px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-profile-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .profile-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #1a472a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .profile-name {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+
+        .profile-role {
+            font-family: 'Poppins', sans-serif;
+            font-size: 9px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        .nav-profile-btn i {
+            color: rgba(255,255,255,0.7);
+            font-size: 10px;
+        }
+
+        .nav-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 180px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border: 1px solid #e5e7eb;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+            overflow: hidden;
+            z-index: 10002;
+        }
+
+        .nav-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-dropdown a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            color: #374151;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+
+        .nav-dropdown a:hover {
+            background: #f3f4f6;
+        }
+
+        .nav-dropdown a i {
+            width: 14px;
+            color: #6b7280;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 4px 0;
+        }
+
+        .nav-dropdown .logout-link {
+            color: #dc2626;
+        }
+
+        .nav-dropdown .logout-link i {
+            color: #dc2626;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            margin-top: 84px;
+            padding: 24px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .stat-icon.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+        .stat-icon.green { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .stat-icon.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+        .stat-icon.orange { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+
+        .stat-content h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .stat-content p {
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            color: #6b7280;
+            margin: 4px 0 0 0;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 24px;
+        }
+
+        .filter-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .filter-header h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-group label {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            color: #374151;
+            background: #ffffff;
+            transition: border-color 0.2s;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #1a472a;
+            box-shadow: 0 0 0 3px rgba(26, 71, 42, 0.1);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .filter-btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .filter-btn.primary {
+            background: linear-gradient(135deg, #1a472a, #2d5a3f);
+            color: white;
+        }
+
+        .filter-btn.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+        }
+
+        .filter-btn.secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .filter-btn.secondary:hover {
+            background: #e5e7eb;
+        }
+
+        /* Logs Table Section */
+        .logs-section {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+        }
+
+        .logs-header {
+            background: linear-gradient(135deg, #1a472a, #2d5a3f);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logs-header h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logs-count {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .logs-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .logs-table thead {
+            background: #f9fafb;
+        }
+
+        .logs-table th {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .logs-table td {
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            color: #374151;
+            padding: 14px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: top;
+        }
+
+        .logs-table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        /* User Cell */
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .user-avatar.staff { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+        .user-avatar.student { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+        .user-avatar.osa_coordinator { background: linear-gradient(135deg, #1a472a, #2d5a3f); color: white; }
+        .user-avatar.guard { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+        .user-avatar.formator { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        /* Action Badge */
+        .action-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .action-badge.created { background: #d1fae5; color: #065f46; }
+        .action-badge.updated { background: #dbeafe; color: #1e40af; }
+        .action-badge.approved { background: #d1fae5; color: #065f46; }
+        .action-badge.rejected { background: #fee2e2; color: #991b1b; }
+        .action-badge.submitted { background: #e0e7ff; color: #3730a3; }
+        .action-badge.reported { background: #fef3c7; color: #92400e; }
+        .action-badge.signed { background: #d1fae5; color: #065f46; }
+        .action-badge.default { background: #f3f4f6; color: #374151; }
+
+        /* Description Cell */
+        .description-cell {
+            max-width: 350px;
+        }
+
+        .description-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.5;
+        }
+
+        /* Image Attachment */
+        .attachment-cell {
+            text-align: center;
+        }
+
+        .attachment-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .attachment-thumb:hover {
+            transform: scale(1.1);
+            border-color: #1a472a;
+        }
+
+        .no-attachment {
+            color: #9ca3af;
+            font-size: 11px;
+        }
+
+        /* Timestamp Cell */
+        .timestamp-cell {
+            white-space: nowrap;
+        }
+
+        .timestamp-date {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .timestamp-time {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            color: #d1d5db;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h4 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin: 0 0 8px 0;
+        }
+
+        .empty-state p {
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        /* Pagination */
+        .pagination-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-top: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .pagination-info {
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .pagination-links {
+            display: flex;
+            gap: 4px;
+        }
+
+        .pagination-links a,
+        .pagination-links span {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .pagination-links a {
+            background: #ffffff;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .pagination-links a:hover {
+            background: #f3f4f6;
+            border-color: #1a472a;
+        }
+
+        .pagination-links .current {
+            background: linear-gradient(135deg, #1a472a, #2d5a3f);
+            color: white;
+            border: 1px solid #1a472a;
+        }
+
+        .pagination-links .disabled {
+            background: #f3f4f6;
+            color: #9ca3af;
+            border: 1px solid #e5e7eb;
+            cursor: not-allowed;
+        }
+
+        /* Image Preview Modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10005;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .image-modal.show {
+            display: flex;
+        }
+
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .image-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .image-modal-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .filter-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 16px;
+                margin-top: 74px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+            .logs-table {
+                font-size: 12px;
+            }
+            .nav-center { display: none; }
+            .nav-back-btn span { display: none; }
+            .profile-info { display: none; }
+        }
+    </style>
+
+    <div class="main-content">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-list-alt"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.total_logs }}</h3>
+                    <p>Total Activities</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.today_logs }}</h3>
+                    <p>Today's Activities</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.staff_logs }}</h3>
+                    <p>Staff Activities</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.student_logs }}</h3>
+                    <p>Student Activities</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.guard_logs }}</h3>
+                    <p>Guard Activities</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.formator_logs }}</h3>
+                    <p>Formator Activities</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <div class="filter-header">
+                <h3><i class="fas fa-filter"></i> Filter Activity Logs</h3>
+            </div>
+            <form method="get" action="">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>User Role</label>
+                        <select name="role">
+                            <option value="all" {% if current_filters.role == 'all' %}selected{% endif %}>All Roles</option>
+                            <option value="staff" {% if current_filters.role == 'staff' %}selected{% endif %}>Staff</option>
+                            <option value="student" {% if current_filters.role == 'student' %}selected{% endif %}>Student</option>
+                            <option value="osa_coordinator" {% if current_filters.role == 'osa_coordinator' %}selected{% endif %}>OSA Coordinator</option>
+                            <option value="guard" {% if current_filters.role == 'guard' %}selected{% endif %}>Guard</option>
+                            <option value="formator" {% if current_filters.role == 'formator' %}selected{% endif %}>Formator</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Action Type</label>
+                        <select name="action">
+                            <option value="all" {% if current_filters.action == 'all' %}selected{% endif %}>All Actions</option>
+                            {% for value, label in action_types %}
+                            <option value="{{ value }}" {% if current_filters.action == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Date From</label>
+                        <input type="date" name="date_from" value="{{ current_filters.date_from }}">
+                    </div>
+                    <div class="filter-group">
+                        <label>Date To</label>
+                        <input type="date" name="date_to" value="{{ current_filters.date_to }}">
+                    </div>
+                    <div class="filter-group">
+                        <label>Search</label>
+                        <input type="text" name="search" placeholder="Search user or description..." value="{{ current_filters.search }}">
+                    </div>
+                </div>
+                <div class="filter-actions" style="margin-top: 16px;">
+                    <button type="submit" class="filter-btn primary">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'violations:faculty_activity_logs' %}" class="filter-btn secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Activity Logs Table -->
+        <div class="logs-section">
+            <div class="logs-header">
+                <h3><i class="fas fa-history"></i> Activity Logs</h3>
+                <span class="logs-count">{{ page_obj.paginator.count }} total records</span>
+            </div>
+
+            {% if logs %}
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Description</th>
+                        <th>Related To</th>
+                        <th>Attachment</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar {% if log.user %}{{ log.user.role }}{% elif log.guard_code %}guard{% elif log.formator_code %}formator{% endif %}">
+                                    {% if log.user %}
+                                        {{ log.user.first_name|default:log.user.username|first|upper }}
+                                    {% elif log.guard_code %}
+                                        <i class="fas fa-shield-alt" style="font-size: 14px;"></i>
+                                    {% elif log.formator_code %}
+                                        <i class="fas fa-user-check" style="font-size: 14px;"></i>
+                                    {% else %}
+                                        ?
+                                    {% endif %}
+                                </div>
+                                <div class="user-info">
+                                    <span class="user-name">{{ log.get_actor_display }}</span>
+                                    <span class="user-role">{{ log.get_actor_role }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="action-badge 
+                                {% if 'created' in log.action_type or 'submitted' in log.action_type %}created
+                                {% elif 'approved' in log.action_type or 'signed' in log.action_type %}approved
+                                {% elif 'rejected' in log.action_type %}rejected
+                                {% elif 'updated' in log.action_type %}updated
+                                {% elif 'reported' in log.action_type %}reported
+                                {% else %}default{% endif %}">
+                                <i class="fas 
+                                    {% if 'created' in log.action_type %}fa-plus-circle
+                                    {% elif 'approved' in log.action_type %}fa-check-circle
+                                    {% elif 'rejected' in log.action_type %}fa-times-circle
+                                    {% elif 'submitted' in log.action_type %}fa-paper-plane
+                                    {% elif 'reported' in log.action_type %}fa-flag
+                                    {% elif 'signed' in log.action_type %}fa-signature
+                                    {% elif 'updated' in log.action_type %}fa-edit
+                                    {% else %}fa-circle{% endif %}"></i>
+                                {{ log.get_action_type_display }}
+                            </span>
+                        </td>
+                        <td class="description-cell">
+                            <div class="description-text">{{ log.description }}</div>
+                        </td>
+                        <td>
+                            {% if log.related_student %}
+                            <span style="font-size: 12px;">
+                                <i class="fas fa-user-graduate" style="color: #3b82f6;"></i>
+                                {{ log.related_student.student_id }}
+                            </span>
+                            {% elif log.related_violation %}
+                            <span style="font-size: 12px;">
+                                <i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i>
+                                Violation #{{ log.related_violation.id }}
+                            </span>
+                            {% elif log.related_apology %}
+                            <span style="font-size: 12px;">
+                                <i class="fas fa-envelope" style="color: #10b981;"></i>
+                                Apology #{{ log.related_apology.id }}
+                            </span>
+                            {% else %}
+                            <span class="no-attachment">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="attachment-cell">
+                            {% if log.attached_image %}
+                            <img src="{{ log.attached_image.url }}" alt="Attachment" class="attachment-thumb" onclick="openImageModal('{{ log.attached_image.url }}')">
+                            {% else %}
+                            <span class="no-attachment">No image</span>
+                            {% endif %}
+                        </td>
+                        <td class="timestamp-cell">
+                            <div class="timestamp-date">{{ log.timestamp|date:"M d, Y" }}</div>
+                            <div class="timestamp-time">{{ log.timestamp|date:"g:i A" }}</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="pagination-wrapper">
+                <div class="pagination-info">
+                    Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} records
+                </div>
+                <div class="pagination-links">
+                    {% if page_obj.has_previous %}
+                    <a href="?page=1{% if current_filters.role != 'all' %}&role={{ current_filters.role }}{% endif %}{% if current_filters.action != 'all' %}&action={{ current_filters.action }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if current_filters.role != 'all' %}&role={{ current_filters.role }}{% endif %}{% if current_filters.action != 'all' %}&action={{ current_filters.action }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                    {% else %}
+                    <span class="disabled"><i class="fas fa-angle-double-left"></i></span>
+                    <span class="disabled"><i class="fas fa-angle-left"></i></span>
+                    {% endif %}
+
+                    <span class="current">{{ page_obj.number }}</span>
+
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if current_filters.role != 'all' %}&role={{ current_filters.role }}{% endif %}{% if current_filters.action != 'all' %}&action={{ current_filters.action }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% if current_filters.role != 'all' %}&role={{ current_filters.role }}{% endif %}{% if current_filters.action != 'all' %}&action={{ current_filters.action }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                    {% else %}
+                    <span class="disabled"><i class="fas fa-angle-right"></i></span>
+                    <span class="disabled"><i class="fas fa-angle-double-right"></i></span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h4>No Activity Logs Found</h4>
+                <p>There are no activity logs matching your filters, or the system hasn't recorded any activities yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div class="image-modal" id="imageModal">
+        <button class="image-modal-close" onclick="closeImageModal()">
+            <i class="fas fa-times"></i>
+        </button>
+        <img id="modalImage" src="" alt="Preview">
+    </div>
+
+    <script>
+        // Profile Dropdown
+        const profileBtn = document.getElementById('profileBtn');
+        const profileDropdown = document.getElementById('profileDropdown');
+
+        profileBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('show');
+        });
+
+        document.addEventListener('click', () => {
+            profileDropdown?.classList.remove('show');
+        });
+
+        // Image Modal
+        function openImageModal(url) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('modalImage');
+            img.src = url;
+            modal.classList.add('show');
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('show');
+        }
+
+        document.getElementById('imageModal')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeImageModal();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+    </script>
+</body>
+</html>

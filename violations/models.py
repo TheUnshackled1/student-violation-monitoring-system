@@ -342,6 +342,170 @@ class LoginActivity(models.Model):
 		return f"LoginActivity({self.user.username} {self.event_type} at {self.timestamp:%Y-%m-%d %H:%M:%S})"
 
 
+class ActivityLog(models.Model):
+	"""Track all user activities across the system for OSA Coordinator monitoring."""
+	
+	class ActionType(models.TextChoices):
+		# Staff actions
+		VIOLATION_CREATED = "violation_created", "Created Violation"
+		VIOLATION_UPDATED = "violation_updated", "Updated Violation"
+		VIOLATION_VERIFIED = "violation_verified", "Verified Violation"
+		VIOLATION_DISMISSED = "violation_dismissed", "Dismissed Violation"
+		APOLOGY_REVIEWED = "apology_reviewed", "Reviewed Apology Letter"
+		APOLOGY_APPROVED = "apology_approved", "Approved Apology Letter"
+		APOLOGY_REJECTED = "apology_rejected", "Rejected Apology Letter"
+		APOLOGY_REVISION = "apology_revision", "Requested Apology Revision"
+		APOLOGY_SENT_FORMATOR = "apology_sent_formator", "Sent to Formator"
+		MESSAGE_SENT = "message_sent", "Sent Message"
+		STUDENT_ADDED = "student_added", "Added Student"
+		MEETING_SCHEDULED = "meeting_scheduled", "Scheduled Meeting"
+		ALERT_RESOLVED = "alert_resolved", "Resolved Alert"
+		
+		# Student actions
+		APOLOGY_SUBMITTED = "apology_submitted", "Submitted Apology Letter"
+		APOLOGY_RESUBMITTED = "apology_resubmitted", "Resubmitted Apology Letter"
+		PROFILE_UPDATED = "profile_updated", "Updated Profile"
+		
+		# Guard actions
+		INCIDENT_REPORTED = "incident_reported", "Reported Incident"
+		ID_CONFISCATED = "id_confiscated", "Confiscated ID"
+		
+		# Formator actions
+		LETTER_SIGNED = "letter_signed", "Signed Apology Letter"
+		LETTER_REJECTED_FORMATOR = "letter_rejected_formator", "Rejected by Formator"
+		
+		# OSA Coordinator actions
+		VIOLATION_REPORTED = "violation_reported", "Reported Violation"
+		REPORT_VIEWED = "report_viewed", "Viewed Reports"
+
+	user = models.ForeignKey(
+		settings.AUTH_USER_MODEL, 
+		on_delete=models.CASCADE, 
+		related_name="activity_logs",
+		null=True,
+		blank=True,
+		help_text="User who performed the action (null for guards/formators using code-based login)"
+	)
+	guard_code = models.CharField(
+		max_length=50, 
+		blank=True, 
+		help_text="Guard code for guard activities"
+	)
+	formator_code = models.CharField(
+		max_length=50, 
+		blank=True, 
+		help_text="Formator code for formator activities"
+	)
+	action_type = models.CharField(max_length=50, choices=ActionType.choices)
+	description = models.TextField(help_text="Detailed description of the activity")
+	
+	# Related objects (optional - for linking to specific records)
+	related_violation = models.ForeignKey(
+		'Violation', 
+		on_delete=models.SET_NULL, 
+		null=True, 
+		blank=True, 
+		related_name="activity_logs"
+	)
+	related_student = models.ForeignKey(
+		'Student', 
+		on_delete=models.SET_NULL, 
+		null=True, 
+		blank=True, 
+		related_name="activity_logs"
+	)
+	related_apology = models.ForeignKey(
+		'ApologyLetter', 
+		on_delete=models.SET_NULL, 
+		null=True, 
+		blank=True, 
+		related_name="activity_logs"
+	)
+	
+	# Attached image/evidence
+	attached_image = models.ImageField(
+		upload_to="activity_logs/%Y/%m/", 
+		blank=True, 
+		null=True,
+		help_text="Optional image attachment for the activity"
+	)
+	
+	# Metadata
+	ip_address = models.CharField(max_length=45, blank=True)
+	user_agent = models.TextField(blank=True)
+	timestamp = models.DateTimeField(auto_now_add=True)
+	
+	class Meta:
+		ordering = ["-timestamp"]
+		verbose_name = "Activity Log"
+		verbose_name_plural = "Activity Logs"
+	
+	def __str__(self):
+		if self.user:
+			actor = self.user.username
+		elif self.guard_code:
+			actor = f"Guard: {self.guard_code}"
+		elif self.formator_code:
+			actor = f"Formator: {self.formator_code}"
+		else:
+			actor = "Unknown"
+		return f"{actor} - {self.get_action_type_display()} at {self.timestamp:%Y-%m-%d %H:%M}"
+	
+	def get_actor_display(self):
+		"""Return a display name for the actor who performed the activity."""
+		if self.user:
+			return self.user.get_full_name() or self.user.username
+		elif self.guard_code:
+			return f"Guard: {self.guard_code}"
+		elif self.formator_code:
+			return f"Formator: {self.formator_code}"
+		return "Unknown"
+	
+	def get_actor_role(self):
+		"""Return the role of the actor."""
+		if self.user:
+			return self.user.get_role_display() if hasattr(self.user, 'get_role_display') else self.user.role
+		elif self.guard_code:
+			return "Guard"
+		elif self.formator_code:
+			return "Formator"
+		return "Unknown"
+	
+	@classmethod
+	def log_activity(cls, action_type, description, request=None, user=None, guard_code=None, formator_code=None, **kwargs):
+		"""Helper method to create activity log entries.
+		
+		Args:
+			action_type: The type of action being logged
+			description: Detailed description of the activity
+			request: HTTP request object (optional, for IP/user agent)
+			user: User object for staff/student/coordinator activities
+			guard_code: Guard code for guard activities
+			formator_code: Formator code for formator activities
+			**kwargs: Additional fields (related_violation, related_student, etc.)
+		"""
+		ip_address = ""
+		user_agent = ""
+		if request:
+			x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+			if x_forwarded_for:
+				ip_address = x_forwarded_for.split(',')[0].strip()
+			else:
+				ip_address = request.META.get('REMOTE_ADDR', '')
+			user_agent = request.META.get('HTTP_USER_AGENT', '')
+		
+		return cls.objects.create(
+			user=user,
+			guard_code=guard_code or '',
+			formator_code=formator_code or '',
+			action_type=action_type,
+			description=description,
+			ip_address=ip_address,
+			user_agent=user_agent,
+			**kwargs
+		)
+
+
 # ============================================
 # STAFF CORE FEATURE MODELS
 # ============================================
@@ -393,6 +557,7 @@ class ApologyLetter(models.Model):
 	letter_date = models.CharField(max_length=100, blank=True, help_text="Date on the letter")
 	letter_campus = models.CharField(max_length=200, blank=True, help_text="Campus name")
 	letter_full_name = models.CharField(max_length=200, blank=True, help_text="Student full name")
+	letter_suffix = models.CharField(max_length=20, blank=True, help_text="Name suffix (Jr., Sr., III, etc.) - Optional")
 	letter_home_address = models.CharField(max_length=500, blank=True, help_text="Home address")
 	letter_program = models.CharField(max_length=300, blank=True, help_text="Program, Major, Year & Section")
 	letter_violations = models.TextField(blank=True, help_text="Specific violation/s")
