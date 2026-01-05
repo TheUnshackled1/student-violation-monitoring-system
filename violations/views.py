@@ -2098,14 +2098,15 @@ def staff_reports_view(request):
 	resolution_rate = round((resolved_count / total_violations * 100), 1) if total_violations > 0 else 0
 	
 	# Average resolution time (for resolved violations)
+	# Using updated_at as proxy for resolution date since resolved_at doesn't exist
 	avg_resolution_days = 0
-	resolved_violations = violations.filter(status=Violation.Status.RESOLVED, resolved_at__isnull=False)
+	resolved_violations = violations.filter(status=Violation.Status.RESOLVED)
 	if resolved_violations.exists():
 		total_days = 0
 		count = 0
 		for v in resolved_violations:
-			if v.resolved_at and v.incident_at:
-				delta = v.resolved_at - v.incident_at
+			if v.updated_at and v.incident_at:
+				delta = v.updated_at - v.incident_at
 				total_days += delta.days
 				count += 1
 		avg_resolution_days = round(total_days / count, 1) if count > 0 else 0
@@ -2195,7 +2196,7 @@ def staff_reports_view(request):
 	# VIOLATION TYPE BREAKDOWN
 	# ============================================
 	violation_type_stats = violations.exclude(violation_type__isnull=True).values(
-		'violation_type__name', 'violation_type__severity'
+		'violation_type__name', 'violation_type__category'
 	).annotate(count=Count('id')).order_by('-count')[:10]
 	
 	violation_types = []
@@ -2206,7 +2207,7 @@ def staff_reports_view(request):
 		percentage = round((count / total_violations * 100), 1) if total_violations > 0 else 0
 		violation_types.append({
 			'type': type_name,
-			'severity': vt['violation_type__severity'],
+			'severity': vt['violation_type__category'],
 			'count': count,
 			'percentage': percentage,
 			'color': type_colors[i % len(type_colors)]

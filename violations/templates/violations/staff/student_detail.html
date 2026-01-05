@@ -30,7 +30,39 @@
       </div>
 
       <div class="nav-actions">
-        <button class="nav-icon-btn" onclick="window.print()" title="Print Profile">
+        <div class="print-settings-dropdown no-print">
+          <button class="nav-icon-btn" onclick="togglePrintSettings()" title="Print Settings">
+            <i class="fas fa-cog"></i>
+          </button>
+          <div class="print-settings-menu" id="printSettingsMenu">
+            <div class="print-settings-header">
+              <i class="fas fa-print"></i> Print Settings
+            </div>
+            <div class="print-settings-body">
+              <label class="print-setting-label">Paper Size:</label>
+              <div class="paper-size-options">
+                <label class="paper-option">
+                  <input type="radio" name="paperSize" value="a4" checked onchange="setPaperSize('a4')">
+                  <span>A4 (210×297mm)</span>
+                </label>
+                <label class="paper-option">
+                  <input type="radio" name="paperSize" value="legal" onchange="setPaperSize('legal')">
+                  <span>Legal (216×356mm)</span>
+                </label>
+                <label class="paper-option">
+                  <input type="radio" name="paperSize" value="letter" onchange="setPaperSize('letter')">
+                  <span>Letter (216×279mm)</span>
+                </label>
+              </div>
+            </div>
+            <div class="print-settings-footer">
+              <button type="button" onclick="window.print()" class="print-now-btn">
+                <i class="fas fa-print"></i> Print Now
+              </button>
+            </div>
+          </div>
+        </div>
+        <button class="nav-icon-btn no-print" onclick="window.print()" title="Print Profile">
           <i class="fas fa-print"></i>
         </button>
         <a href="{% url 'violations:staff_dashboard' %}" class="nav-icon-btn" title="Back to Dashboard">
@@ -1129,6 +1161,230 @@
         border-width: 2px;
       }
     }
+
+    /* Print Settings Dropdown */
+    .print-settings-dropdown {
+      position: relative;
+    }
+
+    .print-settings-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 8px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 25px rgba(0,0,0,0.2);
+      min-width: 260px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s;
+      z-index: 1001;
+      overflow: hidden;
+    }
+
+    .print-settings-menu.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .print-settings-header {
+      background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
+      color: #ffffff;
+      padding: 12px 16px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .print-settings-body {
+      padding: 16px;
+    }
+
+    .print-setting-label {
+      display: block;
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .paper-size-options {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .paper-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .paper-option:hover {
+      background: #f3f4f6;
+    }
+
+    .paper-option input[type="radio"] {
+      accent-color: #1a472a;
+    }
+
+    .print-settings-footer {
+      padding: 12px 16px;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .print-now-btn {
+      width: 100%;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .print-now-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+    }
+
+    /* Paper Size Definitions */
+    @page { margin: 15mm 12mm; }
+    @page a4 { size: A4 portrait; margin: 15mm 12mm; }
+    @page legal { size: 216mm 356mm portrait; margin: 15mm 12mm; }
+    @page letter { size: letter portrait; margin: 15mm 12mm; }
+
+    body.print-a4 { page: a4; }
+    body.print-legal { page: legal; }
+    body.print-letter { page: letter; }
+
+    @media print {
+      *, *::before, *::after {
+        box-shadow: none !important;
+        text-shadow: none !important;
+      }
+
+      html, body {
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        font-size: 11pt !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .background-overlay,
+      .background-image,
+      .print-settings-dropdown {
+        display: none !important;
+      }
+
+      .container {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      main.container {
+        margin-top: 0 !important;
+      }
+
+      .official-profile-section,
+      .official-stats-section,
+      .official-directory-section {
+        border: 1px solid #1a472a !important;
+        margin-bottom: 10mm !important;
+        page-break-inside: avoid !important;
+      }
+
+      .profile-header {
+        padding: 10mm 8mm !important;
+      }
+
+      .profile-header-logo img {
+        width: 50px !important;
+        height: 50px !important;
+      }
+
+      .profile-title-bar {
+        background: #1a472a !important;
+        color: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .profile-photo-frame {
+        width: 100px !important;
+        height: 100px !important;
+      }
+
+      .student-full-name {
+        font-size: 14pt !important;
+      }
+
+      .detail-label {
+        font-size: 8pt !important;
+      }
+
+      .detail-value {
+        font-size: 10pt !important;
+      }
+    }
   </style>
+
+  <script>
+    // Print Settings
+    function togglePrintSettings() {
+      const menu = document.getElementById('printSettingsMenu');
+      menu.classList.toggle('show');
+    }
+
+    let currentPaperSize = 'a4';
+
+    function setPaperSize(size) {
+      currentPaperSize = size;
+      document.body.classList.remove('print-a4', 'print-legal', 'print-letter');
+      document.body.classList.add('print-' + size);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.classList.add('print-a4');
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.print-settings-dropdown')) {
+        const menu = document.getElementById('printSettingsMenu');
+        if (menu) menu.classList.remove('show');
+      }
+    });
+  </script>
 </body>
 </html>

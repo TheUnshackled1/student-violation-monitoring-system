@@ -30,6 +30,53 @@
       </div>
 
       <div class="nav-actions">
+        <div class="print-settings-dropdown no-print">
+          <button class="nav-icon-btn" onclick="togglePrintSettings()" title="Print Settings">
+            <i class="fas fa-cog"></i>
+          </button>
+          <div class="print-settings-menu" id="printSettingsMenu">
+            <div class="print-settings-header">
+              <i class="fas fa-print"></i> Print Settings
+            </div>
+            <div class="print-settings-body">
+              <label class="print-setting-label">Paper Size:</label>
+              <div class="paper-size-options">
+                <label class="paper-option">
+                  <input type="radio" name="paperSize" value="a4" checked onchange="setPaperSize('a4')">
+                  <span>A4 (210×297mm)</span>
+                </label>
+                <label class="paper-option">
+                  <input type="radio" name="paperSize" value="legal" onchange="setPaperSize('legal')">
+                  <span>Legal (216×356mm)</span>
+                </label>
+                <label class="paper-option">
+                  <input type="radio" name="paperSize" value="letter" onchange="setPaperSize('letter')">
+                  <span>Letter (216×279mm)</span>
+                </label>
+                <label class="paper-option">
+                  <input type="radio" name="paperSize" value="folio" onchange="setPaperSize('folio')">
+                  <span>Folio (216×330mm)</span>
+                </label>
+              </div>
+              <label class="print-setting-label" style="margin-top: 12px;">Orientation:</label>
+              <div class="paper-size-options">
+                <label class="paper-option">
+                  <input type="radio" name="orientation" value="portrait" checked onchange="setOrientation('portrait')">
+                  <span>Portrait</span>
+                </label>
+                <label class="paper-option">
+                  <input type="radio" name="orientation" value="landscape" onchange="setOrientation('landscape')">
+                  <span>Landscape</span>
+                </label>
+              </div>
+            </div>
+            <div class="print-settings-footer">
+              <button type="button" onclick="window.print()" class="print-now-btn">
+                <i class="fas fa-print"></i> Print Now
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="export-dropdown no-print">
           <button class="nav-icon-btn" onclick="toggleExportMenu()" title="Export Report">
             <i class="fas fa-download"></i>
@@ -46,7 +93,7 @@
         <button class="nav-icon-btn no-print" onclick="openSendModal()" title="Send to Coordinator">
           <i class="fas fa-paper-plane"></i>
         </button>
-        <button class="nav-icon-btn" onclick="window.print()" title="Print Report">
+        <button class="nav-icon-btn no-print" onclick="window.print()" title="Print Report">
           <i class="fas fa-print"></i>
         </button>
         <a href="{% url 'violations:staff_dashboard' %}" class="nav-icon-btn" title="Back to Dashboard">
@@ -569,12 +616,63 @@
     function toggleExportMenu() {
       const menu = document.getElementById('exportMenu');
       menu.classList.toggle('show');
+      // Close print settings if open
+      const printMenu = document.getElementById('printSettingsMenu');
+      if (printMenu) printMenu.classList.remove('show');
     }
     
-    // Close export menu when clicking outside
+    // Print Settings Toggle
+    function togglePrintSettings() {
+      const menu = document.getElementById('printSettingsMenu');
+      menu.classList.toggle('show');
+      // Close export menu if open
+      const exportMenu = document.getElementById('exportMenu');
+      if (exportMenu) exportMenu.classList.remove('show');
+    }
+    
+    // Set Paper Size
+    let currentPaperSize = 'a4';
+    let currentOrientation = 'portrait';
+    
+    function setPaperSize(size) {
+      currentPaperSize = size;
+      updatePrintClass();
+    }
+    
+    function setOrientation(orientation) {
+      currentOrientation = orientation;
+      updatePrintClass();
+    }
+    
+    function updatePrintClass() {
+      // Remove all print classes
+      document.body.classList.remove(
+        'print-a4', 'print-a4-landscape',
+        'print-legal', 'print-legal-landscape',
+        'print-letter', 'print-letter-landscape',
+        'print-folio', 'print-folio-landscape'
+      );
+      
+      // Add new print class
+      const className = currentOrientation === 'landscape' 
+        ? `print-${currentPaperSize}-landscape` 
+        : `print-${currentPaperSize}`;
+      document.body.classList.add(className);
+    }
+    
+    // Initialize with A4 portrait
+    document.addEventListener('DOMContentLoaded', function() {
+      updatePrintClass();
+    });
+    
+    // Close menus when clicking outside
     document.addEventListener('click', function(e) {
       if (!e.target.closest('.export-dropdown')) {
         const menu = document.getElementById('exportMenu');
+        if (menu) menu.classList.remove('show');
+      }
+      if (!e.target.closest('.print-settings-dropdown')) {
+        const menu = document.getElementById('printSettingsMenu');
         if (menu) menu.classList.remove('show');
       }
     });
@@ -601,6 +699,10 @@
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         closeSendModal();
+        const printMenu = document.getElementById('printSettingsMenu');
+        if (printMenu) printMenu.classList.remove('show');
+        const exportMenu = document.getElementById('exportMenu');
+        if (exportMenu) exportMenu.classList.remove('show');
       }
     });
   </script>
@@ -1424,6 +1526,117 @@
       }
     }
 
+    /* Print Settings Dropdown */
+    .print-settings-dropdown {
+      position: relative;
+    }
+
+    .print-settings-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 8px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 25px rgba(0,0,0,0.2);
+      min-width: 260px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s;
+      z-index: 1001;
+      overflow: hidden;
+    }
+
+    .print-settings-menu.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .print-settings-header {
+      background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
+      color: #ffffff;
+      padding: 12px 16px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .print-settings-body {
+      padding: 16px;
+    }
+
+    .print-setting-label {
+      display: block;
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .paper-size-options {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .paper-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .paper-option:hover {
+      background: #f3f4f6;
+    }
+
+    .paper-option input[type="radio"] {
+      accent-color: #1a472a;
+    }
+
+    .print-settings-footer {
+      padding: 12px 16px;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .print-now-btn {
+      width: 100%;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .print-now-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+    }
+
     /* Export Dropdown */
     .export-dropdown {
       position: relative;
@@ -2069,6 +2282,393 @@
 
       .modal-overlay {
         display: none !important;
+      }
+    }
+
+    /* ========================================
+       COMPREHENSIVE PRINT STYLES
+       ======================================== */
+    
+    /* Paper Size Definitions */
+    @page {
+      margin: 15mm 12mm;
+    }
+
+    /* A4 Size (Default) */
+    @page a4 {
+      size: A4 portrait;
+      margin: 15mm 12mm;
+    }
+
+    @page a4-landscape {
+      size: A4 landscape;
+      margin: 12mm 15mm;
+    }
+
+    /* Legal Size */
+    @page legal {
+      size: 216mm 356mm portrait;
+      margin: 15mm 12mm;
+    }
+
+    @page legal-landscape {
+      size: 356mm 216mm landscape;
+      margin: 12mm 15mm;
+    }
+
+    /* Letter Size */
+    @page letter {
+      size: letter portrait;
+      margin: 15mm 12mm;
+    }
+
+    @page letter-landscape {
+      size: letter landscape;
+      margin: 12mm 15mm;
+    }
+
+    /* Folio Size */
+    @page folio {
+      size: 216mm 330mm portrait;
+      margin: 15mm 12mm;
+    }
+
+    @page folio-landscape {
+      size: 330mm 216mm landscape;
+      margin: 12mm 15mm;
+    }
+
+    /* Print Body Classes */
+    body.print-a4 { page: a4; }
+    body.print-a4-landscape { page: a4-landscape; }
+    body.print-legal { page: legal; }
+    body.print-legal-landscape { page: legal-landscape; }
+    body.print-letter { page: letter; }
+    body.print-letter-landscape { page: letter-landscape; }
+    body.print-folio { page: folio; }
+    body.print-folio-landscape { page: folio-landscape; }
+
+    @media print {
+      /* Reset and base print styles */
+      *, *::before, *::after {
+        box-shadow: none !important;
+        text-shadow: none !important;
+      }
+
+      html, body {
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        font-size: 11pt !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+
+      /* Hide non-print elements */
+      .no-print,
+      .official-top-nav,
+      .background-overlay,
+      .background-image,
+      .nav-actions,
+      .report-filter-bar,
+      .modal-overlay,
+      .print-settings-dropdown,
+      .export-dropdown {
+        display: none !important;
+      }
+
+      /* Show print-only elements */
+      .print-only {
+        display: block !important;
+      }
+
+      /* Container adjustments */
+      .container {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      main.container {
+        margin-top: 0 !important;
+      }
+
+      /* Section styling for print */
+      .official-stats-section,
+      .official-directory-section,
+      .analytics-card,
+      .metrics-row,
+      section {
+        border: 1px solid #1a472a !important;
+        box-shadow: none !important;
+        margin-bottom: 10mm !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      /* Header styling */
+      .stats-header {
+        padding: 12mm 8mm !important;
+        border-bottom: 2px solid #1a472a !important;
+      }
+
+      .stats-header-logo img {
+        width: 50px !important;
+        height: 50px !important;
+      }
+
+      .stats-university {
+        font-size: 14pt !important;
+      }
+
+      .stats-republic,
+      .stats-address,
+      .stats-office {
+        font-size: 9pt !important;
+      }
+
+      /* Title bar */
+      .stats-title-bar,
+      .directory-title-bar,
+      .analytics-header {
+        background: #1a472a !important;
+        color: #ffffff !important;
+        padding: 8mm !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .stats-title,
+      .directory-title {
+        font-size: 12pt !important;
+      }
+
+      /* Stats grid */
+      .stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 0 !important;
+      }
+
+      .stat-card {
+        padding: 8mm !important;
+        border-right: 1px solid #e5e7eb !important;
+        border-bottom: 1px solid #e5e7eb !important;
+      }
+
+      .stat-card:nth-child(4n) {
+        border-right: none !important;
+      }
+
+      .stat-value {
+        font-size: 18pt !important;
+        font-weight: 700 !important;
+      }
+
+      .stat-label {
+        font-size: 8pt !important;
+      }
+
+      .stat-icon {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 14pt !important;
+      }
+
+      /* Metrics row for print */
+      .metrics-row {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0 !important;
+        border: 1px solid #1a472a !important;
+      }
+
+      .metric-card {
+        padding: 6mm !important;
+        border-right: 1px solid #e5e7eb !important;
+        border-bottom: none !important;
+      }
+
+      .metric-card:last-child {
+        border-right: none !important;
+      }
+
+      /* Apology stats grid for print */
+      .apology-stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(6, 1fr) !important;
+        gap: 0 !important;
+      }
+
+      .apology-stat-card {
+        padding: 5mm !important;
+        border-right: 1px solid #e5e7eb !important;
+      }
+
+      .apology-stat-card:last-child {
+        border-right: none !important;
+      }
+
+      .apology-stat-value {
+        font-size: 16pt !important;
+      }
+
+      .apology-stat-label {
+        font-size: 7pt !important;
+      }
+
+      /* Severity, program, year level containers */
+      .severity-container,
+      .program-container {
+        padding: 6mm !important;
+        max-height: none !important;
+        overflow: visible !important;
+      }
+
+      .severity-bar,
+      .program-bar {
+        height: 10px !important;
+      }
+
+      .year-level-container {
+        padding: 6mm !important;
+        min-height: auto !important;
+      }
+
+      .year-level-bar-wrap {
+        height: 60px !important;
+      }
+
+      /* Breakdown container */
+      .breakdown-container {
+        padding: 6mm !important;
+      }
+
+      .breakdown-bar {
+        height: 16px !important;
+      }
+
+      /* Analytics row */
+      .analytics-row {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 5mm !important;
+        page-break-inside: avoid !important;
+      }
+
+      .analytics-card {
+        border: 1px solid #1a472a !important;
+      }
+
+      .analytics-content {
+        padding: 5mm !important;
+      }
+
+      /* Tables */
+      .directory-table,
+      .analytics-table {
+        font-size: 9pt !important;
+      }
+
+      .directory-table th,
+      .analytics-table th {
+        background: #f8fafc !important;
+        padding: 3mm !important;
+        font-size: 8pt !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .directory-table td,
+      .analytics-table td {
+        padding: 3mm !important;
+        font-size: 9pt !important;
+      }
+
+      /* Badges */
+      .status-badge,
+      .type-badge {
+        font-size: 7pt !important;
+        padding: 2px 6px !important;
+      }
+
+      .count-badge {
+        font-size: 8pt !important;
+        padding: 2px 8px !important;
+      }
+
+      /* Trend chart */
+      .trend-chart {
+        height: 100px !important;
+        padding: 5mm 0 !important;
+      }
+
+      .trend-bar {
+        width: 25px !important;
+      }
+
+      .trend-value {
+        font-size: 8pt !important;
+      }
+
+      .trend-label {
+        font-size: 7pt !important;
+      }
+
+      /* Footer */
+      .directory-footer {
+        padding: 4mm !important;
+        background: #f9fafb !important;
+        border-top: 1px solid #1a472a !important;
+      }
+
+      .directory-footer p {
+        font-size: 8pt !important;
+      }
+
+      /* Page breaks */
+      .page-break-before {
+        page-break-before: always !important;
+        break-before: page !important;
+      }
+
+      .page-break-after {
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+
+      /* Print header for each page */
+      .print-header {
+        display: block !important;
+        text-align: center;
+        padding: 5mm 0;
+        border-bottom: 1px solid #1a472a;
+        margin-bottom: 5mm;
+      }
+
+      /* Ensure colors print correctly */
+      .stat-icon-total,
+      .stat-icon-pending,
+      .stat-icon-progress,
+      .stat-icon-resolved {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Links */
+      a {
+        color: #1a472a !important;
+        text-decoration: none !important;
+      }
+
+      /* Images */
+      img {
+        max-width: 100% !important;
+        page-break-inside: avoid !important;
       }
     }
   </style>
