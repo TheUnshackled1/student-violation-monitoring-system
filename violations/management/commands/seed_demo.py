@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from violations.models import User, Message, TemporaryAccessRequest
+from violations.models import User, Message
 
 
 class Command(BaseCommand):
@@ -56,15 +56,5 @@ class Command(BaseCommand):
         # Sample messages
         Message.objects.get_or_create(sender=faculty, receiver=staff, content="Please review report #102.")
         Message.objects.get_or_create(sender=staff, receiver=faculty, content="Acknowledged. Starting review.")
-
-        # Temp access request
-        tar, created = TemporaryAccessRequest.objects.get_or_create(
-            requester=staff,
-            defaults={"reason": "Need to edit a report detail.", "duration_hours": 4},
-        )
-        if created:
-            self.stdout.write(self.style.SUCCESS("Created TemporaryAccessRequest for staff"))
-        else:
-            self.stdout.write("TemporaryAccessRequest exists for staff")
 
         self.stdout.write(self.style.SUCCESS("Demo data seeding complete."))

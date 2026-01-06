@@ -123,44 +123,6 @@ class Staff(models.Model):
 		return f"{self.employee_id} - {self.user.get_full_name() or self.user.username}"
 
 
-class TemporaryAccessRequest(models.Model):
-	class Status(models.TextChoices):
-		PENDING = "pending", "Pending"
-		APPROVED = "approved", "Approved"
-		DENIED = "denied", "Denied"
-
-	requester = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="temp_access_requests")
-	reason = models.TextField()
-	duration_hours = models.PositiveIntegerField(default=1)
-	status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
-	approved_by = models.ForeignKey(
-		settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="temp_access_approvals"
-	)
-	requested_at = models.DateTimeField(auto_now_add=True)
-	approved_at = models.DateTimeField(null=True, blank=True)
-	expires_at = models.DateTimeField(null=True, blank=True)
-
-	def approve(self, approver: "User"):
-		self.status = self.Status.APPROVED
-		self.approved_by = approver
-		self.approved_at = timezone.now()
-		self.expires_at = self.approved_at + timezone.timedelta(hours=self.duration_hours)
-		self.save(update_fields=["status", "approved_by", "approved_at", "expires_at"])
-
-	def deny(self, approver: "User"):
-		self.status = self.Status.DENIED
-		self.approved_by = approver
-		self.approved_at = timezone.now()
-		self.save(update_fields=["status", "approved_by", "approved_at"])
-
-	@property
-	def is_active(self) -> bool:
-		return self.status == self.Status.APPROVED and (self.expires_at is None or self.expires_at > timezone.now())
-
-	def __str__(self) -> str:  # pragma: no cover
-		return f"TempAccess({self.requester} → {self.status})"
-
-
 class Message(models.Model):
 	sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="messages_sent")
 	receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="messages_received")

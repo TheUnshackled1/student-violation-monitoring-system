@@ -8,7 +8,7 @@ from django.shortcuts import redirect
 from django.utils import timezone
 from django.db import models
 
-from .models import TemporaryAccessRequest, User
+from .models import User
 
 
 def login_required(view_func):
@@ -34,21 +34,6 @@ def role_required(allowed_roles: Iterable[str]):
             role = getattr(user, "role", None)
             if role in allowed_roles:
                 return view_func(request, *args, **kwargs)
-
-            # Elevated access: If this view requires OSA Coordinator, allow approved/active temporary access.
-            try:
-                requires_osa_coordinator = getattr(User.Role, "OSA_COORDINATOR", "osa_coordinator") in allowed_roles
-            except Exception:
-                requires_osa_coordinator = False
-
-            if requires_osa_coordinator:
-                now = timezone.now()
-                has_active = TemporaryAccessRequest.objects.filter(
-                    requester=user,
-                    status=TemporaryAccessRequest.Status.APPROVED,
-                ).filter(models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=now)).exists()
-                if has_active:
-                    return view_func(request, *args, **kwargs)
 
             # Optionally, return 403. Here we redirect to a safe landing with a message.
             messages.warning(request, "You do not have permission to access that page.")

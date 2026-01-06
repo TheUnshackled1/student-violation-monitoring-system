@@ -18,7 +18,7 @@ import json
 
 from .models import (
 	User, Student as StudentModel, Staff as StaffModel, OSACoordinator as OSACoordinatorModel,
-	TemporaryAccessRequest, Violation, ViolationType, LoginActivity,
+	Violation, ViolationType, LoginActivity,
 	ViolationDocument, ApologyLetter, StaffVerification,
 	Message, StaffAlert
 )
@@ -1551,14 +1551,6 @@ def route_dashboard_view(request):
 	if role == getattr(getattr(type(request.user), "Role", object), "OSA_COORDINATOR", "osa_coordinator"):
 		return redirect("violations:faculty_dashboard")
 	if role == getattr(getattr(type(request.user), "Role", object), "STAFF", "staff"):
-		# If staff has an active temporary access approval, route to faculty dashboard
-		now = timezone.now()
-		has_active = TemporaryAccessRequest.objects.filter(
-			requester=request.user,
-			status=TemporaryAccessRequest.Status.APPROVED,
-		).filter(models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=now)).exists()
-		if has_active:
-			return redirect("violations:faculty_dashboard")
 		return redirect("violations:staff_dashboard")
 
 	# Fallback

@@ -7,7 +7,6 @@ from .models import (
 	Student,
 	OSACoordinator,
 	Staff,
-	TemporaryAccessRequest,
 	Message,
 	Violation,
 	ViolationType,
@@ -305,23 +304,6 @@ class StaffVerificationAdmin(admin.ModelAdmin):
 		if obj.notes:
 			return obj.notes[:30] + "..." if len(obj.notes) > 30 else obj.notes
 		return "—"
-
-
-@admin.register(TemporaryAccessRequest)
-class TemporaryAccessRequestAdmin(admin.ModelAdmin):
-	list_display = ("requester", "status_badge", "duration_hours", "requested_at", "approved_by", "expires_at")
-	list_filter = ("status", "requested_at")
-	search_fields = ("requester__username", "approved_by__username", "reason")
-	list_per_page = 25
-	
-	@admin.display(description="Status")
-	def status_badge(self, obj):
-		colors = {"pending": "#f59e0b", "approved": "#22c55e", "denied": "#ef4444", "expired": "#6b7280"}
-		color = colors.get(obj.status, "#6b7280")
-		return format_html(
-			'<span style="background-color:{}; color:white; padding:3px 10px; border-radius:12px; font-size:11px;">{}</span>',
-			color, obj.status.title()
-		)
 
 
 @admin.register(Message)

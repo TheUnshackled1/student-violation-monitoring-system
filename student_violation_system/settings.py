@@ -177,7 +177,6 @@ JAZZMIN_SETTINGS = {
         "violations.LoginActivity": "fas fa-history",
         "violations.Message": "fas fa-comments",
         "violations.ChatMessage": "fas fa-comment-dots",
-        "violations.TemporaryAccessRequest": "fas fa-key",
     },
     
     # Icons that are used when one is not manually specified
