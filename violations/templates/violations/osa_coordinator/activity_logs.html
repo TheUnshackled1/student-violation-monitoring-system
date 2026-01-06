@@ -925,6 +925,7 @@
                         <th>Related To</th>
                         <th>Attachment</th>
                         <th>Timestamp</th>
+                        <th style="text-align:center; width:100px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1003,6 +1004,22 @@
                             <div class="timestamp-date">{{ log.timestamp|date:"M d, Y" }}</div>
                             <div class="timestamp-time">{{ log.timestamp|date:"g:i A" }}</div>
                         </td>
+                        <td class="actions-cell" style="text-align:center;">
+                            <button type="button" class="action-btn view-log-btn" title="View Details"
+                                data-log-id="{{ log.id }}"
+                                data-log-user="{{ log.get_actor_display }}"
+                                data-log-role="{{ log.get_actor_role }}"
+                                data-log-action="{{ log.get_action_type_display }}"
+                                data-log-desc="{{ log.description|escapejs }}"
+                                data-log-related="{% if log.related_student %}Student: {{ log.related_student.student_id }}{% elif log.related_violation %}Violation #{{ log.related_violation.id }}{% elif log.related_apology %}Apology #{{ log.related_apology.id }}{% else %}—{% endif %}"
+                                data-log-image="{% if log.attached_image %}{{ log.attached_image.url }}{% endif %}"
+                                data-log-timestamp="{{ log.timestamp|date:'M d, Y g:i A' }}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button" class="action-btn delete-log-btn" title="Delete Log" data-log-id="{{ log.id }}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -1060,6 +1077,249 @@
         <img id="modalImage" src="" alt="Preview">
     </div>
 
+    <!-- View Log Modal -->
+    <div class="modal" id="viewLogModal" aria-hidden="true">
+        <div class="modal-card" style="max-width:560px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-clipboard-list"></i> Activity Log Details</h3>
+                <button class="icon-btn" id="viewLogClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="log-detail-grid">
+                    <div class="log-detail-row">
+                        <span class="log-detail-label"><i class="fas fa-user"></i> User</span>
+                        <span class="log-detail-value" id="vLogUser">—</span>
+                    </div>
+                    <div class="log-detail-row">
+                        <span class="log-detail-label"><i class="fas fa-user-tag"></i> Role</span>
+                        <span class="log-detail-value" id="vLogRole">—</span>
+                    </div>
+                    <div class="log-detail-row">
+                        <span class="log-detail-label"><i class="fas fa-bolt"></i> Action</span>
+                        <span class="log-detail-value" id="vLogAction">—</span>
+                    </div>
+                    <div class="log-detail-row">
+                        <span class="log-detail-label"><i class="fas fa-clock"></i> Timestamp</span>
+                        <span class="log-detail-value" id="vLogTimestamp">—</span>
+                    </div>
+                    <div class="log-detail-row">
+                        <span class="log-detail-label"><i class="fas fa-link"></i> Related To</span>
+                        <span class="log-detail-value" id="vLogRelated">—</span>
+                    </div>
+                    <div class="log-detail-row full-width">
+                        <span class="log-detail-label"><i class="fas fa-align-left"></i> Description</span>
+                        <p class="log-detail-desc" id="vLogDesc">—</p>
+                    </div>
+                    <div class="log-detail-row full-width" id="vLogImageRow" style="display:none;">
+                        <span class="log-detail-label"><i class="fas fa-image"></i> Attachment</span>
+                        <img id="vLogImage" src="" alt="Attachment" class="log-detail-image" onclick="openImageModal(this.src)">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="login-button" id="viewLogCloseBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Action Buttons in Table */
+        .actions-cell {
+            white-space: nowrap;
+        }
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 0 2px;
+        }
+        .action-btn.view-log-btn {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        .action-btn.view-log-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .action-btn.delete-log-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        .action-btn.delete-log-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        /* View Log Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10010;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(-20px) scale(0.95);
+            transition: transform 0.3s ease;
+            border: 2px solid #1a472a;
+            overflow: hidden;
+        }
+        .modal.show .modal-card {
+            transform: translateY(0) scale(1);
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
+            color: #ffffff;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid #fbbf24;
+        }
+        .modal-header h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .modal-header .icon-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: #ffffff;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .modal-header .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-actions {
+            padding: 16px 20px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .login-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
+            color: white;
+        }
+        .login-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+        }
+
+        /* Log Detail Grid */
+        .log-detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .log-detail-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .log-detail-row.full-width {
+            grid-column: 1 / -1;
+        }
+        .log-detail-label {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .log-detail-label i {
+            color: #1a472a;
+        }
+        .log-detail-value {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1f2937;
+            padding: 8px 12px;
+            background: #f3f4f6;
+            border-radius: 6px;
+        }
+        .log-detail-desc {
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            color: #374151;
+            line-height: 1.6;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border-left: 3px solid #1a472a;
+            margin: 0;
+        }
+        .log-detail-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid #e5e7eb;
+            transition: transform 0.2s;
+        }
+        .log-detail-image:hover {
+            transform: scale(1.02);
+            border-color: #1a472a;
+        }
+    </style>
+
     <script>
         // Profile Dropdown
         const profileBtn = document.getElementById('profileBtn');
@@ -1096,7 +1356,81 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeImageModal();
+                closeLogModal();
             }
+        });
+
+        // View Log Modal
+        const logModal = document.getElementById('viewLogModal');
+        const logCloseBtn = document.getElementById('viewLogClose');
+        const logCloseBtnFooter = document.getElementById('viewLogCloseBtn');
+
+        function closeLogModal() {
+            logModal?.classList.remove('show');
+        }
+
+        logCloseBtn?.addEventListener('click', closeLogModal);
+        logCloseBtnFooter?.addEventListener('click', closeLogModal);
+        logModal?.addEventListener('click', (e) => {
+            if (e.target === logModal) closeLogModal();
+        });
+
+        // View Log Button Click
+        document.querySelectorAll('.view-log-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('vLogUser').textContent = btn.dataset.logUser;
+                document.getElementById('vLogRole').textContent = btn.dataset.logRole;
+                document.getElementById('vLogAction').textContent = btn.dataset.logAction;
+                document.getElementById('vLogTimestamp').textContent = btn.dataset.logTimestamp;
+                document.getElementById('vLogRelated').textContent = btn.dataset.logRelated;
+                document.getElementById('vLogDesc').textContent = btn.dataset.logDesc;
+
+                const imageRow = document.getElementById('vLogImageRow');
+                const imageEl = document.getElementById('vLogImage');
+                if (btn.dataset.logImage) {
+                    imageEl.src = btn.dataset.logImage;
+                    imageRow.style.display = 'block';
+                } else {
+                    imageRow.style.display = 'none';
+                }
+
+                logModal.classList.add('show');
+            });
+        });
+
+        // Delete Log Button Click
+        document.querySelectorAll('.delete-log-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (!confirm('Are you sure you want to delete this activity log? This action cannot be undone.')) return;
+
+                const logId = btn.dataset.logId;
+                try {
+                    const res = await fetch(`/faculty/activity-logs/${logId}/delete/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    if (res.ok) {
+                        btn.closest('tr').remove();
+                        // Update count
+                        const countEl = document.querySelector('.logs-count');
+                        if (countEl) {
+                            const match = countEl.textContent.match(/(\d+)/);
+                            if (match) {
+                                const newCount = parseInt(match[1]) - 1;
+                                countEl.textContent = newCount + ' total records';
+                            }
+                        }
+                    } else {
+                        alert('Failed to delete activity log.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Error deleting activity log.');
+                }
+            });
         });
     </script>
 </body>

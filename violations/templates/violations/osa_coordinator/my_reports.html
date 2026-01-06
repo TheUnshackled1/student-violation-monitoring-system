@@ -37,9 +37,9 @@
                     <i class="fas fa-arrow-left"></i>
                     <span>Back to Dashboard</span>
                 </a>
-                <a href="{% url 'violations:faculty_report' %}" class="nav-action-btn">
-                    <i class="fas fa-plus"></i>
-                    <span>New Report</span>
+                <a href="{% url 'violations:faculty_case_management' %}" class="nav-action-btn">
+                    <i class="fas fa-folder-open"></i>
+                    <span>All Cases</span>
                 </a>
                 <div class="nav-divider"></div>
                 <div class="nav-profile">
@@ -523,8 +523,8 @@
                                 <td colspan="9" class="empty-state">
                                     <i class="fas fa-folder-open"></i>
                                     <p>No violation reports found.</p>
-                                    <a href="{% url 'violations:faculty_report' %}" class="empty-action-btn">
-                                        <i class="fas fa-plus"></i> Submit Your First Report
+                                    <a href="{% url 'violations:faculty_case_management' %}" class="empty-action-btn">
+                                        <i class="fas fa-folder-open"></i> View All Cases
                                     </a>
                                 </td>
                             </tr>

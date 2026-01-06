@@ -936,6 +936,470 @@
       .directory-toolbar { display: none; }
       .directory-pagination { display: none; }
     }
+
+    /* ========================================
+       COMPREHENSIVE PRINT STYLES - OPTIMIZED
+       For A4 Portrait (210mm x 297mm)
+       ======================================== */
+    
+    @page {
+      size: 210mm 297mm portrait;
+      margin: 8mm 10mm 12mm 10mm;
+    }
+
+    @page :first {
+      margin-top: 8mm;
+    }
+
+    @media print {
+      /* ===== RESET & BASE ===== */
+      *, *::before, *::after {
+        box-shadow: none !important;
+        text-shadow: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        transition: none !important;
+        animation: none !important;
+      }
+
+      html {
+        width: 210mm !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        font-size: 9pt !important;
+        overflow: visible !important;
+      }
+
+      body {
+        width: 190mm !important;
+        max-width: 190mm !important;
+        height: auto !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        font-size: 9pt !important;
+        line-height: 1.35 !important;
+        font-family: 'Segoe UI', 'Arial', sans-serif !important;
+        overflow: visible !important;
+      }
+
+      /* ===== HIDE NON-PRINT ELEMENTS ===== */
+      .no-print,
+      .official-top-nav,
+      .background-overlay,
+      .background-image,
+      .nav-actions,
+      .nav-container,
+      .directory-toolbar,
+      .directory-pagination,
+      .toolbar-form,
+      .filter-group,
+      .filter-btn,
+      .filter-btn-clear,
+      .directory-search,
+      .action-buttons,
+      .action-btn,
+      button:not(.print-only) {
+        display: none !important;
+        visibility: hidden !important;
+      }
+
+      /* ===== SHOW PRINT-ONLY ELEMENTS ===== */
+      .print-only {
+        display: block !important;
+        visibility: visible !important;
+      }
+
+      /* ===== CONTAINER - FULL WIDTH ===== */
+      .container,
+      main.container {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: relative !important;
+      }
+
+      main.container {
+        margin-top: 0 !important;
+      }
+
+      /* ===== SECTIONS ===== */
+      .official-stats-section {
+        border: 1.5pt solid #1a472a !important;
+        box-shadow: none !important;
+        margin-bottom: 4mm !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: 100% !important;
+        overflow: hidden !important;
+      }
+
+      .official-directory-section {
+        border: 1pt solid #1a472a !important;
+        box-shadow: none !important;
+        margin-bottom: 4mm !important;
+        margin-top: 4mm !important;
+        width: 100% !important;
+        overflow: hidden !important;
+      }
+
+      /* ===== DOCUMENT HEADER ===== */
+      .stats-header {
+        padding: 4mm 4mm !important;
+        border-bottom: 1.5pt solid #1a472a !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%) !important;
+      }
+
+      .stats-header-logo img {
+        width: 35px !important;
+        height: 35px !important;
+        object-fit: contain !important;
+      }
+
+      .stats-header-logo:last-child {
+        display: none !important;
+      }
+
+      .stats-header-text {
+        flex: 1 !important;
+        text-align: center !important;
+      }
+
+      .stats-university {
+        font-size: 10pt !important;
+        font-weight: 700 !important;
+        margin: 1px 0 !important;
+        letter-spacing: 0.5px !important;
+        color: #1a472a !important;
+      }
+
+      .stats-republic {
+        font-size: 7pt !important;
+        margin: 0 !important;
+        color: #374151 !important;
+      }
+
+      .stats-address {
+        font-size: 7pt !important;
+        margin: 0 !important;
+        font-style: italic !important;
+        color: #4b5563 !important;
+      }
+
+      .stats-office {
+        font-size: 8pt !important;
+        font-weight: 600 !important;
+        margin: 2px 0 0 0 !important;
+        color: #1a472a !important;
+      }
+
+      /* ===== TITLE BARS ===== */
+      .stats-title-bar,
+      .directory-title-bar {
+        background: #1a472a !important;
+        color: #ffffff !important;
+        padding: 3mm 4mm !important;
+        text-align: center !important;
+      }
+
+      .stats-title,
+      .directory-title {
+        font-size: 9pt !important;
+        font-weight: 600 !important;
+        letter-spacing: 1.5px !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+      }
+
+      .stats-title i,
+      .directory-title i {
+        font-size: 10pt !important;
+      }
+
+      .stats-subtitle,
+      .directory-subtitle {
+        font-size: 7pt !important;
+        margin: 2px 0 0 0 !important;
+        opacity: 0.9 !important;
+      }
+
+      /* ===== STATS GRID - 4 COLUMNS ===== */
+      .stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 0 !important;
+        width: 100% !important;
+      }
+
+      .stat-card {
+        padding: 3mm 2.5mm !important;
+        border: none !important;
+        border-right: 0.5pt solid #d1d5db !important;
+        border-bottom: 0.5pt solid #d1d5db !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        background: #ffffff !important;
+      }
+
+      .stat-card:nth-child(4n) {
+        border-right: none !important;
+      }
+
+      .stat-card:last-child {
+        border-right: none !important;
+      }
+
+      .stat-icon {
+        width: 22px !important;
+        height: 22px !important;
+        min-width: 22px !important;
+        font-size: 9pt !important;
+        border-radius: 4px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+
+      .stat-icon-warning {
+        background: #d97706 !important;
+        color: #ffffff !important;
+      }
+
+      .stat-icon-success {
+        background: #059669 !important;
+        color: #ffffff !important;
+      }
+
+      .stat-icon-revision {
+        background: #7c3aed !important;
+        color: #ffffff !important;
+      }
+
+      .stat-icon-danger {
+        background: #dc2626 !important;
+        color: #ffffff !important;
+      }
+
+      .stat-content {
+        flex: 1 !important;
+        min-width: 0 !important;
+      }
+
+      .stat-value {
+        font-size: 13pt !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        color: #1a472a !important;
+        display: block !important;
+      }
+
+      .stat-label {
+        font-size: 6pt !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.3px !important;
+        color: #6b7280 !important;
+        display: block !important;
+        margin-bottom: 1px !important;
+      }
+
+      .stat-desc {
+        display: none !important;
+      }
+
+      /* ===== TABLES ===== */
+      .directory-table-wrapper {
+        overflow: visible !important;
+      }
+
+      .directory-table {
+        width: 100% !important;
+        font-size: 7pt !important;
+        border-collapse: collapse !important;
+        page-break-inside: auto !important;
+      }
+
+      .directory-table thead {
+        display: table-header-group !important;
+      }
+
+      .directory-table tbody {
+        page-break-inside: auto !important;
+      }
+
+      .directory-table tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .directory-table th {
+        background: #f1f5f9 !important;
+        padding: 2mm 2.5mm !important;
+        font-size: 6pt !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        text-align: left !important;
+        border-bottom: 1pt solid #1a472a !important;
+        color: #374151 !important;
+        white-space: nowrap !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .directory-table td {
+        padding: 1.5mm 2.5mm !important;
+        font-size: 7pt !important;
+        border-bottom: 0.5pt solid #e5e7eb !important;
+        vertical-align: middle !important;
+      }
+
+      .directory-table tbody tr:last-child td {
+        border-bottom: none !important;
+      }
+
+      .directory-table .col-seq {
+        width: 15px !important;
+        text-align: center !important;
+        color: #9ca3af !important;
+      }
+
+      .directory-table .col-actions {
+        display: none !important;
+      }
+
+      .student-link,
+      .violation-link {
+        color: #1a472a !important;
+        text-decoration: none !important;
+        font-weight: 500 !important;
+      }
+
+      .student-id-sub,
+      .time-sub {
+        font-size: 5pt !important;
+        color: #9ca3af !important;
+        display: block !important;
+      }
+
+      .violation-link code {
+        background: #f3f4f6 !important;
+        padding: 1px 4px !important;
+        border-radius: 2px !important;
+        font-size: 6pt !important;
+        color: #1a472a !important;
+        font-weight: 600 !important;
+      }
+
+      /* ===== BADGES ===== */
+      .status-badge {
+        font-size: 5pt !important;
+        padding: 1px 4px !important;
+        border-radius: 3px !important;
+        font-weight: 600 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 2px !important;
+        white-space: nowrap !important;
+      }
+
+      .status-badge i {
+        font-size: 5pt !important;
+      }
+
+      .status-pending {
+        background: #fef3c7 !important;
+        color: #d97706 !important;
+      }
+
+      .status-approved {
+        background: #d1fae5 !important;
+        color: #059669 !important;
+      }
+
+      .status-revision {
+        background: #ede9fe !important;
+        color: #7c3aed !important;
+      }
+
+      .status-rejected {
+        background: #fee2e2 !important;
+        color: #dc2626 !important;
+      }
+
+      /* ===== FOOTER ===== */
+      .directory-footer {
+        padding: 2.5mm 3mm !important;
+        background: #f9fafb !important;
+        border-top: 0.5pt solid #d1d5db !important;
+        text-align: center !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .directory-footer p {
+        font-size: 6pt !important;
+        margin: 1px 0 !important;
+        color: #6b7280 !important;
+      }
+
+      .directory-footer i {
+        color: #1a472a !important;
+      }
+
+      /* ===== PAGE BREAK CONTROLS ===== */
+      h1, h2, h3, h4, h5, h6,
+      .stats-title-bar,
+      .directory-title-bar {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+
+      p {
+        orphans: 2 !important;
+        widows: 2 !important;
+      }
+
+      /* ===== EMPTY STATES ===== */
+      .empty-state {
+        padding: 4mm !important;
+        font-size: 7pt !important;
+        text-align: center !important;
+        color: #9ca3af !important;
+      }
+
+      .empty-state i {
+        font-size: 14pt !important;
+        display: block !important;
+        margin-bottom: 2mm !important;
+      }
+
+      /* ===== LINKS ===== */
+      a {
+        color: #1a472a !important;
+        text-decoration: none !important;
+      }
+
+      a[href]:after {
+        content: none !important;
+      }
+
+      /* ===== IMAGES ===== */
+      img {
+        max-width: 100% !important;
+        page-break-inside: avoid !important;
+      }
+    }
   </style>
 </body>
 </html>

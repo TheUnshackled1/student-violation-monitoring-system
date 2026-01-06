@@ -1,0 +1,923 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Management Dashboard - OSA Coordinator</title>
+    <link rel="stylesheet" href="{% static 'violations/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'violations/css/main.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="role-faculty">
+    <!-- Official Top Navigation -->
+    <header class="official-top-nav">
+        <div class="nav-container">
+            <!-- Left: Logo and Title -->
+            <div class="nav-brand">
+                <div class="brand-logo">
+                    <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU" />
+                </div>
+                <div class="brand-text">
+                    <span class="brand-university">CHMSU</span>
+                    <span class="brand-title">Case Management</span>
+                </div>
+            </div>
+
+            <!-- Center: University Name -->
+            <div class="nav-center">
+                <span class="nav-department">Office of Student Affairs</span>
+                <span class="nav-system">Violation Case Oversight & Monitoring</span>
+            </div>
+
+            <!-- Right: Actions -->
+            <div class="nav-actions">
+                <a href="{% url 'violations:faculty_dashboard' %}" class="nav-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Dashboard</span>
+                </a>
+                <div class="nav-divider"></div>
+                <div class="nav-profile">
+                    <button class="nav-profile-btn" id="profileBtn">
+                        <span class="profile-avatar">{{ request.user.first_name|default:request.user.username|first|upper }}</span>
+                        <div class="profile-info">
+                            <span class="profile-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+                            <span class="profile-role">OSA Coordinator</span>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="nav-dropdown" id="profileDropdown">
+                        <a href="{% url 'violations:faculty_dashboard' %}"><i class="fas fa-home"></i> Dashboard</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'violations:auth_logout' %}" class="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <style>
+        /* Top Navigation Styles */
+        .official-top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10000;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 50%, #1a472a 100%);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            border-bottom: 3px solid #fbbf24;
+        }
+
+        .nav-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            border-radius: 50%;
+            background: white;
+            padding: 2px;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-university {
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fbbf24;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .brand-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .nav-department {
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 10px;
+            color: rgba(255,255,255,0.8);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .nav-system {
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .nav-back-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-1px);
+        }
+
+        .nav-divider {
+            width: 1px;
+            height: 32px;
+            background: rgba(255,255,255,0.2);
+            margin: 0 4px;
+        }
+
+        .nav-profile {
+            position: relative;
+        }
+
+        .nav-profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 10px 5px 5px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-profile-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .profile-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #1a472a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .profile-name {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+
+        .profile-role {
+            font-family: 'Poppins', sans-serif;
+            font-size: 9px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        .nav-profile-btn i {
+            color: rgba(255,255,255,0.7);
+            font-size: 10px;
+        }
+
+        .nav-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 180px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border: 1px solid #e5e7eb;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+            overflow: hidden;
+            z-index: 10002;
+        }
+
+        .nav-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-dropdown a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            color: #374151;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+
+        .nav-dropdown a:hover {
+            background: #f3f4f6;
+        }
+
+        .nav-dropdown a i {
+            width: 14px;
+            color: #6b7280;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 4px 0;
+        }
+
+        .nav-dropdown .logout-link {
+            color: #dc2626;
+        }
+
+        .nav-dropdown .logout-link i {
+            color: #dc2626;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 84px;
+            padding: 24px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Stats Cards Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .stat-icon.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+        .stat-icon.green { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .stat-icon.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+        .stat-icon.orange { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+        .stat-icon.red { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+
+        .stat-content h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .stat-content p {
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            color: #6b7280;
+            margin: 4px 0 0 0;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 24px;
+        }
+
+        .filter-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .filter-header h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-group label {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            color: #374151;
+            background: #ffffff;
+            transition: border-color 0.2s;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #1a472a;
+            box-shadow: 0 0 0 3px rgba(26, 71, 42, 0.1);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .filter-btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .filter-btn.primary {
+            background: linear-gradient(135deg, #1a472a, #2d5a3f);
+            color: white;
+        }
+
+        .filter-btn.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+        }
+
+        .filter-btn.secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .filter-btn.secondary:hover {
+            background: #e5e7eb;
+        }
+
+        /* Cases Table */
+        .cases-section {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+        }
+
+        .cases-header {
+            background: linear-gradient(135deg, #1a472a, #2d5a3f);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cases-header h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cases-count {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .cases-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .cases-table thead {
+            background: #f9fafb;
+        }
+
+        .cases-table th {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .cases-table td {
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            color: #374151;
+            padding: 14px 16px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .cases-table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-badge.reported { background: #fef3c7; color: #92400e; }
+        .status-badge.under-review { background: #dbeafe; color: #1e40af; }
+        .status-badge.under_review { background: #dbeafe; color: #1e40af; }
+        .status-badge.resolved { background: #d1fae5; color: #065f46; }
+        .status-badge.dismissed { background: #f3f4f6; color: #374151; }
+
+        /* Type Badges */
+        .type-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .type-badge.minor { background: #fef3c7; color: #92400e; }
+        .type-badge.major { background: #fee2e2; color: #991b1b; }
+
+        /* Action Buttons */
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .action-btn.view {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+
+        .action-btn.view:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Pagination */
+        .pagination-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-top: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .pagination-info {
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .pagination-links {
+            display: flex;
+            gap: 4px;
+        }
+
+        .pagination-links a,
+        .pagination-links span {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .pagination-links a {
+            background: #ffffff;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .pagination-links a:hover {
+            background: #f3f4f6;
+            border-color: #1a472a;
+        }
+
+        .pagination-links .current {
+            background: linear-gradient(135deg, #1a472a, #2d5a3f);
+            color: white;
+            border: 1px solid #1a472a;
+        }
+
+        .pagination-links .disabled {
+            background: #f3f4f6;
+            color: #9ca3af;
+            border: 1px solid #e5e7eb;
+            cursor: not-allowed;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            color: #d1d5db;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h4 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin: 0 0 8px 0;
+        }
+
+        .empty-state p {
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .filter-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 16px;
+                margin-top: 74px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+            .nav-center { display: none; }
+            .nav-back-btn span { display: none; }
+            .profile-info { display: none; }
+        }
+    </style>
+
+    <div class="main-content">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-folder-open"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.total_cases }}</h3>
+                    <p>Total Cases</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.pending }}</h3>
+                    <p>Pending Review</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-eye"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.under_review }}</h3>
+                    <p>Under Review</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.resolved }}</h3>
+                    <p>Resolved</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.overdue }}</h3>
+                    <p>Overdue Cases</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <div class="filter-header">
+                <h3><i class="fas fa-filter"></i> Filter Cases</h3>
+            </div>
+            <form method="get" action="">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label for="status">Status</label>
+                        <select name="status" id="status">
+                            <option value="all" {% if current_filters.status == 'all' %}selected{% endif %}>All Statuses</option>
+                            {% for value, label in violation_statuses %}
+                            <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="type">Severity</label>
+                        <select name="type" id="type">
+                            <option value="all" {% if current_filters.type == 'all' %}selected{% endif %}>All Severities</option>
+                            {% for value, label in violation_types %}
+                            <option value="{{ value }}" {% if current_filters.type == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="severity">Filter Type</label>
+                        <select name="severity" id="severity">
+                            <option value="all" {% if current_filters.severity == 'all' %}selected{% endif %}>All</option>
+                            <option value="minor" {% if current_filters.severity == 'minor' %}selected{% endif %}>Minor Only</option>
+                            <option value="major" {% if current_filters.severity == 'major' %}selected{% endif %}>Major Only</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="date_from">Date From</label>
+                        <input type="date" name="date_from" id="date_from" value="{{ current_filters.date_from }}">
+                    </div>
+                    <div class="filter-group">
+                        <label for="date_to">Date To</label>
+                        <input type="date" name="date_to" id="date_to" value="{{ current_filters.date_to }}">
+                    </div>
+                    <div class="filter-group">
+                        <label for="search">Search</label>
+                        <input type="text" name="search" id="search" placeholder="Student ID, name..." value="{{ current_filters.search }}">
+                    </div>
+                </div>
+                <div class="filter-actions" style="margin-top: 16px;">
+                    <button type="submit" class="filter-btn primary">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'violations:faculty_case_management' %}" class="filter-btn secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Cases Table -->
+        <div class="cases-section">
+            <div class="cases-header">
+                <h3><i class="fas fa-list"></i> Violation Cases</h3>
+                <span class="cases-count">{{ page_obj.paginator.count }} total cases</span>
+            </div>
+
+            {% if cases %}
+            <table class="cases-table">
+                <thead>
+                    <tr>
+                        <th>Case ID</th>
+                        <th>Student</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th>Reported By</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in cases %}
+                    <tr>
+                        <td><strong>#{{ case.id }}</strong></td>
+                        <td>
+                            <div>
+                                <strong>{{ case.student.student_id }}</strong><br>
+                                <small style="color:#6b7280;">{{ case.student.user.get_full_name }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if case.type == 'minor' %}
+                            <span class="type-badge minor">Minor</span>
+                            {% else %}
+                            <span class="type-badge major">Major</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge {{ case.status }}">
+                                {{ case.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if case.reported_by %}
+                                {{ case.reported_by.get_full_name|default:case.reported_by.username }}
+                            {% elif case.reported_by_guard %}
+                                Guard: {{ case.reported_by_guard }}
+                            {% else %}
+                                <span style="color:#9ca3af;">—</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ case.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            <a href="{% url 'violations:faculty_student_detail' case.student.student_id %}" class="action-btn view">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="pagination-wrapper">
+                <div class="pagination-info">
+                    Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} cases
+                </div>
+                <div class="pagination-links">
+                    {% if page_obj.has_previous %}
+                    <a href="?page=1{% if current_filters.status != 'all' %}&status={{ current_filters.status }}{% endif %}{% if current_filters.type != 'all' %}&type={{ current_filters.type }}{% endif %}{% if current_filters.severity != 'all' %}&severity={{ current_filters.severity }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if current_filters.status != 'all' %}&status={{ current_filters.status }}{% endif %}{% if current_filters.type != 'all' %}&type={{ current_filters.type }}{% endif %}{% if current_filters.severity != 'all' %}&severity={{ current_filters.severity }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                    {% else %}
+                    <span class="disabled"><i class="fas fa-angle-double-left"></i></span>
+                    <span class="disabled"><i class="fas fa-angle-left"></i></span>
+                    {% endif %}
+
+                    <span class="current">{{ page_obj.number }}</span>
+
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if current_filters.status != 'all' %}&status={{ current_filters.status }}{% endif %}{% if current_filters.type != 'all' %}&type={{ current_filters.type }}{% endif %}{% if current_filters.severity != 'all' %}&severity={{ current_filters.severity }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% if current_filters.status != 'all' %}&status={{ current_filters.status }}{% endif %}{% if current_filters.type != 'all' %}&type={{ current_filters.type }}{% endif %}{% if current_filters.severity != 'all' %}&severity={{ current_filters.severity }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                    {% else %}
+                    <span class="disabled"><i class="fas fa-angle-right"></i></span>
+                    <span class="disabled"><i class="fas fa-angle-double-right"></i></span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h4>No Cases Found</h4>
+                <p>There are no violation cases matching your filters.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Profile Dropdown
+        const profileBtn = document.getElementById('profileBtn');
+        const profileDropdown = document.getElementById('profileDropdown');
+
+        profileBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('show');
+        });
+
+        document.addEventListener('click', () => {
+            profileDropdown?.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

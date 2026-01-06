@@ -565,15 +565,26 @@ def student_update_profile_view(request):
 
 @role_required({User.Role.OSA_COORDINATOR})
 def faculty_dashboard_view(request):
-	"""OSA Coordinator dashboard — shows quick stats for the current reporter."""
-	# Aggregate counts for reports created by this user
-	my_reports_qs = Violation.objects.filter(reported_by=request.user)
-	total_reports = my_reports_qs.count()
-	reported_count = my_reports_qs.filter(status=Violation.Status.REPORTED).count()
-	under_review_count = my_reports_qs.filter(status=Violation.Status.UNDER_REVIEW).count()
-	resolved_count = my_reports_qs.filter(status=Violation.Status.RESOLVED).count()
+	"""OSA Coordinator dashboard — shows oversight stats for all violation cases."""
+	from datetime import timedelta
+	
+	# Get all violations for oversight (not just reported by this user)
+	all_violations_qs = Violation.objects.all()
+	
+	# Calculate overdue cases (pending more than 7 days)
+	overdue_threshold = timezone.now() - timedelta(days=7)
+	overdue_count = all_violations_qs.filter(
+		status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW],
+		created_at__lt=overdue_threshold
+	).count()
+	
+	# Aggregate counts for dashboard stats
+	total_reports = all_violations_qs.count()
+	reported_count = all_violations_qs.filter(status=Violation.Status.REPORTED).count()
+	under_review_count = all_violations_qs.filter(status=Violation.Status.UNDER_REVIEW).count()
+	resolved_count = all_violations_qs.filter(status=Violation.Status.RESOLVED).count()
 	pending_count = reported_count + under_review_count
-	latest = my_reports_qs.order_by("-created_at").first()
+	latest = all_violations_qs.order_by("-created_at").first()
 
 	# include login history for modal
 	# Annotated student directory (violation counts per student)
@@ -652,6 +663,7 @@ def faculty_dashboard_view(request):
 			"reported": reported_count,
 			"under_review": under_review_count,
 			"resolved": resolved_count,
+			"overdue": overdue_count,
 			"latest_created_at": latest.created_at if latest else None,
 		},
 		"login_history": login_history,
@@ -693,65 +705,128 @@ def faculty_student_detail_view(request, student_id: str):
 
 
 @role_required({User.Role.OSA_COORDINATOR})
-def faculty_report_view(request):
-	"""OSA Coordinator: Report Violation form — supports GET (form) and POST (create)."""
-	if request.method == "POST":
-		# Expect Student ID in student_search for MVP
-		student_key = (request.POST.get("student_search") or "").strip()
-		incident_dt = request.POST.get("incident_dt")
-		vtype = request.POST.get("violation_type")
-		location = (request.POST.get("location") or "").strip()
-		description = (request.POST.get("description") or "").strip()
-		witness = (request.POST.get("witness") or "").strip()
-		evidence = request.FILES.get("evidence")
-
-		missing = [k for k, v in {
-			"Student": student_key,
-			"Date/Time": incident_dt,
-			"Type": vtype,
-			"Location": location,
-			"Description": description,
-		}.items() if not v]
-		if missing:
-			messages.error(request, f"Please fill in all required fields: {', '.join(missing)}.")
-			return render(request, "violations/osa_coordinator/report_form.html", status=400)
-
-		# Resolve student by exact student_id first, else try name match (basic)
-		try:
-			student = StudentModel.objects.get(student_id__iexact=student_key)
-		except StudentModel.DoesNotExist:
-			# Fallback: try matching by user's first_name substring
-			student = StudentModel.objects.select_related("user").filter(user__first_name__icontains=student_key).first()
-			if not student:
-				messages.error(request, "Student not found. Please provide a valid Student ID or name.")
-				return render(request, "violations/osa_coordinator/report_form.html", status=404)
-
-		# Parse datetime-local
+@role_required({User.Role.OSA_COORDINATOR})
+def faculty_case_management_view(request):
+	"""
+	OSA Coordinator: Case Management Dashboard
+	View all violation cases with comprehensive filtering and oversight capabilities.
+	"""
+	from django.db.models import Q, Count, F
+	from datetime import timedelta
+	
+	# Get filter parameters
+	status_filter = request.GET.get('status', 'all')
+	type_filter = request.GET.get('type', 'all')
+	severity_filter = request.GET.get('severity', 'all')
+	date_from = request.GET.get('date_from', '')
+	date_to = request.GET.get('date_to', '')
+	search_query = request.GET.get('search', '')
+	semester = request.GET.get('semester', '')
+	
+	# Base queryset - all violations with related data
+	cases = Violation.objects.select_related(
+		'student__user', 'reported_by', 'violation_type'
+	).annotate(
+		days_pending=timezone.now() - F('created_at')
+	).order_by('-created_at')
+	
+	# Filter by status
+	if status_filter != 'all':
+		cases = cases.filter(status=status_filter)
+	
+	# Filter by violation type
+	if type_filter != 'all':
+		cases = cases.filter(type=type_filter)
+	
+	# Filter by severity
+	if severity_filter == 'minor':
+		cases = cases.filter(type=Violation.Severity.MINOR)
+	elif severity_filter == 'major':
+		cases = cases.filter(type=Violation.Severity.MAJOR)
+	
+	# Filter by date range
+	if date_from:
 		try:
 			from datetime import datetime
-			incident_at = datetime.fromisoformat(incident_dt)
-		except Exception:
-			messages.error(request, "Invalid date/time format.")
-			return render(request, "violations/osa_coordinator/report_form.html", status=400)
-
-		# Create violation
-		v = Violation(
-			student=student,
-			reported_by=request.user,
-			incident_at=incident_at,
-			type=vtype,
-			location=location,
-			description=description,
-			witness_statement=witness,
-			status=Violation.Status.REPORTED,
+			date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d')
+			cases = cases.filter(created_at__date__gte=date_from_parsed)
+		except ValueError:
+			pass
+	
+	if date_to:
+		try:
+			from datetime import datetime
+			date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d')
+			cases = cases.filter(created_at__date__lte=date_to_parsed)
+		except ValueError:
+			pass
+	
+	# Search filter
+	if search_query:
+		cases = cases.filter(
+			Q(student__student_id__icontains=search_query) |
+			Q(student__user__first_name__icontains=search_query) |
+			Q(student__user__last_name__icontains=search_query) |
+			Q(description__icontains=search_query) |
+			Q(location__icontains=search_query)
 		)
-		if evidence:
-			v.evidence_file = evidence
-		v.save()
-		messages.success(request, "Violation report submitted.")
-		return redirect("violations:faculty_my_reports")
+	
+	# Identify overdue cases (pending more than 7 days)
+	overdue_threshold = timezone.now() - timedelta(days=7)
+	overdue_cases = cases.filter(
+		status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW],
+		created_at__lt=overdue_threshold
+	)
+	
+	# Pagination
+	from django.core.paginator import Paginator
+	paginator = Paginator(cases, 20)
+	page_number = request.GET.get('page', 1)
+	page_obj = paginator.get_page(page_number)
+	
+	# Summary statistics
+	stats = {
+		'total_cases': Violation.objects.count(),
+		'pending': Violation.objects.filter(status=Violation.Status.REPORTED).count(),
+		'under_review': Violation.objects.filter(status=Violation.Status.UNDER_REVIEW).count(),
+		'resolved': Violation.objects.filter(status=Violation.Status.RESOLVED).count(),
+		'dismissed': Violation.objects.filter(status=Violation.Status.DISMISSED).count(),
+		'overdue': overdue_cases.count(),
+		'today': Violation.objects.filter(created_at__date=timezone.now().date()).count(),
+		'this_week': Violation.objects.filter(
+			created_at__gte=timezone.now() - timedelta(days=7)
+		).count(),
+		'minor_violations': Violation.objects.filter(type=Violation.Severity.MINOR).count(),
+		'major_violations': Violation.objects.filter(type=Violation.Severity.MAJOR).count(),
+	}
+	
+	context = {
+		'page_obj': page_obj,
+		'cases': page_obj,
+		'stats': stats,
+		'violation_types': Violation.Severity.choices,
+		'violation_statuses': Violation.Status.choices,
+		'current_filters': {
+			'status': status_filter,
+			'type': type_filter,
+			'severity': severity_filter,
+			'date_from': date_from,
+			'date_to': date_to,
+			'search': search_query,
+			'semester': semester,
+		},
+		'overdue_count': overdue_cases.count(),
+	}
+	
+	return render(request, "violations/osa_coordinator/case_management.html", context)
 
-	return render(request, "violations/osa_coordinator/report_form.html")
+
+# Commenting out old report view - OSA Coordinator should oversee, not report directly
+# @role_required({User.Role.OSA_COORDINATOR})
+# def faculty_report_view(request):
+# 	\"\"\"OSA Coordinator: Report Violation form — supports GET (form) and POST (create).\"\"\"
+# 	# This view is deprecated - OSA Coordinator role is for oversight, not direct reporting
+# 	pass
 
 
 @role_required({User.Role.OSA_COORDINATOR})
@@ -861,6 +936,26 @@ def faculty_activity_logs_view(request):
 	}
 	
 	return render(request, "violations/osa_coordinator/activity_logs.html", context)
+
+
+@role_required({User.Role.OSA_COORDINATOR})
+def faculty_delete_activity_log_view(request, log_id):
+	"""
+	OSA Coordinator: Delete an activity log entry.
+	"""
+	from .models import ActivityLog
+	
+	if request.method != 'POST':
+		return JsonResponse({'error': 'Method not allowed'}, status=405)
+	
+	try:
+		log = ActivityLog.objects.get(id=log_id)
+		log.delete()
+		return JsonResponse({'success': True, 'message': 'Activity log deleted successfully'})
+	except ActivityLog.DoesNotExist:
+		return JsonResponse({'error': 'Activity log not found'}, status=404)
+	except Exception as e:
+		return JsonResponse({'error': str(e)}, status=500)
 
 
 @role_required({User.Role.OSA_COORDINATOR})

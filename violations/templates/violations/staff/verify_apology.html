@@ -1185,75 +1185,259 @@
       }
     }
 
+    /* ===== COMPREHENSIVE A4 PORTRAIT PRINT STYLES ===== */
+    @page {
+      size: 210mm 297mm portrait;
+      margin: 15mm 15mm 15mm 15mm;
+    }
+
+    @page :first {
+      margin-top: 15mm;
+    }
+
     @media print {
       *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
         box-shadow: none !important;
+        text-shadow: none !important;
       }
 
-      html, body {
-        width: 100% !important;
+      html {
+        width: 210mm !important;
         height: auto !important;
+        font-size: 11pt !important;
+        background: #fff !important;
+      }
+
+      body {
+        width: 100% !important;
+        max-width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+        font-size: 11pt !important;
+        line-height: 1.5 !important;
+        overflow: visible !important;
+        visibility: visible !important;
       }
 
-      body * { 
-        visibility: hidden; 
-      }
-      
-      .letter-template, .letter-template * { 
-        visibility: visible; 
-      }
-      
-      .letter-template { 
-        position: absolute; 
-        left: 0; 
-        top: 0; 
-        width: 100%;
-        border: none;
-        box-shadow: none;
-        padding: 15mm;
-        font-size: 11pt;
+      /* ===== HIDE NON-PRINT ELEMENTS ===== */
+      .no-print,
+      .official-top-nav,
+      .official-review-section,
+      .official-file-section,
+      .official-formator-section,
+      .background-overlay,
+      .background-image,
+      .nav-container,
+      .nav-dropdown,
+      .profile-dropdown,
+      button,
+      .btn,
+      .btn-verify,
+      .btn-reject,
+      .btn-cancel,
+      .btn-file,
+      .btn-send-formator,
+      form,
+      textarea,
+      #imageModal,
+      .letter-section-header,
+      footer { 
+        display: none !important; 
+        visibility: hidden !important;
       }
 
+      /* ===== MAIN CONTAINER - RESET POSITIONING ===== */
+      main.container {
+        position: static !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        z-index: auto !important;
+      }
+
+      /* ===== LETTER SECTION WRAPPER ===== */
+      .official-letter-section {
+        display: block !important;
+        visibility: visible !important;
+        position: static !important;
+        width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: #fff !important;
+      }
+
+      /* ===== LETTER TEMPLATE (MAIN PRINT CONTENT) ===== */
+      .letter-template {
+        display: block !important;
+        visibility: visible !important;
+        position: static !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        font-family: 'Times New Roman', Times, serif !important;
+        font-size: 11pt !important;
+        line-height: 1.5 !important;
+      }
+
+      .letter-template * {
+        visibility: visible !important;
+      }
+
+      /* ===== LETTER HEADER ===== */
       .letter-header {
-        margin-bottom: 8mm;
+        display: flex !important;
+        align-items: flex-start !important;
+        margin-bottom: 5mm !important;
+        padding-bottom: 3mm !important;
+        border-bottom: 1.5pt solid #000 !important;
       }
 
       .letter-logo {
-        width: 60px !important;
-        height: 60px !important;
+        width: 50px !important;
+        height: 50px !important;
+        margin-right: 4mm !important;
+        flex-shrink: 0 !important;
+      }
+
+      .letter-title-section {
+        flex: 1 !important;
+        text-align: center !important;
       }
 
       .letter-title {
-        font-size: 14pt !important;
+        font-size: 13pt !important;
+        font-weight: bold !important;
+        margin-bottom: 0 !important;
       }
 
+      .letter-doc-info {
+        font-size: 7pt !important;
+        padding: 1.5mm !important;
+        border: 0.5pt solid #000 !important;
+        text-align: right !important;
+        flex-shrink: 0 !important;
+      }
+
+      .letter-doc-info div {
+        border-bottom: 0.5pt solid #000 !important;
+        padding: 0.5mm 0 !important;
+        line-height: 1.3 !important;
+      }
+
+      .letter-doc-info div:last-child {
+        border-bottom: none !important;
+      }
+
+      /* ===== LETTER BODY ===== */
       .letter-body {
         font-size: 11pt !important;
-        line-height: 1.6 !important;
+        line-height: 1.5 !important;
+        margin-top: 4mm !important;
+      }
+
+      .letter-body p {
+        font-size: 11pt !important;
+        margin-bottom: 3mm !important;
+        line-height: 1.5 !important;
       }
 
       .letter-field {
         border: none !important;
-        border-bottom: 1px solid #000 !important;
+        border-bottom: 0.5pt solid #000 !important;
         font-size: 11pt !important;
         background: transparent !important;
+        padding: 0 1mm !important;
+        min-width: 30mm !important;
+        display: inline-block !important;
+      }
+
+      .letter-field.wide {
+        min-width: 50mm !important;
+      }
+
+      .letter-field.full {
+        display: block !important;
+        width: 100% !important;
+        margin: 2mm 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      .letter-paragraph {
+        text-align: justify !important;
+        text-indent: 10mm !important;
+        margin: 3mm 0 !important;
+        font-size: 11pt !important;
+        line-height: 1.6 !important;
+      }
+
+      /* ===== SIGNATURES ===== */
+      .letter-signature {
+        margin-top: 6mm !important;
+        page-break-inside: avoid !important;
+      }
+
+      .signature-image {
+        max-width: 45mm !important;
+        max-height: 15mm !important;
+        border: 0.5pt solid #000 !important;
       }
 
       .signature-line {
-        margin-top: 10mm;
+        border-top: 0.5pt solid #000 !important;
+        width: 50mm !important;
+        margin-top: 6mm !important;
+        padding-top: 1mm !important;
+        text-align: center !important;
+        font-size: 10pt !important;
       }
 
-      .no-print,
-      .official-top-nav,
-      .official-review-section,
-      .background-overlay,
-      .background-image { 
-        display: none !important; 
+      .letter-footer {
+        margin-top: 5mm !important;
+        page-break-inside: avoid !important;
+      }
+
+      .letter-footer p {
+        font-size: 10pt !important;
+        margin-bottom: 1mm !important;
+      }
+
+      /* ===== STATUS STAMP ===== */
+      .status-stamp {
+        position: absolute !important;
+        top: 0 !important;
+        right: 0 !important;
+      }
+
+      .status-stamp-box {
+        font-size: 7pt !important;
+        padding: 1.5mm 2mm !important;
+        border: 0.75pt solid #000 !important;
+        text-align: center !important;
+      }
+
+      /* ===== PAGE BREAK CONTROLS ===== */
+      h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid !important;
+      }
+
+      p {
+        orphans: 2 !important;
+        widows: 2 !important;
+      }
+
+      section {
+        page-break-inside: avoid !important;
       }
     }
   </style>

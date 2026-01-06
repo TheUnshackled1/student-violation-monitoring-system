@@ -391,31 +391,20 @@
 
             <!-- Statistics Grid -->
             <div class="stats-grid">
-                <a href="{% url 'violations:faculty_report' %}" class="stat-card stat-card-link">
+                <a href="{% url 'violations:faculty_case_management' %}" class="stat-card stat-card-link">
                     <div class="stat-icon stat-icon-primary">
-                        <i class="fas fa-pen-to-square"></i>
+                        <i class="fas fa-folder-open"></i>
                     </div>
                     <div class="stat-content">
-                        <span class="stat-label">Report Violation</span>
-                        <span class="stat-value" style="font-size:16px;">New Report</span>
-                        <span class="stat-desc">Submit incident report</span>
+                        <span class="stat-label">Case Management</span>
+                        <span class="stat-value" style="font-size:16px;">{{ stats.total|default:'0' }}</span>
+                        <span class="stat-desc">View all violation cases</span>
                     </div>
                 </a>
 
-                <a href="{% url 'violations:faculty_my_reports' %}" class="stat-card stat-card-link">
-                    <div class="stat-icon stat-icon-info">
-                        <i class="fas fa-list-check"></i>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-label">My Reports</span>
-                        <span class="stat-value">{{ stats.total|default:'0' }}</span>
-                        <span class="stat-desc">Total submitted</span>
-                    </div>
-                </a>
-
-                <a href="{% url 'violations:faculty_my_reports' %}#pending" class="stat-card stat-card-link">
+                <a href="{% url 'violations:faculty_case_management' %}?status=reported" class="stat-card stat-card-link">
                     <div class="stat-icon stat-icon-warning">
-                        <i class="fas fa-bell"></i>
+                        <i class="fas fa-clock"></i>
                     </div>
                     <div class="stat-content">
                         <span class="stat-label">Pending Review</span>
@@ -424,7 +413,18 @@
                     </div>
                 </a>
 
-                <a href="{% url 'violations:faculty_my_reports' %}#resolved" class="stat-card stat-card-link">
+                <a href="{% url 'violations:faculty_case_management' %}?status=under_review" class="stat-card stat-card-link">
+                    <div class="stat-icon stat-icon-info">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Under Review</span>
+                        <span class="stat-value">{{ stats.under_review|default:'0' }}</span>
+                        <span class="stat-desc">Being processed</span>
+                    </div>
+                </a>
+
+                <a href="{% url 'violations:faculty_case_management' %}?status=resolved" class="stat-card stat-card-link">
                     <div class="stat-icon stat-icon-success">
                         <i class="fas fa-check-circle"></i>
                     </div>
@@ -436,13 +436,13 @@
                 </a>
 
                 <div class="stat-card">
-                    <div class="stat-icon stat-icon-secondary">
-                        <i class="fas fa-clock-rotate-left"></i>
+                    <div class="stat-icon stat-icon-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
                     </div>
                     <div class="stat-content">
-                        <span class="stat-label">Latest Report</span>
-                        <span class="stat-value" style="font-size:14px;">{% if stats.latest_created_at %}{{ stats.latest_created_at|date:"M d, Y" }}{% else %}—{% endif %}</span>
-                        <span class="stat-desc">{% if stats.latest_created_at %}{{ stats.latest_created_at|date:"g:i A" }}{% else %}No reports yet{% endif %}</span>
+                        <span class="stat-label">Overdue Cases</span>
+                        <span class="stat-value">{{ stats.overdue|default:'0' }}</span>
+                        <span class="stat-desc">Pending >7 days</span>
                     </div>
                 </div>
             </div>

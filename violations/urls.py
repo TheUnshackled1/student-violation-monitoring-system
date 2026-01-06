@@ -38,9 +38,10 @@ urlpatterns = [
 
     # OSA Coordinator (Reporting Personnel)
     path('faculty/dashboard/', views.faculty_dashboard_view, name='faculty_dashboard'),
-    path('faculty/report/', views.faculty_report_view, name='faculty_report'),
+    path('faculty/case-management/', views.faculty_case_management_view, name='faculty_case_management'),
     path('faculty/my-reports/', views.faculty_my_reports_view, name='faculty_my_reports'),
     path('faculty/activity-logs/', views.faculty_activity_logs_view, name='faculty_activity_logs'),
+    path('faculty/activity-logs/<int:log_id>/delete/', views.faculty_delete_activity_log_view, name='faculty_delete_activity_log'),
     path('faculty/analytics/', views.faculty_analytics_view, name='faculty_analytics'),
     path('faculty/analytics/api/', views.faculty_analytics_api, name='faculty_analytics_api'),
     path('faculty/students/<str:student_id>/', views.faculty_student_detail_view, name='faculty_student_detail'),
