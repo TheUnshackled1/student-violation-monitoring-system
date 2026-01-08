@@ -21,22 +21,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-1m=i!+(*d1tu=a)jwdmg__z=v(v!#ll69!@mdlx7&)@!c4uyz5"  # fallback for dev
-)
-
-# SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', "django-insecure-1m=i!+(*d1tu=a)jwdmg__z=v(v!#ll69!@mdlx7&)@!c4uyz5")
+SECRET_KEY = "django-insecure-1m=i!+(*d1tu=a)jwdmg__z=v(v!#ll69!@mdlx7&)@!c4uyz5"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "yes")
+DEBUG = True
 
-# For Render, if no ALLOWED_HOSTS are set, allow Render’s domain
-allowed_hosts_env = os.environ.get("ALLOWED_HOSTS", "")
-ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
+ALLOWED_HOSTS = ['*']
 
-if not ALLOWED_HOSTS and not DEBUG:
-    ALLOWED_HOSTS = ["*"]  # Or your Render URL
 # Application definition
 
 INSTALLED_APPS = [
@@ -267,7 +258,6 @@ JAZZMIN_UI_TWEAKS = {
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # Serve static files in production
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -300,28 +290,18 @@ WSGI_APPLICATION = "student_violation_system.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Use DATABASE_URL from Render (or other PaaS)
-import dj_database_url
-
-DATABASE_URL = os.environ.get("DATABASE_URL")
-
-if DATABASE_URL:
-    # Production: Use DATABASE_URL from Render
-    DATABASES = {
-        "default": dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
+# PostgreSQL configuration
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "student_tracking_db",
+        "USER": "postgres",
+        "PASSWORD": "1234",
+        "HOST": "localhost",
+        "PORT": "5432",
     }
-else:
-    # Local development: SQLite
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -360,16 +340,6 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = []
 STATIC_ROOT = BASE_DIR / "staticfiles"
-
-# WhiteNoise static files compression
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
 
 # Media files (user uploaded content)
 MEDIA_URL = "media/"
