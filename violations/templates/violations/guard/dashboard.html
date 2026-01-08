@@ -3,12 +3,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#1a472a" />
+  <meta name="format-detection" content="telephone=no" />
   <title>Guard Dashboard - CHMSU SVMS</title>
   <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
   <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <!-- PWA/Mobile App Icons -->
+  <link rel="apple-touch-icon" href="{% static 'violations/images/chmsu_logo.png' %}" />
+  <link rel="icon" type="image/png" href="{% static 'violations/images/chmsu_logo.png' %}" />
 </head>
 <body class="role-guard">
   <!-- Official Top Navigation -->
@@ -2963,6 +2971,195 @@
 
       .form-footer {
         padding: 12px 20px;
+      }
+    }
+
+    /* ===== MOBILE APP / PWA ENHANCEMENTS ===== */
+    
+    /* Safe Area Insets for Notched Devices (iPhone X+, etc.) */
+    @supports (padding: env(safe-area-inset-top)) {
+      .official-top-nav {
+        padding-top: calc(12px + env(safe-area-inset-top));
+      }
+      
+      .dashboard-content {
+        padding-bottom: calc(30px + env(safe-area-inset-bottom));
+      }
+      
+      .modal-content {
+        padding-bottom: calc(20px + env(safe-area-inset-bottom));
+      }
+      
+      .action-buttons {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+
+    /* Touch-Friendly Targets (min 44px for accessibility) */
+    @media (hover: none) and (pointer: coarse) {
+      .btn,
+      .nav-user-btn,
+      .dropdown-item,
+      .action-btn,
+      .quick-action-btn {
+        min-height: 48px;
+        min-width: 48px;
+      }
+      
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        min-height: 52px;
+        font-size: 16px; /* Prevents iOS zoom on focus */
+      }
+      
+      .table-actions .action-btn {
+        width: 44px;
+        height: 44px;
+      }
+      
+      .dropdown-menu {
+        min-width: 200px;
+      }
+      
+      .dropdown-item {
+        padding: 14px 20px;
+      }
+    }
+
+    /* Mobile Table Handling - Horizontal Scroll */
+    @media (max-width: 768px) {
+      .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        margin: 0 -16px;
+        padding: 0 16px;
+      }
+      
+      .data-table {
+        min-width: 700px;
+      }
+      
+      .data-table th,
+      .data-table td {
+        white-space: nowrap;
+        padding: 12px 10px;
+      }
+      
+      /* Mobile scroll indicator */
+      .table-container::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 30px;
+        background: linear-gradient(to right, transparent, rgba(255,255,255,0.9));
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      
+      .table-container.has-scroll::after {
+        opacity: 1;
+      }
+    }
+
+    /* Prevent Text Selection on UI Elements */
+    .btn,
+    .nav-user-btn,
+    .dropdown-item,
+    .stat-card,
+    .quick-action-btn {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Smooth Touch Feedback */
+    .btn:active,
+    .stat-card:active,
+    .quick-action-btn:active,
+    .dropdown-item:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+
+    /* Standalone PWA Mode Adjustments */
+    @media (display-mode: standalone) {
+      body {
+        padding-top: env(safe-area-inset-top);
+      }
+      
+      .official-top-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        padding-top: calc(12px + env(safe-area-inset-top));
+      }
+      
+      .dashboard-content {
+        margin-top: 80px;
+      }
+    }
+
+    /* Improve Scrolling Performance */
+    .dashboard-content,
+    .table-container,
+    .modal-content {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    /* Disable Pull-to-Refresh on PWA */
+    body {
+      overscroll-behavior-y: contain;
+    }
+
+    /* High Contrast Mode Support */
+    @media (prefers-contrast: high) {
+      .stat-card,
+      .data-table th,
+      .data-table td {
+        border: 2px solid currentColor;
+      }
+      
+      .btn {
+        border: 2px solid currentColor;
+      }
+    }
+
+    /* Reduced Motion for Accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Mobile Portrait Landscape Lock Indicator */
+    @media (max-width: 480px) and (orientation: landscape) {
+      .dashboard-content {
+        padding-top: 10px;
+      }
+      
+      .stat-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      
+      .stat-card {
+        padding: 12px;
+      }
+      
+      .stat-number {
+        font-size: 20px;
       }
     }
   </style>

@@ -3,12 +3,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="format-detection" content="telephone=no" />
   <title>Formator Login - CHMSU SVMS</title>
   <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
   <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link rel="apple-touch-icon" href="{% static 'violations/images/chmsu_logo.png' %}" />
+  <link rel="icon" type="image/png" href="{% static 'violations/images/chmsu_logo.png' %}" />
 </head>
 <body class="role-formator">
   <div class="background-overlay"></div>
@@ -751,6 +758,89 @@
 
       .back-link {
         min-height: 48px;
+      }
+    }
+
+    /* ===== MOBILE APP / PWA ENHANCEMENTS ===== */
+    
+    /* Safe Area Insets for Notched Devices */
+    @supports (padding: env(safe-area-inset-top)) {
+      .login-container {
+        padding-top: calc(40px + env(safe-area-inset-top));
+        padding-bottom: calc(40px + env(safe-area-inset-bottom));
+        padding-left: calc(20px + env(safe-area-inset-left));
+        padding-right: calc(20px + env(safe-area-inset-right));
+      }
+    }
+
+    /* Prevent Text Selection on UI Elements */
+    .btn-login,
+    .back-link,
+    .login-card {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Smooth Touch Feedback */
+    .btn-login:active,
+    .back-link:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+
+    /* Standalone PWA Mode */
+    @media (display-mode: standalone) {
+      body {
+        padding-top: env(safe-area-inset-top);
+      }
+      
+      .login-container {
+        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      }
+    }
+
+    /* Disable Pull-to-Refresh */
+    body {
+      overscroll-behavior-y: contain;
+    }
+
+    /* Reduced Motion for Accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      
+      .floating-shapes {
+        display: none;
+      }
+    }
+
+    /* Landscape Mode Adjustments */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .login-container {
+        padding: 20px;
+      }
+      
+      .login-card {
+        max-width: 500px;
+      }
+      
+      .card-role-section {
+        padding: 16px;
+      }
+      
+      .role-icon-bg {
+        width: 50px;
+        height: 50px;
+      }
+      
+      .card-body {
+        padding: 16px 20px;
       }
     }
   </style>

@@ -3,12 +3,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="format-detection" content="telephone=no" />
   <title>Formator Dashboard - CHMSU SVMS</title>
   <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
   <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link rel="apple-touch-icon" href="{% static 'violations/images/chmsu_logo.png' %}" />
+  <link rel="icon" type="image/png" href="{% static 'violations/images/chmsu_logo.png' %}" />
 </head>
 <body class="role-formator">
   <!-- Official Top Navigation -->
@@ -1555,6 +1562,109 @@
       .directory-table td,
       .directory-table th {
         padding: 12px 8px;
+      }
+    }
+
+    /* ===== MOBILE APP / PWA ENHANCEMENTS ===== */
+    
+    /* Safe Area Insets for Notched Devices */
+    @supports (padding: env(safe-area-inset-top)) {
+      .formator-nav {
+        padding-top: calc(12px + env(safe-area-inset-top));
+        padding-left: calc(20px + env(safe-area-inset-left));
+        padding-right: calc(20px + env(safe-area-inset-right));
+      }
+      
+      .dashboard-content {
+        padding-bottom: calc(30px + env(safe-area-inset-bottom));
+        padding-left: calc(20px + env(safe-area-inset-left));
+        padding-right: calc(20px + env(safe-area-inset-right));
+      }
+    }
+
+    /* Enhanced Touch Targets */
+    @media (hover: none) and (pointer: coarse) {
+      .btn,
+      .dropdown-item {
+        min-height: 48px;
+      }
+      
+      input, select, textarea {
+        min-height: 48px;
+        font-size: 16px; /* Prevents iOS zoom on focus */
+      }
+    }
+
+    /* Prevent Text Selection on UI Elements */
+    .btn,
+    .nav-icon-btn,
+    .stat-card,
+    .dropdown-item {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Smooth Touch Feedback */
+    .btn:active,
+    .stat-card:active,
+    .nav-icon-btn:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+
+    /* Standalone PWA Mode Adjustments */
+    @media (display-mode: standalone) {
+      body {
+        padding-top: env(safe-area-inset-top);
+      }
+      
+      .formator-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+      }
+      
+      .dashboard-content {
+        margin-top: 80px;
+      }
+    }
+
+    /* Improve Scrolling Performance */
+    .dashboard-content,
+    .directory-table-wrapper {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    /* Disable Pull-to-Refresh on PWA */
+    body {
+      overscroll-behavior-y: contain;
+    }
+
+    /* Reduced Motion for Accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Landscape Mode Adjustments */
+    @media (max-width: 768px) and (orientation: landscape) {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      
+      .stat-card {
+        padding: 12px;
+        flex-direction: row;
       }
     }
   </style>
