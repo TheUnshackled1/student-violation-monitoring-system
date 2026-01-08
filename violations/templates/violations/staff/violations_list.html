@@ -31,10 +31,7 @@
 
       <div class="nav-actions">
         <a href="{% url 'violations:staff_dashboard' %}" class="nav-icon-btn" title="Back to Dashboard">
-          <i class="fas fa-home"></i>
-        </a>
-        <a href="{% url 'violations:staff_violation_create' %}" class="nav-action-btn">
-          <i class="fas fa-plus"></i> New Violation
+          <i class="fas fa-home"></i> Dashboard
         </a>
       </div>
     </div>
@@ -111,6 +108,17 @@
             <span class="stat-desc">Completed cases</span>
           </div>
         </div>
+
+        <a href="?status=overdue" class="stat-card stat-card-link {% if overdue_count > 0 %}stat-card-alert{% endif %}" title="View overdue cases">
+          <div class="stat-icon stat-icon-danger">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Overdue Cases</span>
+            <span class="stat-value">{{ overdue_count|default:'0' }}</span>
+            <span class="stat-desc">Pending &gt; 7 days</span>
+          </div>
+        </a>
       </div>
     </section>
 
@@ -344,8 +352,7 @@
     }
 
     .nav-icon-btn {
-      width: 40px;
-      height: 40px;
+      padding: 8px 16px;
       border-radius: 8px;
       background: rgba(255,255,255,0.1);
       border: 1px solid rgba(255,255,255,0.2);
@@ -353,9 +360,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
       cursor: pointer;
       transition: all 0.2s;
       text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
     }
 
     .nav-icon-btn:hover {
@@ -476,15 +486,15 @@
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 0;
     }
 
     .stat-card {
       display: flex;
       align-items: center;
-      gap: 15px;
-      padding: 20px;
+      gap: 10px;
+      padding: 12px 14px;
       background: #ffffff;
       border-right: 1px solid #e5e7eb;
       transition: all 0.2s ease;
@@ -499,13 +509,13 @@
     }
 
     .stat-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 12px;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
+      font-size: 18px;
       flex-shrink: 0;
     }
 
@@ -529,6 +539,26 @@
       color: #ffffff;
     }
 
+    .stat-icon-danger {
+      background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+      color: #ffffff;
+    }
+
+    .stat-card-link {
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .stat-card-link:hover {
+      background: #f0fdf4;
+    }
+
+    .stat-card-alert {
+      background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%) !important;
+      border-left: 3px solid #dc2626;
+    }
+
     .stat-content {
       display: flex;
       flex-direction: column;
@@ -545,7 +575,7 @@
 
     .stat-value {
       font-family: 'Poppins', sans-serif;
-      font-size: 28px;
+      font-size: 22px;
       font-weight: 700;
       color: #1a472a;
       line-height: 1.2;
@@ -553,7 +583,7 @@
 
     .stat-desc {
       font-family: 'Poppins', sans-serif;
-      font-size: 10px;
+      font-size: 9px;
       color: #9ca3af;
       margin-top: 2px;
     }

@@ -349,19 +349,22 @@
             margin-bottom: 16px;
         }
         .print-btn {
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
             color: white;
             border: none;
             padding: 10px 20px;
             border-radius: 8px;
-            cursor: pointer;
+            font-size: 13px;
             font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
         .print-btn:hover {
-            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
         }
         
         /* Official Top Navigation Styles */
@@ -451,9 +454,8 @@
         }
 
         .nav-icon-btn {
-            width: 38px;
-            height: 38px;
-            border: none;
+            padding: 8px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 8px;
             background: rgba(255,255,255,0.1);
             color: #ffffff;
@@ -461,7 +463,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 15px;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
             transition: all 0.2s ease;
             text-decoration: none;
         }
@@ -726,7 +730,7 @@
 
             <div class="nav-actions">
                 <a href="{% url 'violations:student_dashboard' %}" class="nav-icon-btn" title="Back to Dashboard">
-                    <i class="fas fa-arrow-left"></i>
+                    <i class="fas fa-arrow-left"></i> Back
                 </a>
                 <div class="profile-menu">
                     <button class="profile-btn" id="profileBtn">
@@ -819,13 +823,8 @@
 
         <!-- Step 2: Letter Template -->
         <div class="form-card" id="letterSection" style="display: none;">
-            <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-                <h3 class="form-title" style="margin-bottom: 0;"><i class="fas fa-file-alt"></i> Step 2: Fill Out & Print the Letter</h3>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <button type="button" class="print-btn" onclick="window.print()">
-                        <i class="fas fa-print"></i> Print Letter
-                    </button>
-                </div>
+            <div class="no-print" style="margin-bottom: 16px;">
+                <h3 class="form-title" style="margin-bottom: 0;"><i class="fas fa-file-alt"></i> Step 2: Fill Out the Letter</h3>
             </div>
             
             <!-- Required Fields Notice -->

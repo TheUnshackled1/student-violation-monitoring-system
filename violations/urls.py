@@ -39,6 +39,7 @@ urlpatterns = [
     # OSA Coordinator (Reporting Personnel)
     path('faculty/dashboard/', views.faculty_dashboard_view, name='faculty_dashboard'),
     path('faculty/case-management/', views.faculty_case_management_view, name='faculty_case_management'),
+    path('faculty/case-management/update-status/', views.faculty_update_case_status_view, name='faculty_update_case_status'),
     path('faculty/my-reports/', views.faculty_my_reports_view, name='faculty_my_reports'),
     path('faculty/activity-logs/', views.faculty_activity_logs_view, name='faculty_activity_logs'),
     path('faculty/activity-logs/<int:log_id>/delete/', views.faculty_delete_activity_log_view, name='faculty_delete_activity_log'),
@@ -87,6 +88,9 @@ urlpatterns = [
     path('staff/schedule-meeting/<int:alert_id>/', views.staff_schedule_meeting_view, name='staff_schedule_meeting'),
     path('staff/resolve-alert/<int:alert_id>/', views.staff_resolve_alert_view, name='staff_resolve_alert'),
     path('staff/mark-meeting-met/<int:alert_id>/', views.staff_mark_meeting_met_view, name='staff_mark_meeting_met'),
+    path('staff/dismiss-alert/<int:alert_id>/', views.staff_dismiss_alert_view, name='staff_dismiss_alert'),
+    path('staff/restore-alert/<int:alert_id>/', views.staff_restore_alert_view, name='staff_restore_alert'),
+    path('staff/delete-alert/<int:alert_id>/', views.staff_permanent_delete_alert_view, name='staff_delete_alert'),
 
     # Guard Portal
     path('guard/login/', views.guard_login_view, name='guard_login'),

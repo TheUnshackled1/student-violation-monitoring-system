@@ -31,15 +31,15 @@
 
       <div class="nav-actions">
         <button class="nav-icon-btn no-print" onclick="window.print()" title="Print Profile">
-          <i class="fas fa-print"></i>
+          <i class="fas fa-print"></i> Print
         </button>
         {% if request.user.role == 'osa_coordinator' %}
-        <a href="{% url 'violations:faculty_dashboard' %}" class="nav-icon-btn" title="Back to Dashboard">
-          <i class="fas fa-home"></i>
+        <a href="{% url 'violations:faculty_dashboard' %}" class="nav-icon-btn no-print" title="Back to Dashboard">
+          <i class="fas fa-arrow-left"></i> Back
         </a>
         {% else %}
-        <a href="{% url 'violations:staff_dashboard' %}" class="nav-icon-btn" title="Back to Dashboard">
-          <i class="fas fa-home"></i>
+        <a href="{% url 'violations:staff_dashboard' %}" class="nav-icon-btn no-print" title="Back to Dashboard">
+          <i class="fas fa-arrow-left"></i> Back
         </a>
         {% endif %}
       </div>
@@ -156,6 +156,155 @@
                 <div class="info-value">{{ student.guardian_contact|default:"Not Provided" }}</div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Certificate of Good Moral Character (CGMC) Eligibility Section -->
+    <section class="official-goodmoral-section" style="margin-top:20px;">
+      <div class="goodmoral-title-bar">
+        <h2 class="goodmoral-title"><i class="fas fa-certificate"></i> CERTIFICATE OF GOOD MORAL CHARACTER</h2>
+        <p class="goodmoral-subtitle">Official CGMC Eligibility Assessment per CHMSU Student Handbook</p>
+      </div>
+
+      <div class="goodmoral-content">
+        <!-- Main Status Card -->
+        <div class="goodmoral-status-card status-{{ cgmc.status }}">
+          <div class="goodmoral-icon">
+            <i class="{{ cgmc.icon }}"></i>
+          </div>
+          <div class="goodmoral-info">
+            <span class="goodmoral-label">{{ cgmc.label }}</span>
+            <span class="goodmoral-desc">{{ cgmc.description }}</span>
+          </div>
+          <div class="goodmoral-badge">
+            {% if cgmc.status == 'eligible' %}
+              <span class="badge-eligible"><i class="fas fa-check-circle"></i> ELIGIBLE FOR CGMC</span>
+            {% elif cgmc.status == 'conditional' %}
+              <span class="badge-conditional"><i class="fas fa-exclamation-triangle"></i> CONDITIONAL</span>
+            {% elif cgmc.status == 'pending_review' %}
+              <span class="badge-pending"><i class="fas fa-clock"></i> PENDING CASE</span>
+            {% else %}
+              <span class="badge-ineligible"><i class="fas fa-ban"></i> NOT ELIGIBLE</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Eligibility Criteria Grid -->
+        <div class="cgmc-criteria-grid">
+          <div class="criteria-item {% if vstats.major_count == 0 %}criteria-pass{% else %}criteria-fail{% endif %}">
+            <div class="criteria-icon">
+              {% if vstats.major_count == 0 %}
+                <i class="fas fa-check-circle text-success"></i>
+              {% else %}
+                <i class="fas fa-times-circle text-danger"></i>
+              {% endif %}
+            </div>
+            <div class="criteria-content">
+              <span class="criteria-label">No Major Offenses</span>
+              <span class="criteria-value">{{ vstats.major_count }} on record</span>
+            </div>
+          </div>
+
+          <div class="criteria-item {% if vstats.pending == 0 %}criteria-pass{% else %}criteria-fail{% endif %}">
+            <div class="criteria-icon">
+              {% if vstats.pending == 0 %}
+                <i class="fas fa-check-circle text-success"></i>
+              {% else %}
+                <i class="fas fa-times-circle text-danger"></i>
+              {% endif %}
+            </div>
+            <div class="criteria-content">
+              <span class="criteria-label">No Pending Cases</span>
+              <span class="criteria-value">{{ vstats.pending }} pending</span>
+            </div>
+          </div>
+
+          <div class="criteria-item {% if vstats.effective_major < 3 %}criteria-pass{% else %}criteria-fail{% endif %}">
+            <div class="criteria-icon">
+              {% if vstats.effective_major < 3 %}
+                <i class="fas fa-check-circle text-success"></i>
+              {% else %}
+                <i class="fas fa-times-circle text-danger"></i>
+              {% endif %}
+            </div>
+            <div class="criteria-content">
+              <span class="criteria-label">Below Violation Threshold</span>
+              <span class="criteria-value">{{ vstats.effective_major }}/3 effective major</span>
+            </div>
+          </div>
+
+          <div class="criteria-item {% if cgmc.can_issue %}criteria-pass{% else %}criteria-fail{% endif %}">
+            <div class="criteria-icon">
+              {% if cgmc.can_issue %}
+                <i class="fas fa-file-certificate text-success"></i>
+              {% else %}
+                <i class="fas fa-file-excel text-danger"></i>
+              {% endif %}
+            </div>
+            <div class="criteria-content">
+              <span class="criteria-label">Certificate Status</span>
+              <span class="criteria-value">{% if cgmc.can_issue %}Can be Issued{% else %}Cannot be Issued{% endif %}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Violation Breakdown -->
+        <div class="goodmoral-breakdown">
+          <div class="breakdown-item">
+            <span class="breakdown-label">Major Violations</span>
+            <span class="breakdown-value {% if vstats.major_count > 0 %}text-danger{% endif %}">{{ vstats.major_count|default:'0' }}</span>
+          </div>
+          <div class="breakdown-item">
+            <span class="breakdown-label">Minor Violations</span>
+            <span class="breakdown-value {% if vstats.minor_count >= 3 %}text-warning{% endif %}">{{ vstats.minor_count|default:'0' }}</span>
+          </div>
+          <div class="breakdown-item">
+            <span class="breakdown-label">Effective Major (3 minor = 1 major)</span>
+            <span class="breakdown-value {% if vstats.effective_major >= 3 %}text-danger{% endif %}">{{ vstats.effective_major|default:'0' }}</span>
+          </div>
+          <div class="breakdown-item">
+            <span class="breakdown-label">Pending Cases</span>
+            <span class="breakdown-value {% if vstats.pending > 0 %}text-warning{% endif %}">{{ vstats.pending|default:'0' }}</span>
+          </div>
+        </div>
+
+        <!-- Reasons & Recommendations -->
+        {% if cgmc.reasons %}
+        <div class="cgmc-reasons">
+          <h4><i class="fas fa-clipboard-list"></i> Assessment Factors</h4>
+          <ul>
+            {% for reason in cgmc.reasons %}
+            <li>{{ reason }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        {% if cgmc.recommendations %}
+        <div class="cgmc-recommendations">
+          <h4><i class="fas fa-lightbulb"></i> Recommendations</h4>
+          <ul>
+            {% for rec in cgmc.recommendations %}
+            <li>{{ rec }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <!-- Official Note -->
+        <div class="goodmoral-note">
+          <i class="fas fa-gavel"></i>
+          <div>
+            <p><strong>CGMC Eligibility Rules (Per CHMSU Student Handbook):</strong></p>
+            <ul style="margin:8px 0 0 16px; font-size:12px; color:#374151;">
+              <li><strong>Eligible:</strong> No major offenses, no pending cases, sanctions completed (if any)</li>
+              <li><strong>Conditional:</strong> Minor offenses only, all resolved, may be issued with administrative discretion</li>
+              <li><strong>Pending:</strong> Has unresolved case(s) — wait for resolution before applying</li>
+              <li><strong>Not Eligible:</strong> Major offense on record, or pattern of repeated misconduct</li>
+            </ul>
+            <p style="margin-top:8px; font-size:11px; color:#6b7280;"><em>This assessment is based on available disciplinary records as of the date of viewing. Certificate issuance requires official request and administrative approval.</em></p>
           </div>
         </div>
       </div>
@@ -294,6 +443,19 @@
         <p class="print-only">Generated on: {% now "F d, Y - g:i A" %}</p>
       </div>
     </section>
+
+    <!-- Print Signature Section (Outside violation history box) -->
+    <div class="print-signature-section print-only" style="margin-top: 40px; padding-top: 20px; display: none;">
+      <div style="width: 250px; margin-left: auto; text-align: center;">
+        <div style="border-bottom: 1px solid #1f2937; width: 100%; margin-bottom: 8px;"></div>
+        <p style="font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; color: #1f2937; margin: 0;">
+          VICTORIA VIOLANDA
+        </p>
+        <p style="font-family: 'Poppins', sans-serif; font-size: 10px; color: #4b5563; margin: 4px 0 0 0;">
+          OSA Coordinator
+        </p>
+      </div>
+    </div>
   </main>
 
   <script src="{% static 'violations/js/script.js' %}"></script>
@@ -387,8 +549,7 @@
     }
 
     .nav-icon-btn {
-      width: 40px;
-      height: 40px;
+      padding: 8px 16px;
       border-radius: 8px;
       background: rgba(255,255,255,0.1);
       border: 1px solid rgba(255,255,255,0.2);
@@ -396,9 +557,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
       cursor: pointer;
       transition: all 0.2s;
       text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
     }
 
     .nav-icon-btn:hover {
@@ -768,6 +932,337 @@
       flex-shrink: 0;
     }
 
+    /* Good Moral Section Styles */
+    .official-goodmoral-section {
+      background: #ffffff;
+      border: 2px solid #1a472a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .goodmoral-title-bar {
+      background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
+      color: #ffffff;
+      padding: 14px 25px;
+      text-align: center;
+    }
+
+    .goodmoral-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .goodmoral-subtitle {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      margin: 5px 0 0 0;
+      opacity: 0.9;
+    }
+
+    .goodmoral-content {
+      padding: 20px;
+    }
+
+    .goodmoral-status-card {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .goodmoral-status-card.status-excellent {
+      background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+      border: 2px solid #22c55e;
+    }
+
+    .goodmoral-status-card.status-good {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      border: 2px solid #3b82f6;
+    }
+
+    .goodmoral-status-card.status-fair {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #f59e0b;
+    }
+
+    .goodmoral-status-card.status-under_review {
+      background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+      border: 2px solid #6366f1;
+    }
+
+    .goodmoral-status-card.status-not_eligible {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      border: 2px solid #ef4444;
+    }
+
+    .goodmoral-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .status-excellent .goodmoral-icon {
+      background: #22c55e;
+      color: white;
+    }
+
+    .status-good .goodmoral-icon {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .status-fair .goodmoral-icon {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .status-under_review .goodmoral-icon {
+      background: #6366f1;
+      color: white;
+    }
+
+    .status-not_eligible .goodmoral-icon {
+      background: #ef4444;
+      color: white;
+    }
+
+    .goodmoral-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .goodmoral-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .goodmoral-desc {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    .goodmoral-badge span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .badge-eligible {
+      background: #22c55e;
+      color: white;
+    }
+
+    .badge-conditional {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .badge-pending {
+      background: #6366f1;
+      color: white;
+    }
+
+    .badge-ineligible {
+      background: #ef4444;
+      color: white;
+    }
+
+    /* CGMC Criteria Grid */
+    .cgmc-criteria-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .criteria-item {
+      background: #f9fafb;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .criteria-item.criteria-pass {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border-color: #86efac;
+    }
+
+    .criteria-item.criteria-fail {
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border-color: #fca5a5;
+    }
+
+    .criteria-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .criteria-icon .text-success {
+      color: #22c55e;
+    }
+
+    .criteria-icon .text-danger {
+      color: #ef4444;
+    }
+
+    .criteria-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .criteria-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .criteria-value {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    /* CGMC Reasons & Recommendations */
+    .cgmc-reasons, .cgmc-recommendations {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .cgmc-reasons h4, .cgmc-recommendations h4 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cgmc-reasons h4 i {
+      color: #3b82f6;
+    }
+
+    .cgmc-recommendations h4 i {
+      color: #f59e0b;
+    }
+
+    .cgmc-reasons ul, .cgmc-recommendations ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .cgmc-reasons li, .cgmc-recommendations li {
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      color: #4b5563;
+      padding: 4px 0;
+    }
+
+    .goodmoral-breakdown {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .breakdown-item {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .breakdown-label {
+      display: block;
+      font-family: 'Poppins', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .breakdown-value {
+      display: block;
+      font-family: 'Poppins', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .breakdown-value.text-danger {
+      color: #ef4444;
+    }
+
+    .breakdown-value.text-warning {
+      color: #f59e0b;
+    }
+
+    .goodmoral-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      border-left: 4px solid #22c55e;
+    }
+
+    .goodmoral-note i {
+      color: #22c55e;
+      font-size: 16px;
+      margin-top: 2px;
+    }
+
+    .goodmoral-note p {
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      color: #166534;
+      margin: 0;
+      line-height: 1.5;
+    }
+
     .stat-icon-total {
       background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
       color: #ffffff;
@@ -1110,7 +1605,8 @@
     @media print {
       .no-print { display: none !important; }
       .official-top-nav { display: none; }
-      .print-only { display: block; }
+      .print-only { display: block !important; }
+      .print-signature-section.print-only { display: block !important; }
     }
 
     /* ========================================
@@ -1211,13 +1707,148 @@
       }
 
       .official-stats-section,
-      .official-directory-section {
+      .official-directory-section,
+      .official-goodmoral-section {
         border: 1pt solid #1a472a !important;
         box-shadow: none !important;
         margin-bottom: 4mm !important;
         margin-top: 4mm !important;
         width: 100% !important;
         overflow: hidden !important;
+      }
+
+      /* ===== GOOD MORAL SECTION PRINT ===== */
+      .goodmoral-title-bar {
+        background: #1a472a !important;
+        color: #ffffff !important;
+        padding: 3mm 4mm !important;
+        text-align: center !important;
+      }
+
+      .goodmoral-title {
+        font-size: 9pt !important;
+        font-weight: 600 !important;
+        letter-spacing: 1.5px !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+      }
+
+      .goodmoral-subtitle {
+        font-size: 7pt !important;
+        margin: 2px 0 0 0 !important;
+        opacity: 0.9 !important;
+      }
+
+      .goodmoral-content {
+        padding: 4mm !important;
+      }
+
+      .goodmoral-status-card {
+        padding: 4mm !important;
+        margin-bottom: 3mm !important;
+        border-radius: 4px !important;
+        page-break-inside: avoid !important;
+      }
+
+      .goodmoral-icon {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 18px !important;
+      }
+
+      .goodmoral-label {
+        font-size: 12pt !important;
+        font-weight: 700 !important;
+      }
+
+      .goodmoral-desc {
+        font-size: 9pt !important;
+      }
+
+      .goodmoral-badge span {
+        padding: 2mm 4mm !important;
+        font-size: 8pt !important;
+        border-radius: 3mm !important;
+      }
+
+      .goodmoral-breakdown {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 2mm !important;
+        margin-bottom: 3mm !important;
+      }
+
+      .breakdown-item {
+        padding: 2mm !important;
+        border-radius: 4px !important;
+      }
+
+      .breakdown-label {
+        font-size: 6pt !important;
+      }
+
+      .breakdown-value {
+        font-size: 14pt !important;
+      }
+
+      /* CGMC Criteria Grid Print Styles */
+      .cgmc-criteria-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 2mm !important;
+        margin-bottom: 3mm !important;
+      }
+
+      .criteria-item {
+        padding: 2mm !important;
+        border-radius: 4px !important;
+        border-width: 1px !important;
+      }
+
+      .criteria-icon {
+        font-size: 14pt !important;
+      }
+
+      .criteria-label {
+        font-size: 6pt !important;
+      }
+
+      .criteria-value {
+        font-size: 8pt !important;
+      }
+
+      .cgmc-reasons, .cgmc-recommendations {
+        padding: 2mm 3mm !important;
+        margin-bottom: 2mm !important;
+        border-radius: 4px !important;
+      }
+
+      .cgmc-reasons h4, .cgmc-recommendations h4 {
+        font-size: 8pt !important;
+        margin-bottom: 2mm !important;
+      }
+
+      .cgmc-reasons li, .cgmc-recommendations li {
+        font-size: 7pt !important;
+        padding: 1px 0 !important;
+      }
+
+      .goodmoral-note {
+        padding: 2mm 3mm !important;
+        border-radius: 4px !important;
+      }
+
+      .goodmoral-note i {
+        font-size: 10pt !important;
+      }
+
+      .goodmoral-note p {
+        font-size: 7pt !important;
+      }
+
+      .goodmoral-note ul {
+        font-size: 6pt !important;
       }
 
       /* ===== PROFILE HEADER ===== */

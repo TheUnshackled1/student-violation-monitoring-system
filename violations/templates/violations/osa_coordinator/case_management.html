@@ -583,6 +583,62 @@
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
 
+        /* Action Cell */
+        .action-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-select {
+            padding: 5px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            background: white;
+            min-width: 110px;
+            transition: all 0.2s;
+        }
+
+        .status-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .status-select:hover {
+            border-color: #9ca3af;
+        }
+
+        .status-select.updating {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Status-specific dropdown colors */
+        .status-select.status-reported {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+        .status-select.status-under_review {
+            background: #dbeafe;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        .status-select.status-resolved {
+            background: #d1fae5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+        .status-select.status-dismissed {
+            background: #f3f4f6;
+            border-color: #6b7280;
+            color: #374151;
+        }
+
         /* Pagination */
         .pagination-wrapper {
             display: flex;
@@ -753,6 +809,8 @@
                         <label for="status">Status</label>
                         <select name="status" id="status">
                             <option value="all" {% if current_filters.status == 'all' %}selected{% endif %}>All Statuses</option>
+                            <option value="pending" {% if current_filters.status == 'pending' %}selected{% endif %}>⏳ Pending (Reported + Under Review)</option>
+                            <option value="overdue" {% if current_filters.status == 'overdue' %}selected{% endif %}>⚠️ Overdue (>7 days)</option>
                             {% for value, label in violation_statuses %}
                             <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}

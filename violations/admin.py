@@ -94,16 +94,21 @@ class StudentAdmin(admin.ModelAdmin):
 	
 	@admin.display(description="Department")
 	def department_badge(self, obj):
+		# Official CHMSU College/Department Colors
 		colors = {
-			"CAS": "#22c55e",
-			"CBMA": "#eab308",
-			"CCS": "#6b7280",
-			"COEd": "#3b82f6",
-			"CIT": "#ef4444",
-			"COE": "#f97316",
+			"CAS": "#22c55e",      # Green - College of Arts and Sciences
+			"CBMA": "#eab308",     # Yellow/Gold - College of Business Management and Accountancy
+			"CCS": "#6b7280",      # Gray - College of Computer Studies
+			"COEd": "#3b82f6",     # Blue - College of Education
+			"CIT": "#ef4444",      # Red - College of Industrial Technology
+			"COE": "#f97316",      # Orange - College of Engineering
+			"CON": "#ec4899",      # Pink - College of Nursing
+			"CTHM": "#8b5cf6",     # Purple - College of Tourism and Hospitality Management
+			"CAF": "#14b8a6",      # Teal - College of Agriculture and Fishery
+			"CGS": "#1a472a",      # Dark Green - College of Graduate Studies
 		}
 		dept = obj.department or "—"
-		color = colors.get(dept, "#6b7280")
+		color = colors.get(dept, "#64748b")  # Slate gray for unknown
 		return format_html(
 			'<span style="background-color:{}; color:white; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;">{}</span>',
 			color, dept

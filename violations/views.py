@@ -491,6 +491,27 @@ def student_dashboard_view(request):
 		models.Q(sender=request.user, deleted_by_sender__isnull=False) |
 		models.Q(receiver=request.user, deleted_by_receiver__isnull=False)
 	).order_by("-created_at")[:30]
+	
+	# Get active meeting alerts for this student (scheduled or expired)
+	scheduled_meeting = None
+	if student:
+		active_alert = StaffAlert.objects.filter(
+			student=student,
+			resolved=False,
+			meeting_status__in=[StaffAlert.MeetingStatus.SCHEDULED, StaffAlert.MeetingStatus.EXPIRED]
+		).select_related('triggered_violation').order_by('-created_at').first()
+		if active_alert and active_alert.scheduled_meeting:
+			# Check if meeting has expired
+			active_alert.check_meeting_expired()
+			scheduled_meeting = {
+				'alert': active_alert,
+				'datetime': active_alert.scheduled_meeting,
+				'notes': active_alert.meeting_notes,
+				'status': active_alert.meeting_status,
+				'is_expired': active_alert.meeting_status == StaffAlert.MeetingStatus.EXPIRED,
+				'is_upcoming': active_alert.scheduled_meeting > timezone.now() if active_alert.meeting_status == StaffAlert.MeetingStatus.SCHEDULED else False,
+			}
+	
 	ctx = {
 		"student": student,
 		"violations": violations,
@@ -498,6 +519,7 @@ def student_dashboard_view(request):
 		"staff_messages": staff_messages,
 		"unread_count": unread_count,
 		"trashed_messages": trashed_messages,
+		"scheduled_meeting": scheduled_meeting,
 	}
 	return render(request, "violations/student/dashboard.html", ctx)
 
@@ -642,15 +664,27 @@ def faculty_dashboard_view(request):
 	).order_by("-created_at")
 	unread_count = staff_messages_qs.filter(read_at__isnull=True).count()
 	staff_messages = staff_messages_qs[:20]
+	
+	# Count staff reports (messages containing VIOLATION REPORT SUMMARY)
+	staff_reports_qs = staff_messages_qs.filter(content__contains="VIOLATION REPORT SUMMARY")
+	staff_reports_count = staff_reports_qs.count()
+	unread_reports_count = staff_reports_qs.filter(read_at__isnull=True).count()
+	
 	# Trashed messages
 	trashed_messages = Message.objects.select_related("sender", "receiver").filter(
 		receiver=request.user,
 		deleted_by_receiver__isnull=False
 	).order_by("-created_at")[:30]
-	# Staff alerts for students who reached violation threshold
+	# Staff alerts for students who reached violation threshold (exclude dismissed)
 	staff_alerts = StaffAlert.objects.select_related("student__user", "triggered_violation").filter(
-		resolved=False
+		resolved=False,
+		dismissed_at__isnull=True
 	).order_by("-created_at")
+	
+	# Dismissed/trashed alerts
+	trashed_alerts = StaffAlert.objects.select_related("student__user", "triggered_violation", "dismissed_by").filter(
+		dismissed_at__isnull=False
+	).order_by("-dismissed_at")[:30]
 	
 	# Check for expired meetings and update status automatically
 	for alert in staff_alerts:
@@ -662,9 +696,12 @@ def faculty_dashboard_view(request):
 			"pending": pending_count,
 			"reported": reported_count,
 			"under_review": under_review_count,
+			"pending_for_review": reported_count + under_review_count,  # Combined: reported + under_review
 			"resolved": resolved_count,
 			"overdue": overdue_count,
 			"latest_created_at": latest.created_at if latest else None,
+			"staff_reports": staff_reports_count,
+			"unread_reports": unread_reports_count,
 		},
 		"login_history": login_history,
 		"students": students_page,  # page object
@@ -673,6 +710,7 @@ def faculty_dashboard_view(request):
 		"unread_count": unread_count,
 		"trashed_messages": trashed_messages,
 		"staff_alerts": staff_alerts,
+		"trashed_alerts": trashed_alerts,
 	}
 	return render(request, "violations/osa_coordinator/dashboard.html", ctx)
 
@@ -690,6 +728,10 @@ def faculty_student_detail_view(request, student_id: str):
 	resolved_v = vqs.filter(status=Violation.Status.RESOLVED).count()
 	dismissed_v = vqs.filter(status=Violation.Status.DISMISSED).count()
 	latest_incident = vqs.first().incident_at if total_v else None
+	
+	# CGMC (Certificate of Good Moral Character) eligibility
+	cgmc = student.cgmc_eligibility
+	
 	ctx = {
 		"student": student,
 		"violations": vqs,
@@ -699,7 +741,17 @@ def faculty_student_detail_view(request, student_id: str):
 			"resolved": resolved_v,
 			"dismissed": dismissed_v,
 			"latest_incident": latest_incident,
-		}
+			"major_count": student.major_violation_count,
+			"minor_count": student.minor_violation_count,
+			"effective_major": student.effective_major_violations,
+		},
+		"cgmc": cgmc,
+		# Backward compatibility
+		"good_moral": {
+			"status": cgmc['status'],
+			"label": cgmc['label'],
+			"description": cgmc['description'],
+		},
 	}
 	return render(request, "violations/staff/student_detail.html", ctx)
 
@@ -731,7 +783,17 @@ def faculty_case_management_view(request):
 	).order_by('-created_at')
 	
 	# Filter by status
-	if status_filter != 'all':
+	if status_filter == 'pending':
+		# Combined: reported + under_review
+		cases = cases.filter(status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW])
+	elif status_filter == 'overdue':
+		# Overdue: pending more than 7 days
+		overdue_threshold = timezone.now() - timedelta(days=7)
+		cases = cases.filter(
+			status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW],
+			created_at__lt=overdue_threshold
+		)
+	elif status_filter != 'all':
 		cases = cases.filter(status=status_filter)
 	
 	# Filter by violation type
@@ -819,6 +881,54 @@ def faculty_case_management_view(request):
 	}
 	
 	return render(request, "violations/osa_coordinator/case_management.html", context)
+
+
+@role_required({User.Role.OSA_COORDINATOR})
+def faculty_update_case_status_view(request):
+	"""OSA Coordinator: Update violation case status via AJAX."""
+	if request.method != 'POST':
+		return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+	
+	violation_id = request.POST.get('violation_id')
+	new_status = request.POST.get('status')
+	
+	if not violation_id or not new_status:
+		return JsonResponse({'success': False, 'error': 'Missing violation_id or status'}, status=400)
+	
+	# Validate status is a valid choice
+	valid_statuses = [choice[0] for choice in Violation.Status.choices]
+	if new_status not in valid_statuses:
+		return JsonResponse({'success': False, 'error': 'Invalid status value'}, status=400)
+	
+	try:
+		violation = Violation.objects.select_related('student', 'student__user').get(id=violation_id)
+		old_status = violation.get_status_display()
+		violation.status = new_status
+		violation.save()
+		
+		# Log the activity
+		from .models import ActivityLog
+		student_name = violation.student.user.get_full_name() or violation.student.student_id
+		new_status_display = violation.get_status_display()
+		ActivityLog.log_activity(
+			action_type=ActivityLog.ActionType.VIOLATION_UPDATED,
+			description=f"Updated case #{violation.id} status: {old_status} → {new_status_display} for {student_name}",
+			request=request,
+			user=request.user,
+			related_student=violation.student,
+			related_violation=violation
+		)
+		
+		return JsonResponse({
+			'success': True, 
+			'message': f'Case #{violation.id} status updated to {new_status_display}',
+			'new_status': new_status,
+			'new_status_display': new_status_display
+		})
+	except Violation.DoesNotExist:
+		return JsonResponse({'success': False, 'error': 'Violation not found'}, status=404)
+	except Exception as e:
+		return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 # Commenting out old report view - OSA Coordinator should oversee, not report directly
@@ -1084,13 +1194,30 @@ def faculty_analytics_api(request):
 	)
 	dept_labels = []
 	dept_data = []
-	dept_colors = ['#1a472a', '#2563eb', '#dc2626', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4']
-	for i, item in enumerate(dept_breakdown):
+	dept_colors = []
+	
+	# Official CHMSU College/Department Colors
+	college_colors = {
+		'CAS': '#22c55e',      # Green - College of Arts and Sciences
+		'CBMA': '#eab308',     # Yellow/Gold - College of Business Management and Accountancy
+		'CCS': '#6b7280',      # Gray - College of Computer Studies
+		'COEd': '#3b82f6',     # Blue - College of Education
+		'CIT': '#ef4444',      # Red - College of Industrial Technology
+		'COE': '#f97316',      # Orange - College of Engineering
+		'CON': '#ec4899',      # Pink - College of Nursing
+		'CTHM': '#8b5cf6',     # Purple - College of Tourism and Hospitality Management
+		'CAF': '#14b8a6',      # Teal - College of Agriculture and Fishery
+		'CGS': '#1a472a',      # Dark Green - College of Graduate Studies
+	}
+	default_color = '#64748b'  # Slate gray for unknown departments
+	
+	for item in dept_breakdown:
 		dept = item['student__department']
-		if len(dept) > 15:
-			dept = dept[:12] + '...'
-		dept_labels.append(dept)
+		display_dept = dept if len(dept) <= 15 else dept[:12] + '...'
+		dept_labels.append(display_dept)
 		dept_data.append(item['count'])
+		# Get color based on department code
+		dept_colors.append(college_colors.get(dept, default_color))
 	
 	# 6. Summary Statistics
 	total_violations = Violation.objects.count()
@@ -1148,8 +1275,19 @@ def faculty_analytics_api(request):
 		'department_breakdown': {
 			'labels': dept_labels,
 			'data': dept_data,
-			'colors': dept_colors[:len(dept_labels)],
+			'colors': dept_colors,
 		},
+		# 7. Diagnostic Analytics - "Why did it happen?"
+		'diagnostic': generate_diagnostic_analytics(
+			total_violations=total_violations,
+			total_major=total_major,
+			total_minor=total_minor,
+			total_pending=total_pending,
+			total_resolved=total_resolved,
+			week_change_percent=week_change_percent,
+			top_violation_types=list(top_violation_types),
+			dept_breakdown=list(dept_breakdown),
+		),
 		# 8. Prescriptive Analytics - Rule-based recommendations
 		'prescriptive': generate_prescriptive_recommendations(
 			total_violations=total_violations,
@@ -1163,6 +1301,275 @@ def faculty_analytics_api(request):
 	}
 	
 	return JsonResponse(analytics_data)
+
+
+def generate_diagnostic_analytics(total_violations, total_major, total_minor, 
+                                  total_pending, total_resolved, week_change_percent,
+                                  top_violation_types, dept_breakdown):
+	"""
+	Generate diagnostic analytics - "Why did it happen?"
+	
+	Analyzes data to find causes, patterns, and contributing factors
+	behind violation outcomes without using predictive algorithms.
+	
+	Returns a dictionary containing:
+	- root_causes: Identified patterns and potential causes
+	- correlations: Relationships between different factors
+	- time_patterns: Temporal analysis insights
+	- hotspots: Location/department concentrations
+	"""
+	from datetime import timedelta
+	from django.db.models import Count, Q
+	from django.db.models.functions import ExtractHour, ExtractWeekDay, TruncMonth
+	
+	diagnostic = {
+		'root_causes': [],
+		'correlations': [],
+		'time_patterns': [],
+		'hotspots': [],
+		'summary': '',
+	}
+	
+	# === ROOT CAUSE ANALYSIS ===
+	
+	# Analyze top violation type patterns
+	if top_violation_types:
+		top_vtype = top_violation_types[0]
+		vtype_name = top_vtype.get('violation_type__name', 'Unknown')
+		vtype_count = top_vtype.get('count', 0)
+		vtype_category = top_vtype.get('violation_type__category', 'minor')
+		
+		if total_violations > 0:
+			vtype_percentage = (vtype_count / total_violations) * 100
+			
+			if vtype_percentage > 30:
+				cause_analysis = {
+					'icon': 'fa-magnifying-glass-chart',
+					'title': f'Dominant Violation Pattern: {vtype_name}',
+					'percentage': f'{vtype_percentage:.1f}%',
+					'finding': f'This single violation type accounts for {vtype_percentage:.1f}% of all cases.',
+					'possible_causes': [],
+				}
+				
+				# Determine possible causes based on violation type
+				vtype_lower = vtype_name.lower()
+				if any(kw in vtype_lower for kw in ['uniform', 'dress', 'attire', 'id']):
+					cause_analysis['possible_causes'] = [
+						'Students may not fully understand dress code requirements',
+						'Uniform availability or affordability issues',
+						'Inconsistent enforcement creating confusion',
+						'Morning rush leading to oversight',
+					]
+				elif any(kw in vtype_lower for kw in ['late', 'tardy', 'absent', 'cutting']):
+					cause_analysis['possible_causes'] = [
+						'Transportation or commute challenges',
+						'Class schedule conflicts with personal obligations',
+						'Lack of engagement with course content',
+						'Health or personal issues affecting attendance',
+					]
+				elif any(kw in vtype_lower for kw in ['smok', 'vape']):
+					cause_analysis['possible_causes'] = [
+						'Peer influence and social pressure',
+						'Stress-coping mechanisms',
+						'Designated smoking areas may be unclear',
+						'Need for cessation support programs',
+					]
+				elif any(kw in vtype_lower for kw in ['disrespect', 'misconduct', 'behavior']):
+					cause_analysis['possible_causes'] = [
+						'Communication or conflict resolution skill gaps',
+						'Stress or personal problems affecting behavior',
+						'Unclear behavioral expectations',
+						'Need for counseling or mediation services',
+					]
+				else:
+					cause_analysis['possible_causes'] = [
+						'Policy awareness may need reinforcement',
+						'Environmental factors in specific areas',
+						'Student orientation gaps',
+						'Need for targeted information campaigns',
+					]
+				
+				diagnostic['root_causes'].append(cause_analysis)
+	
+	# Analyze major vs minor ratio
+	if total_violations > 0:
+		major_ratio = (total_major / total_violations) * 100
+		minor_ratio = (total_minor / total_violations) * 100
+		
+		if major_ratio > 40:
+			diagnostic['root_causes'].append({
+				'icon': 'fa-triangle-exclamation',
+				'title': 'High Major Offense Concentration',
+				'percentage': f'{major_ratio:.1f}%',
+				'finding': 'Major offenses are disproportionately high, suggesting serious behavioral concerns.',
+				'possible_causes': [
+					'Escalation from unaddressed minor violations',
+					'Insufficient preventive interventions',
+					'Possible gaps in policy understanding',
+					'Environmental factors enabling serious misconduct',
+				]
+			})
+		elif minor_ratio > 80:
+			diagnostic['root_causes'].append({
+				'icon': 'fa-clipboard-check',
+				'title': 'Minor Offense Predominance',
+				'percentage': f'{minor_ratio:.1f}%',
+				'finding': 'Most violations are minor, indicating good overall discipline with areas for improvement.',
+				'possible_causes': [
+					'Policy compliance generally understood',
+					'Minor lapses often related to convenience or awareness',
+					'Effective deterrence against major offenses',
+				]
+			})
+	
+	# === TIME PATTERN ANALYSIS ===
+	
+	# Day of week analysis
+	dow_data = (
+		Violation.objects.values(dow=ExtractWeekDay('incident_at'))
+		.annotate(count=Count('id'))
+		.order_by('dow')
+	)
+	
+	dow_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+	dow_counts = {item['dow']: item['count'] for item in dow_data}
+	
+	if dow_counts:
+		max_dow = max(dow_counts, key=dow_counts.get)
+		max_count = dow_counts[max_dow]
+		# Django ExtractDayOfWeek: 1=Sunday, 2=Monday, etc.
+		max_day_name = dow_names[max_dow - 1] if 1 <= max_dow <= 7 else 'Unknown'
+		
+		avg_count = sum(dow_counts.values()) / len(dow_counts) if dow_counts else 0
+		
+		if max_count > avg_count * 1.3:  # 30% above average
+			diagnostic['time_patterns'].append({
+				'icon': 'fa-calendar-day',
+				'title': f'{max_day_name}s Show Higher Violations',
+				'finding': f'{max_day_name}s have {max_count} violations, above the daily average.',
+				'insight': f'Consider increased monitoring or awareness campaigns targeting {max_day_name}s.',
+				'data': {
+					'labels': dow_names,
+					'values': [dow_counts.get(i+1, 0) for i in range(7)],
+				}
+			})
+	
+	# Hour of day analysis (common hours)
+	hour_data = (
+		Violation.objects.values(hour=ExtractHour('incident_at'))
+		.annotate(count=Count('id'))
+		.order_by('-count')[:3]
+	)
+	
+	if hour_data:
+		peak_hours = []
+		for item in hour_data:
+			hour = item['hour']
+			count = item['count']
+			if hour < 12:
+				time_str = f'{hour}:00 AM' if hour > 0 else '12:00 AM'
+			elif hour == 12:
+				time_str = '12:00 PM'
+			else:
+				time_str = f'{hour-12}:00 PM'
+			peak_hours.append({'time': time_str, 'count': count})
+		
+		if peak_hours:
+			diagnostic['time_patterns'].append({
+				'icon': 'fa-clock',
+				'title': 'Peak Violation Hours',
+				'finding': f'Most violations occur around {peak_hours[0]["time"]}.',
+				'insight': 'Deploy additional monitoring during peak hours.',
+				'peak_hours': peak_hours,
+			})
+	
+	# === DEPARTMENT/LOCATION HOTSPOTS ===
+	
+	if dept_breakdown:
+		total_dept_violations = sum(d.get('count', 0) for d in dept_breakdown)
+		
+		for dept in dept_breakdown[:3]:  # Top 3 departments
+			dept_name = dept.get('student__department', 'Unknown')
+			dept_count = dept.get('count', 0)
+			
+			if total_dept_violations > 0:
+				dept_percentage = (dept_count / total_dept_violations) * 100
+				
+				diagnostic['hotspots'].append({
+					'icon': 'fa-building',
+					'department': dept_name,
+					'count': dept_count,
+					'percentage': f'{dept_percentage:.1f}%',
+					'rank': len(diagnostic['hotspots']) + 1,
+				})
+	
+	# Location analysis
+	location_data = (
+		Violation.objects.exclude(location='').exclude(location__isnull=True)
+		.values('location')
+		.annotate(count=Count('id'))
+		.order_by('-count')[:5]
+	)
+	
+	if location_data:
+		for loc in location_data:
+			if loc['count'] >= 3:  # Minimum threshold
+				diagnostic['hotspots'].append({
+					'icon': 'fa-location-dot',
+					'location': loc['location'][:40],
+					'count': loc['count'],
+					'type': 'location',
+				})
+	
+	# === CORRELATIONS ===
+	
+	# Check if certain departments have more major violations
+	dept_major = (
+		Violation.objects.filter(type='major', student__department__isnull=False)
+		.exclude(student__department='')
+		.values('student__department')
+		.annotate(count=Count('id'))
+		.order_by('-count')[:3]
+	)
+	
+	if dept_major:
+		top_major_dept = dept_major[0]
+		if top_major_dept['count'] >= 3:
+			diagnostic['correlations'].append({
+				'icon': 'fa-link',
+				'title': 'Department-Severity Correlation',
+				'finding': f'{top_major_dept["student__department"]} has the highest major offense count ({top_major_dept["count"]} cases).',
+				'insight': 'Targeted intervention may be needed for this department.',
+			})
+	
+	# Resolution rate correlation
+	if total_violations > 0:
+		resolution_rate = (total_resolved / total_violations) * 100
+		pending_rate = (total_pending / total_violations) * 100
+		
+		if pending_rate > 30:
+			diagnostic['correlations'].append({
+				'icon': 'fa-hourglass-half',
+				'title': 'Processing Bottleneck Detected',
+				'finding': f'{pending_rate:.1f}% of cases are still pending resolution.',
+				'insight': 'High pending rate may indicate staffing or process constraints.',
+			})
+	
+	# === SUMMARY ===
+	
+	findings_count = (len(diagnostic['root_causes']) + 
+					  len(diagnostic['time_patterns']) + 
+					  len(diagnostic['hotspots']) + 
+					  len(diagnostic['correlations']))
+	
+	if findings_count == 0:
+		diagnostic['summary'] = 'No significant patterns or anomalies detected. Continue standard monitoring.'
+	elif findings_count <= 2:
+		diagnostic['summary'] = 'Limited patterns identified. Focus on the highlighted areas for improvement.'
+	else:
+		diagnostic['summary'] = f'Multiple patterns identified ({findings_count} findings). Review each area for comprehensive intervention planning.'
+	
+	return diagnostic
 
 
 def generate_prescriptive_recommendations(total_violations, total_major, total_minor, 
@@ -1410,6 +1817,8 @@ def staff_dashboard_view(request):
 	"""Staff dashboard — shows overview cards and a student directory table."""
 	from .models import Student as StudentModel
 	from django.db.models import Count, Sum, Case, When, IntegerField
+	from datetime import timedelta
+	
 	# Fetch students with related user for names; keep it simple (no pagination yet)
 	students = (
 		StudentModel.objects.select_related("user")
@@ -1451,6 +1860,14 @@ def staff_dashboard_view(request):
 	resolved_violations = violation_qs.filter(status=Violation.Status.RESOLVED).count()
 	# Ongoing sanctions (approximation: under_review status)
 	ongoing_sanctions = violation_qs.filter(status=Violation.Status.UNDER_REVIEW).count()
+	
+	# Overdue cases (pending more than 7 days)
+	overdue_threshold = timezone.now() - timedelta(days=7)
+	overdue_count = violation_qs.filter(
+		status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW],
+		created_at__lt=overdue_threshold
+	).count()
+	
 	# include login history for modal
 	login_history = LoginActivity.objects.filter(user=request.user).order_by("-timestamp")[:20]
 	# Sent messages to students (for tracking read status) - exclude deleted by sender
@@ -1470,10 +1887,16 @@ def staff_dashboard_view(request):
 	).order_by("-created_at")[:50]
 	# OSA Coordinator list for messaging
 	faculty_list = User.objects.filter(role=User.Role.OSA_COORDINATOR).order_by("first_name", "last_name")
-	# Staff alerts for students who reached violation threshold
+	# Staff alerts for students who reached violation threshold (exclude dismissed)
 	staff_alerts = StaffAlert.objects.select_related("student__user", "triggered_violation").filter(
-		resolved=False
+		resolved=False,
+		dismissed_at__isnull=True
 	).order_by("-created_at")
+	
+	# Dismissed/trashed alerts
+	trashed_alerts = StaffAlert.objects.select_related("student__user", "triggered_violation", "dismissed_by").filter(
+		dismissed_at__isnull=False
+	).order_by("-dismissed_at")[:30]
 	
 	# Check for expired meetings and update status automatically
 	for alert in staff_alerts:
@@ -1486,12 +1909,14 @@ def staff_dashboard_view(request):
 		"pending_violations": pending_violations,
 		"resolved_violations": resolved_violations,
 		"ongoing_sanctions": ongoing_sanctions,
+		"overdue_count": overdue_count,
 		"login_history": login_history,
 		"sent_messages": sent_messages,
 		"student_replies": student_replies,
 		"trashed_messages": trashed_messages,
 		"faculty_list": faculty_list,
 		"staff_alerts": staff_alerts,
+		"trashed_alerts": trashed_alerts,
 	}
 	return render(request, "violations/staff/dashboard.html", ctx)
 
@@ -1512,6 +1937,10 @@ def staff_student_detail_view(request, student_id: str):
 	resolved_v = vqs.filter(status=Violation.Status.RESOLVED).count()
 	dismissed_v = vqs.filter(status=Violation.Status.DISMISSED).count()
 	latest_incident = vqs.first().incident_at if total_v else None
+	
+	# CGMC (Certificate of Good Moral Character) eligibility
+	cgmc = student.cgmc_eligibility
+	
 	ctx = {
 		"student": student,
 		"violations": vqs,
@@ -1521,7 +1950,17 @@ def staff_student_detail_view(request, student_id: str):
 			"resolved": resolved_v,
 			"dismissed": dismissed_v,
 			"latest_incident": latest_incident,
-		}
+			"major_count": student.major_violation_count,
+			"minor_count": student.minor_violation_count,
+			"effective_major": student.effective_major_violations,
+		},
+		"cgmc": cgmc,
+		# Backward compatibility
+		"good_moral": {
+			"status": cgmc['status'],
+			"label": cgmc['label'],
+			"description": cgmc['description'],
+		},
 	}
 	return render(request, "violations/staff/student_detail.html", ctx)
 
@@ -1564,7 +2003,22 @@ def route_dashboard_view(request):
 @role_required({User.Role.STAFF})
 def staff_violations_list_view(request):
 	"""Staff: View all violations with filtering and search."""
+	from datetime import timedelta
+	
 	violations = Violation.objects.select_related('student', 'student__user', 'reported_by').order_by('-created_at')
+	
+	# Get counts for stats (before filtering)
+	all_violations = Violation.objects.all()
+	reported_count = all_violations.filter(status='reported').count()
+	under_review_count = all_violations.filter(status='under_review').count()
+	resolved_count = all_violations.filter(status='resolved').count()
+	
+	# Calculate overdue cases (pending more than 7 days)
+	overdue_threshold = timezone.now() - timedelta(days=7)
+	overdue_count = all_violations.filter(
+		status__in=['reported', 'under_review'],
+		created_at__lt=overdue_threshold
+	).count()
 	
 	# Search
 	search_query = request.GET.get('search', '')
@@ -1579,7 +2033,14 @@ def staff_violations_list_view(request):
 	# Status filter
 	status_filter = request.GET.get('status', '')
 	if status_filter:
-		violations = violations.filter(status=status_filter)
+		if status_filter == 'overdue':
+			# Overdue: pending more than 7 days
+			violations = violations.filter(
+				status__in=['reported', 'under_review'],
+				created_at__lt=overdue_threshold
+			)
+		else:
+			violations = violations.filter(status=status_filter)
 	
 	# Type (severity) filter
 	type_filter = request.GET.get('type', '')
@@ -1601,6 +2062,10 @@ def staff_violations_list_view(request):
 		'type_filter': type_filter,
 		'status_choices': Violation.Status.choices,
 		'type_choices': Violation.Severity.choices,
+		'reported_count': reported_count,
+		'under_review_count': under_review_count,
+		'resolved_count': resolved_count,
+		'overdue_count': overdue_count,
 	}
 	return render(request, 'violations/staff/violations_list.html', ctx)
 
@@ -2080,16 +2545,21 @@ def staff_verify_apology_view(request, letter_id):
 		# Log the activity
 		student_name = letter.student.user.get_full_name() or letter.student.student_id
 		if action == ApologyLetter.Status.APPROVED:
+			# Auto-resolve the violation when apology is approved
+			violation = letter.violation
+			violation.status = Violation.Status.RESOLVED
+			violation.save()
+			
 			ActivityLog.log_activity(
 				user=request.user,
 				action_type=ActivityLog.ActionType.APOLOGY_APPROVED,
-				description=f"Approved apology letter from {student_name} for violation #{letter.violation.id}",
+				description=f"Approved apology letter from {student_name} for violation #{letter.violation.id}. Case auto-resolved.",
 				request=request,
 				related_apology=letter,
 				related_student=letter.student,
 				related_violation=letter.violation
 			)
-			messages.success(request, f"Apology letter from {student_name} has been approved.")
+			messages.success(request, f"Apology letter from {student_name} has been approved. Case #{violation.id} is now resolved.")
 		elif action == ApologyLetter.Status.REVISION_NEEDED:
 			ActivityLog.log_activity(
 				user=request.user,
@@ -2524,10 +2994,12 @@ Generated: {timezone.now().strftime('%B %d, %Y at %I:%M %p')}"""
 		sent_count += 1
 	
 	# Log the activity
+	from .models import ActivityLog
 	ActivityLog.log_activity(
-		action='report_sent',
+		action_type='report_sent',
 		description=f"Sent violation report summary to {sent_count} coordinator(s). {period_text}",
-		performed_by=request.user
+		request=request,
+		user=request.user
 	)
 	
 	messages.success(request, f"Report sent successfully to {sent_count} OSA Coordinator(s).")
@@ -3286,9 +3758,9 @@ OSA Office
 		return JsonResponse({"error": str(e)}, status=400)
 
 
-@role_required({User.Role.STAFF})
+@role_required({User.Role.STAFF, User.Role.OSA_COORDINATOR})
 def staff_resolve_alert_view(request, alert_id):
-	"""Staff: Mark a staff alert as resolved."""
+	"""Staff/OSA Coordinator: Mark a staff alert as resolved."""
 	if request.method != "POST":
 		return JsonResponse({"error": "Method not allowed"}, status=405)
 	
@@ -3300,6 +3772,54 @@ def staff_resolve_alert_view(request, alert_id):
 		return JsonResponse({"status": "success", "message": "Alert resolved successfully"})
 	except StaffAlert.DoesNotExist:
 		return JsonResponse({"error": "Alert not found"}, status=404)
+	except Exception as e:
+		return JsonResponse({"error": str(e)}, status=400)
+
+
+@role_required({User.Role.STAFF, User.Role.OSA_COORDINATOR})
+def staff_dismiss_alert_view(request, alert_id):
+	"""Staff/OSA Coordinator: Dismiss (soft delete) a staff alert."""
+	if request.method != "POST":
+		return JsonResponse({"error": "Method not allowed"}, status=405)
+	
+	try:
+		alert = StaffAlert.objects.get(id=alert_id, dismissed_at__isnull=True)
+		alert.dismiss(user=request.user)
+		return JsonResponse({"status": "success", "message": "Alert dismissed successfully"})
+	except StaffAlert.DoesNotExist:
+		return JsonResponse({"error": "Alert not found"}, status=404)
+	except Exception as e:
+		return JsonResponse({"error": str(e)}, status=400)
+
+
+@role_required({User.Role.STAFF, User.Role.OSA_COORDINATOR})
+def staff_restore_alert_view(request, alert_id):
+	"""Staff/OSA Coordinator: Restore a dismissed staff alert."""
+	if request.method != "POST":
+		return JsonResponse({"error": "Method not allowed"}, status=405)
+	
+	try:
+		alert = StaffAlert.objects.get(id=alert_id, dismissed_at__isnull=False)
+		alert.restore()
+		return JsonResponse({"status": "success", "message": "Alert restored successfully"})
+	except StaffAlert.DoesNotExist:
+		return JsonResponse({"error": "Alert not found or not dismissed"}, status=404)
+	except Exception as e:
+		return JsonResponse({"error": str(e)}, status=400)
+
+
+@role_required({User.Role.STAFF, User.Role.OSA_COORDINATOR})
+def staff_permanent_delete_alert_view(request, alert_id):
+	"""Staff/OSA Coordinator: Permanently delete a dismissed staff alert."""
+	if request.method != "POST":
+		return JsonResponse({"error": "Method not allowed"}, status=405)
+	
+	try:
+		alert = StaffAlert.objects.get(id=alert_id, dismissed_at__isnull=False)
+		alert.delete()
+		return JsonResponse({"status": "success", "message": "Alert permanently deleted"})
+	except StaffAlert.DoesNotExist:
+		return JsonResponse({"error": "Alert not found or not dismissed"}, status=404)
 	except Exception as e:
 		return JsonResponse({"error": str(e)}, status=400)
 

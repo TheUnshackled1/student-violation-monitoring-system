@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.utils import timezone
 
-from .models import User, Student, OSACoordinator, Staff, LoginActivity
+from .models import User, Student, OSACoordinator, Staff, LoginActivity, Violation, StaffAlert
 
 
 @receiver(post_save, sender=User)
@@ -72,4 +72,40 @@ def on_user_logged_out(sender, request, user, **kwargs):  # pragma: no cover - s
             user_agent=_get_user_agent(request),
         )
     except Exception:
+        pass
+
+
+@receiver(post_save, sender=Violation)
+def create_staff_alert_on_violation(sender, instance: Violation, created: bool, **kwargs):
+    """Automatically create a StaffAlert when a student reaches 3+ effective major violations.
+    
+    Rules:
+    - 3 minor violations = 1 major violation (effective count)
+    - Alert is triggered when effective_major_violations >= 3
+    - Only creates alert if no unresolved alert exists for this student
+    """
+    if not created:
+        return
+    
+    try:
+        student = instance.student
+        effective_majors = student.effective_major_violations
+        
+        # Only create alert if student has 3+ effective major violations
+        if effective_majors >= 3:
+            # Check if there's already an unresolved alert for this student
+            existing_alert = StaffAlert.objects.filter(
+                student=student,
+                resolved=False,
+                dismissed_at__isnull=True
+            ).exists()
+            
+            if not existing_alert:
+                StaffAlert.objects.create(
+                    student=student,
+                    triggered_violation=instance,
+                    effective_major_count=effective_majors,
+                )
+    except Exception:
+        # Don't let alert creation failure block violation creation
         pass

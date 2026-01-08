@@ -94,6 +94,275 @@ class Student(models.Model):
 		"""True when effective major violations >= 3 (trigger staff alert)."""
 		return self.effective_major_violations >= 3
 
+	# ============================================
+	# Certificate of Good Moral Character (CGMC)
+	# Rule-based eligibility system per CHMSU handbook
+	# ============================================
+
+	@property
+	def has_pending_case(self):
+		"""Check if student has any ongoing/pending disciplinary case."""
+		from .models import Violation
+		return self.violations.filter(
+			status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW]
+		).exists()
+
+	@property
+	def pending_case_count(self):
+		"""Count of pending/under review cases."""
+		from .models import Violation
+		return self.violations.filter(
+			status__in=[Violation.Status.REPORTED, Violation.Status.UNDER_REVIEW]
+		).count()
+
+	@property
+	def has_disqualifying_offense(self):
+		"""Check if student has major offense punishable by suspension or higher.
+		
+		Disqualifying offenses include:
+		- Any major violation on record (regardless of status)
+		- Major violations are considered disqualifying per handbook
+		"""
+		return self.major_violation_count > 0
+
+	@property
+	def disqualifying_offense_count(self):
+		"""Count of major offenses that disqualify from CGMC."""
+		return self.major_violation_count
+
+	@property
+	def resolved_violations_count(self):
+		"""Count of violations that have been resolved."""
+		from .models import Violation
+		return self.violations.filter(status=Violation.Status.RESOLVED).count()
+
+	@property
+	def sanctions_completed(self):
+		"""Check if all violations have been resolved/addressed.
+		
+		Returns True if no pending cases and all past violations are resolved/dismissed.
+		"""
+		from .models import Violation
+		total = self.violations.count()
+		resolved_or_dismissed = self.violations.filter(
+			status__in=[Violation.Status.RESOLVED, Violation.Status.DISMISSED]
+		).count()
+		return total == 0 or total == resolved_or_dismissed
+
+	@property
+	def last_violation_date(self):
+		"""Get the date of the most recent violation."""
+		latest = self.violations.order_by('-incident_at').first()
+		return latest.incident_at if latest else None
+
+	@property
+	def clearance_period_passed(self):
+		"""Check if sufficient clearance period has passed since last violation.
+		
+		Clearance period: 6 months (one semester) since last violation incident.
+		"""
+		from django.utils import timezone
+		from datetime import timedelta
+		
+		last_date = self.last_violation_date
+		if not last_date:
+			return True  # No violations, clearance not needed
+		
+		clearance_days = 180  # ~6 months (one semester)
+		return timezone.now() >= last_date + timedelta(days=clearance_days)
+
+	@property
+	def has_repeated_misconduct(self):
+		"""Check for pattern of repeated violations indicating failure of moral restoration.
+		
+		Repeated misconduct pattern:
+		- 3+ minor violations of same type, OR
+		- 2+ major violations, OR  
+		- Violations spanning multiple semesters with no improvement
+		"""
+		from .models import Violation
+		
+		# Check for 2+ major violations
+		if self.major_violation_count >= 2:
+			return True
+		
+		# Check for 3+ effective major violations
+		if self.effective_major_violations >= 3:
+			return True
+		
+		return False
+
+	@property
+	def cgmc_eligibility(self):
+		"""Determine Certificate of Good Moral Character eligibility.
+		
+		Based on CHMSU Student Handbook rules:
+		
+		ELIGIBLE (✅): 
+		- No major offense on record
+		- No ongoing/pending cases
+		- Minor offenses (if any) are resolved
+		- No active disciplinary sanction
+		
+		CONDITIONALLY ELIGIBLE (⚠️):
+		- Minor offenses only
+		- Sanctions completed
+		- Clearance period passed (1 semester)
+		- May be issued with administrative discretion
+		
+		NOT ELIGIBLE (❌):
+		- Any major offense punishable by suspension or higher
+		- Unresolved/pending case
+		- Pattern of repeated violations
+		- 3+ effective major violations
+		
+		Returns dict with:
+		- status: 'eligible', 'conditional', 'pending_review', 'not_eligible'
+		- can_issue: Boolean
+		- label: Display label
+		- description: Detailed explanation
+		- reasons: List of reasons affecting eligibility
+		- recommendations: Actions needed (if any)
+		"""
+		from .models import Violation
+		
+		reasons = []
+		recommendations = []
+		
+		total_violations = self.violations.count()
+		major_count = self.major_violation_count
+		minor_count = self.minor_violation_count
+		effective_major = self.effective_major_violations
+		pending_count = self.pending_case_count
+		has_pending = self.has_pending_case
+		sanctions_done = self.sanctions_completed
+		clearance_ok = self.clearance_period_passed
+		repeated_pattern = self.has_repeated_misconduct
+		
+		# ============================================
+		# NOT ELIGIBLE (❌) - Automatic Disqualification
+		# ============================================
+		
+		# Check for disqualifying major offense
+		if major_count > 0:
+			reasons.append(f"{major_count} major offense(s) on record")
+			recommendations.append("Major offenses permanently affect CGMC eligibility")
+			return {
+				'status': 'not_eligible',
+				'can_issue': False,
+				'label': 'Not Eligible',
+				'description': f'Student has {major_count} major disciplinary offense(s) on record, which disqualifies them from receiving a Certificate of Good Moral Character per CHMSU Student Handbook.',
+				'reasons': reasons,
+				'recommendations': recommendations,
+				'badge_class': 'badge-ineligible',
+				'icon': 'fas fa-ban',
+			}
+		
+		# Check for pattern of repeated misconduct (3+ effective major)
+		if repeated_pattern:
+			reasons.append("Pattern of repeated misconduct detected")
+			recommendations.append("Demonstrate sustained behavioral improvement")
+			return {
+				'status': 'not_eligible',
+				'can_issue': False,
+				'label': 'Not Eligible',
+				'description': f'Student has {effective_major} effective major violations (3 minor = 1 major), indicating a pattern of misconduct that disqualifies them from CGMC.',
+				'reasons': reasons,
+				'recommendations': recommendations,
+				'badge_class': 'badge-ineligible',
+				'icon': 'fas fa-ban',
+			}
+		
+		# ============================================
+		# PENDING REVIEW - Cannot issue yet
+		# ============================================
+		
+		if has_pending:
+			reasons.append(f"{pending_count} pending/under review case(s)")
+			recommendations.append("Wait for all cases to be resolved before applying for CGMC")
+			return {
+				'status': 'pending_review',
+				'can_issue': False,
+				'label': 'Pending Case Resolution',
+				'description': f'Student has {pending_count} case(s) currently under investigation or pending resolution. CGMC cannot be issued until all cases are resolved.',
+				'reasons': reasons,
+				'recommendations': recommendations,
+				'badge_class': 'badge-pending',
+				'icon': 'fas fa-hourglass-half',
+			}
+		
+		# ============================================
+		# CONDITIONALLY ELIGIBLE (⚠️)
+		# ============================================
+		
+		# Has minor violations but all resolved
+		if minor_count > 0 and sanctions_done:
+			if not clearance_ok:
+				reasons.append(f"{minor_count} minor violation(s) - sanctions completed")
+				reasons.append("Clearance period not yet passed (6 months)")
+				recommendations.append("Wait for clearance period to complete")
+				recommendations.append("Maintain clean disciplinary record")
+				return {
+					'status': 'conditional',
+					'can_issue': True,  # Can issue with remarks
+					'label': 'Conditionally Eligible',
+					'description': f'Student has {minor_count} minor violation(s) with completed sanctions. May be issued with administrative discretion. Clearance period (6 months since last incident) has not fully passed.',
+					'reasons': reasons,
+					'recommendations': recommendations,
+					'badge_class': 'badge-conditional',
+					'icon': 'fas fa-exclamation-triangle',
+				}
+			else:
+				reasons.append(f"{minor_count} minor violation(s) - fully resolved")
+				reasons.append("Clearance period passed")
+				return {
+					'status': 'conditional',
+					'can_issue': True,
+					'label': 'Conditionally Eligible',
+					'description': f'Student has {minor_count} minor violation(s) on record, but all sanctions have been completed and clearance period has passed. May be issued at administrative discretion.',
+					'reasons': reasons,
+					'recommendations': [],
+					'badge_class': 'badge-conditional',
+					'icon': 'fas fa-check-circle',
+				}
+		
+		# ============================================
+		# AUTOMATICALLY ELIGIBLE (✅)
+		# ============================================
+		
+		if total_violations == 0:
+			return {
+				'status': 'eligible',
+				'can_issue': True,
+				'label': 'Eligible',
+				'description': 'Student has no disciplinary violations on record. Eligible for Certificate of Good Moral Character.',
+				'reasons': ['No disciplinary record'],
+				'recommendations': [],
+				'badge_class': 'badge-eligible',
+				'icon': 'fas fa-medal',
+			}
+		
+		# Default case - should not normally reach here
+		return {
+			'status': 'eligible',
+			'can_issue': True,
+			'label': 'Eligible',
+			'description': 'Student meets all requirements for Certificate of Good Moral Character.',
+			'reasons': ['Disciplinary record within acceptable limits'],
+			'recommendations': [],
+			'badge_class': 'badge-eligible',
+			'icon': 'fas fa-award',
+		}
+
+	@property
+	def good_moral_status(self):
+		"""Simplified good moral status for backward compatibility.
+		
+		Returns a tuple of (status_code, status_label, status_description)
+		"""
+		cgmc = self.cgmc_eligibility
+		return (cgmc['status'], cgmc['label'], cgmc['description'])
+
 
 class OSACoordinator(models.Model):
 	"""OSA Coordinator profile (formerly Faculty)"""
@@ -240,6 +509,16 @@ class StaffAlert(models.Model):
 		help_text="Current status of the scheduled meeting"
 	)
 	meeting_status_updated_at = models.DateTimeField(null=True, blank=True, help_text="When the meeting status was last updated")
+	# Soft delete field for trash functionality
+	dismissed_at = models.DateTimeField(null=True, blank=True, help_text="When the alert was dismissed/deleted")
+	dismissed_by = models.ForeignKey(
+		settings.AUTH_USER_MODEL, 
+		on_delete=models.SET_NULL, 
+		null=True, 
+		blank=True, 
+		related_name="dismissed_alerts",
+		help_text="User who dismissed this alert"
+	)
 
 	class Meta:
 		ordering = ["-created_at"]
@@ -248,6 +527,18 @@ class StaffAlert(models.Model):
 		self.resolved = True
 		self.resolved_at = timezone.now()
 		self.save(update_fields=["resolved", "resolved_at"])
+
+	def dismiss(self, user=None):
+		"""Soft delete the alert by marking it as dismissed."""
+		self.dismissed_at = timezone.now()
+		self.dismissed_by = user
+		self.save(update_fields=["dismissed_at", "dismissed_by"])
+
+	def restore(self):
+		"""Restore a dismissed alert."""
+		self.dismissed_at = None
+		self.dismissed_by = None
+		self.save(update_fields=["dismissed_at", "dismissed_by"])
 
 	def update_meeting_status(self, status):
 		"""Update meeting status and timestamp."""

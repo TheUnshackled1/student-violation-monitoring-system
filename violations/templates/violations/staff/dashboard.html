@@ -496,25 +496,27 @@
           </div>
         </div>
 
-        <div class="stat-card stat-card-split">
+        <a href="{% url 'violations:staff_violations_list' %}?status=resolved" class="stat-card stat-card-split stat-card-link">
           <div class="stat-icon stat-icon-success">
             <i class="fas fa-clipboard-check"></i>
           </div>
           <div class="stat-content">
-            <span class="stat-label">Case Status</span>
-            <div class="stat-split-values">
-              <div class="split-item metric-chip" data-filter="resolved" role="button" tabindex="0">
-                <span class="split-value text-success">{{ resolved_violations|default:'0' }}</span>
-                <span class="split-label">Resolved</span>
-              </div>
-              <div class="split-divider"></div>
-              <div class="split-item metric-chip" data-filter="ongoing" role="button" tabindex="0">
-                <span class="split-value text-warning">{{ ongoing_sanctions|default:'0' }}</span>
-                <span class="split-label">Ongoing</span>
-              </div>
-            </div>
+            <span class="stat-label">Resolved Cases</span>
+            <span class="stat-value">{{ resolved_violations|default:'0' }}</span>
+            <span class="stat-desc">Completed with approved apology</span>
           </div>
-        </div>
+        </a>
+
+        <a href="{% url 'violations:staff_violations_list' %}?status=overdue" class="stat-card stat-card-link {% if overdue_count > 0 %}stat-card-alert{% endif %}">
+          <div class="stat-icon stat-icon-overdue">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Overdue Cases</span>
+            <span class="stat-value">{{ overdue_count|default:'0' }}</span>
+            <span class="stat-desc">Pending &gt; 7 days</span>
+          </div>
+        </a>
       </div>
 
       <!-- Stats Footer -->
@@ -668,7 +670,7 @@
 
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 0;
         border-bottom: 2px solid #1a472a;
       }
@@ -676,12 +678,14 @@
       .stat-card {
         display: flex;
         align-items: center;
-        gap: 15px;
-        padding: 20px;
+        gap: 10px;
+        padding: 12px 14px;
         background: #ffffff;
         border-right: 1px solid #e5e7eb;
         cursor: pointer;
         transition: all 0.2s ease;
+        text-decoration: none;
+        color: inherit;
       }
 
       .stat-card:last-child {
@@ -697,13 +701,13 @@
       }
 
       .stat-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 12px;
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 22px;
+        font-size: 18px;
         flex-shrink: 0;
       }
 
@@ -727,6 +731,16 @@
         color: #ffffff;
       }
 
+      .stat-icon-overdue {
+        background: linear-gradient(135deg, #7c2d12 0%, #c2410c 100%);
+        color: #ffffff;
+      }
+
+      .stat-card-alert {
+        background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%) !important;
+        border-left: 3px solid #dc2626;
+      }
+
       .stat-content {
         display: flex;
         flex-direction: column;
@@ -744,7 +758,7 @@
 
       .stat-value {
         font-family: 'Poppins', sans-serif;
-        font-size: 28px;
+        font-size: 22px;
         font-weight: 700;
         color: #1a472a;
         line-height: 1.2;
@@ -752,7 +766,7 @@
 
       .stat-desc {
         font-family: 'Poppins', sans-serif;
-        font-size: 10px;
+        font-size: 9px;
         color: #9ca3af;
         margin-top: 2px;
       }
@@ -1642,8 +1656,12 @@
     <ul class="notif-list" style="max-height:400px; overflow-y:auto; padding:0; margin:0;">
       {% if staff_alerts %}
         {% for alert in staff_alerts %}
-        <li class="alert-item" data-alert-id="{{ alert.id }}" data-student-id="{{ alert.student.student_id }}" style="padding:16px; border-bottom:1px solid #eee; cursor:pointer; {% if alert.meeting_status == 'expired' %}background:#fef2f2;{% elif alert.meeting_status == 'met' %}background:#f0fdf4;{% elif alert.meeting_status == 'scheduled' %}background:#eff6ff;{% else %}background:#fef2f2;{% endif %}">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+        <li class="alert-item" data-alert-id="{{ alert.id }}" data-student-id="{{ alert.student.student_id }}" style="padding:16px; border-bottom:1px solid #eee; position:relative; {% if alert.meeting_status == 'expired' %}background:#fef2f2;{% elif alert.meeting_status == 'met' %}background:#f0fdf4;{% elif alert.meeting_status == 'scheduled' %}background:#eff6ff;{% else %}background:#fef2f2;{% endif %}">
+          <!-- Dismiss Button -->
+          <button class="dismiss-alert-btn" data-alert-id="{{ alert.id }}" title="Dismiss Alert" style="position:absolute; top:8px; right:8px; background:transparent; border:none; color:#9ca3af; cursor:pointer; padding:4px; font-size:14px; line-height:1; border-radius:4px; transition:all 0.2s;">
+            <i class="fas fa-times"></i>
+          </button>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; padding-right:24px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <i class="fas fa-exclamation-triangle" style="color:#dc2626;"></i>
               <strong style="color:#b91c1c;">{{ alert.student.user.get_full_name }}</strong>
@@ -1653,9 +1671,22 @@
           <p style="margin:4px 0; color:#374151;">
             <strong>Effective Violations:</strong> {{ alert.effective_major_count }}
           </p>
+          {% if alert.triggered_violation %}
           <p style="margin:4px 0; color:#374151;">
             <strong>Triggered by:</strong> {{ alert.triggered_violation.get_type_display }} violation
+            {% if alert.triggered_violation.violation_type %}
+              - {{ alert.triggered_violation.violation_type.name }}
+            {% endif %}
           </p>
+          <p style="margin:4px 0; color:#6b7280; font-size:12px;">
+            <i class="fas fa-map-marker-alt"></i> {{ alert.triggered_violation.location }} | {{ alert.triggered_violation.incident_at|date:"M d, Y g:i A" }}
+          </p>
+          {% if alert.triggered_violation.description %}
+          <p style="margin:4px 0; color:#6b7280; font-size:12px; font-style:italic;">
+            "{{ alert.triggered_violation.description|truncatewords:20 }}"
+          </p>
+          {% endif %}
+          {% endif %}
           
           <!-- Meeting Status Display -->
           {% if alert.scheduled_meeting %}
@@ -1708,9 +1739,12 @@
           
           {% else %}
           <!-- No meeting scheduled yet -->
-          <div style="margin-top:12px; display:flex; gap:8px;">
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
             <button class="action-btn schedule-meeting-btn" data-alert-id="{{ alert.id }}" style="background:#3b82f6; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
-              <i class="fas fa-calendar-plus"></i> Schedule Meeting at OSA Office
+              <i class="fas fa-calendar-plus"></i> Schedule Meeting
+            </button>
+            <button class="action-btn resolve-alert-btn" data-alert-id="{{ alert.id }}" style="background:#6b7280; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
+              <i class="fas fa-check"></i> Mark Resolved
             </button>
           </div>
           {% endif %}
@@ -1723,6 +1757,67 @@
         </li>
       {% endif %}
     </ul>
+    
+    <!-- View Deleted Alerts Button -->
+    {% if trashed_alerts %}
+    <div style="padding:12px 16px; border-top:1px solid #eee; background:#f9fafb;">
+      <button id="viewTrashedAlertsBtn" style="width:100%; padding:10px; background:#f3f4f6; border:1px solid #d1d5db; border-radius:8px; color:#6b7280; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <i class="fas fa-trash-alt"></i> View Deleted Alerts ({{ trashed_alerts|length }})
+      </button>
+    </div>
+    {% endif %}
+  </aside>
+
+  <!-- Deleted Alerts Panel -->
+  <aside class="notif-panel" id="trashedAlertsPanel" aria-hidden="true">
+    <div class="notif-header">
+      <h3><i class="fas fa-trash-alt"></i> Deleted Alerts {% if trashed_alerts %}<span class="badge badge-secondary" style="font-size:12px; margin-left:6px; background:#6b7280;">{{ trashed_alerts|length }}</span>{% endif %}</h3>
+      <button class="icon-btn" id="trashedAlertsClose"><i class="fas fa-times"></i></button>
+    </div>
+    <ul class="notif-list" style="max-height:400px; overflow-y:auto; padding:0; margin:0;">
+      {% if trashed_alerts %}
+        {% for alert in trashed_alerts %}
+        <li class="trashed-alert-item" data-alert-id="{{ alert.id }}" style="padding:16px; border-bottom:1px solid #eee; background:#f9fafb;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <i class="fas fa-exclamation-triangle" style="color:#9ca3af;"></i>
+              <strong style="color:#6b7280;">{{ alert.student.user.get_full_name }}</strong>
+            </div>
+            <small style="color:#9ca3af;">{{ alert.created_at|date:"M d, Y g:i A" }}</small>
+          </div>
+          <p style="margin:4px 0; color:#6b7280; font-size:13px;">
+            <strong>Effective Violations:</strong> {{ alert.effective_major_count }}
+          </p>
+          <p style="margin:4px 0; color:#9ca3af; font-size:11px;">
+            <i class="fas fa-trash"></i> Deleted {{ alert.dismissed_at|date:"M d, Y g:i A" }}
+            {% if alert.dismissed_by %}by {{ alert.dismissed_by.get_full_name|default:alert.dismissed_by.username }}{% endif %}
+          </p>
+          
+          <!-- Action Buttons -->
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="action-btn restore-alert-btn" data-alert-id="{{ alert.id }}" style="background:#3b82f6; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
+              <i class="fas fa-undo"></i> Restore
+            </button>
+            <button class="action-btn permanent-delete-btn" data-alert-id="{{ alert.id }}" style="background:#dc2626; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
+              <i class="fas fa-trash"></i> Delete Permanently
+            </button>
+          </div>
+        </li>
+        {% endfor %}
+      {% else %}
+        <li style="padding:20px; color:#667085; text-align:center;">
+          <i class="fas fa-trash-alt" style="font-size:24px; margin-bottom:8px; display:block; color:#9ca3af;"></i>
+          No deleted alerts.
+        </li>
+      {% endif %}
+    </ul>
+    
+    <!-- Back Button -->
+    <div style="padding:12px 16px; border-top:1px solid #eee; background:#f9fafb;">
+      <button id="backToAlertsBtn" style="width:100%; padding:10px; background:#f3f4f6; border:1px solid #d1d5db; border-radius:8px; color:#6b7280; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <i class="fas fa-arrow-left"></i> Back to Alerts
+      </button>
+    </div>
   </aside>
 
   <!-- Meeting Scheduling Modal -->
@@ -2796,16 +2891,16 @@
         });
       });
 
-      // Resolve Alert functionality
-      document.querySelectorAll('.resolve-alert-btn').forEach(btn => {
+      // Dismiss Alert functionality (X button) - moves to trash
+      document.querySelectorAll('.dismiss-alert-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const alertId = btn.dataset.alertId;
           
-          if (!confirm('Mark this alert as resolved?')) return;
+          if (!confirm('Move this alert to trash? You can restore it later from Deleted Alerts.')) return;
           
           try {
-            const response = await fetch(`/violations/staff/resolve-alert/${alertId}/`, {
+            const response = await fetch(`/staff/dismiss-alert/${alertId}/`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -2814,8 +2909,100 @@
             });
             
             if (response.ok) {
-              alert('Alert resolved successfully!');
-              location.reload();
+              // Remove the alert item from the list with animation
+              const alertItem = btn.closest('.alert-item');
+              alertItem.style.transition = 'all 0.3s ease';
+              alertItem.style.opacity = '0';
+              alertItem.style.transform = 'translateX(100%)';
+              setTimeout(() => {
+                alertItem.remove();
+                // Update badge count
+                const badge = document.querySelector('#staffAlertsBtn .nav-badge');
+                if (badge) {
+                  const count = parseInt(badge.textContent) - 1;
+                  if (count <= 0) {
+                    badge.remove();
+                  } else {
+                    badge.textContent = count;
+                  }
+                }
+                // Check if no more alerts
+                const remainingAlerts = document.querySelectorAll('.alert-item');
+                if (remainingAlerts.length === 0) {
+                  document.querySelector('#staffAlertsPanel .notif-list').innerHTML = `
+                    <li style="padding:20px; color:#667085; text-align:center;">
+                      <i class="fas fa-check-circle" style="font-size:24px; margin-bottom:8px; display:block; color:#10b981;"></i>
+                      No pending alerts.
+                    </li>
+                  `;
+                }
+              }, 300);
+            } else {
+              alert('Failed to dismiss alert.');
+            }
+          } catch (error) {
+            console.error('Error dismissing alert:', error);
+            alert('Error dismissing alert.');
+          }
+        });
+        
+        // Hover effects for dismiss button
+        btn.addEventListener('mouseenter', () => {
+          btn.style.color = '#dc2626';
+          btn.style.background = '#fee2e2';
+        });
+        btn.addEventListener('mouseleave', () => {
+          btn.style.color = '#9ca3af';
+          btn.style.background = 'transparent';
+        });
+      });
+
+      // Resolve Alert functionality (marks as resolved, not trashed)
+      document.querySelectorAll('.resolve-alert-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const alertId = btn.dataset.alertId;
+          
+          if (!confirm('Mark this alert as resolved? This will complete the alert.')) return;
+          
+          try {
+            const response = await fetch(`/staff/resolve-alert/${alertId}/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+              }
+            });
+            
+            if (response.ok) {
+              // Remove the alert item from the list with animation
+              const alertItem = btn.closest('.alert-item');
+              alertItem.style.transition = 'all 0.3s ease';
+              alertItem.style.opacity = '0';
+              alertItem.style.transform = 'translateX(100%)';
+              setTimeout(() => {
+                alertItem.remove();
+                // Update badge count
+                const badge = document.querySelector('#staffAlertsBtn .nav-badge');
+                if (badge) {
+                  const count = parseInt(badge.textContent) - 1;
+                  if (count <= 0) {
+                    badge.remove();
+                  } else {
+                    badge.textContent = count;
+                  }
+                }
+                // Check if no more alerts
+                const remainingAlerts = document.querySelectorAll('.alert-item');
+                if (remainingAlerts.length === 0) {
+                  document.querySelector('#staffAlertsPanel .notif-list').innerHTML = `
+                    <li style="padding:20px; color:#667085; text-align:center;">
+                      <i class="fas fa-check-circle" style="font-size:24px; margin-bottom:8px; display:block; color:#10b981;"></i>
+                      No pending alerts.
+                    </li>
+                  `;
+                }
+              }, 300);
             } else {
               alert('Failed to resolve alert.');
             }
@@ -2883,6 +3070,119 @@
         if (e.target.id === 'meetingModal') {
           document.getElementById('meetingModal').classList.remove('show');
         }
+      });
+      
+      // ====== TRASHED ALERTS PANEL FUNCTIONALITY ======
+      
+      // View Trashed Alerts button
+      const viewTrashedAlertsBtn = document.getElementById('viewTrashedAlertsBtn');
+      const trashedAlertsPanel = document.getElementById('trashedAlertsPanel');
+      const staffAlertsPanel = document.getElementById('staffAlertsPanel');
+      const trashedAlertsClose = document.getElementById('trashedAlertsClose');
+      const backToAlertsBtn = document.getElementById('backToAlertsBtn');
+      
+      if (viewTrashedAlertsBtn && trashedAlertsPanel) {
+        viewTrashedAlertsBtn.addEventListener('click', () => {
+          staffAlertsPanel.classList.remove('show');
+          trashedAlertsPanel.classList.add('show');
+        });
+      }
+      
+      if (trashedAlertsClose) {
+        trashedAlertsClose.addEventListener('click', () => {
+          trashedAlertsPanel.classList.remove('show');
+        });
+      }
+      
+      if (backToAlertsBtn) {
+        backToAlertsBtn.addEventListener('click', () => {
+          trashedAlertsPanel.classList.remove('show');
+          staffAlertsPanel.classList.add('show');
+        });
+      }
+      
+      // Restore Alert functionality
+      document.querySelectorAll('.restore-alert-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const alertId = btn.dataset.alertId;
+          
+          if (!confirm('Restore this alert? It will appear back in the pending alerts list.')) return;
+          
+          try {
+            const response = await fetch(`/staff/restore-alert/${alertId}/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+              }
+            });
+            
+            if (response.ok) {
+              // Remove the alert item from trashed list with animation
+              const alertItem = btn.closest('.trashed-alert-item');
+              alertItem.style.transition = 'all 0.3s ease';
+              alertItem.style.opacity = '0';
+              alertItem.style.transform = 'translateX(-100%)';
+              setTimeout(() => {
+                alertItem.remove();
+                alert('Alert restored successfully!');
+                location.reload(); // Reload to show restored alert in main list
+              }, 300);
+            } else {
+              alert('Failed to restore alert.');
+            }
+          } catch (error) {
+            console.error('Error restoring alert:', error);
+            alert('Error restoring alert.');
+          }
+        });
+      });
+      
+      // Permanent Delete functionality
+      document.querySelectorAll('.permanent-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const alertId = btn.dataset.alertId;
+          
+          if (!confirm('⚠️ PERMANENTLY DELETE this alert? This action cannot be undone!')) return;
+          
+          try {
+            const response = await fetch(`/staff/delete-alert/${alertId}/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+              }
+            });
+            
+            if (response.ok) {
+              // Remove the alert item with animation
+              const alertItem = btn.closest('.trashed-alert-item');
+              alertItem.style.transition = 'all 0.3s ease';
+              alertItem.style.opacity = '0';
+              alertItem.style.transform = 'scale(0.8)';
+              setTimeout(() => {
+                alertItem.remove();
+                // Check if no more trashed alerts
+                const remainingTrashed = document.querySelectorAll('.trashed-alert-item');
+                if (remainingTrashed.length === 0) {
+                  document.querySelector('#trashedAlertsPanel .notif-list').innerHTML = `
+                    <li style="padding:20px; color:#667085; text-align:center;">
+                      <i class="fas fa-trash-alt" style="font-size:24px; margin-bottom:8px; display:block; color:#9ca3af;"></i>
+                      No deleted alerts.
+                    </li>
+                  `;
+                }
+              }, 300);
+            } else {
+              alert('Failed to delete alert permanently.');
+            }
+          } catch (error) {
+            console.error('Error deleting alert permanently:', error);
+            alert('Error deleting alert permanently.');
+          }
+        });
       });
     })();
   </script>
@@ -3103,11 +3403,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 9999;
+      z-index: 100000;
       opacity: 0;
       visibility: hidden;
       transition: all 0.3s ease;
-      padding: 20px;
+      padding: 80px 20px 20px 20px;
+      box-sizing: border-box;
     }
 
     .modal.show {
@@ -3118,17 +3419,18 @@
     /* Official Modal Card */
     .modal-card {
       background: #ffffff;
-      border-radius: 0;
+      border-radius: 12px;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
       width: 100%;
       max-width: 550px;
-      max-height: 90vh;
+      max-height: calc(100vh - 100px);
       display: flex;
       flex-direction: column;
       transform: translateY(-20px) scale(0.95);
       transition: transform 0.3s ease;
       border: 2px solid #1a472a;
       overflow: hidden;
+      margin: 0 auto;
     }
 
     .modal.show .modal-card {

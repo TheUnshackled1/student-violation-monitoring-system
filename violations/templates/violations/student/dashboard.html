@@ -406,9 +406,46 @@
                 <p class="stats-subtitle">Welcome{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %} • {% now "F d, Y" %}</p>
             </div>
 
+            <!-- Scheduled Meeting Alert Banner -->
+            {% if scheduled_meeting %}
+            <div class="meeting-alert-banner {% if scheduled_meeting.is_expired %}meeting-alert-expired{% elif scheduled_meeting.is_upcoming %}meeting-alert-upcoming{% else %}meeting-alert-past{% endif %}" id="meetingAlertBanner">
+                <div class="meeting-alert-icon">
+                    {% if scheduled_meeting.is_expired %}
+                    <i class="fas fa-exclamation-circle"></i>
+                    {% else %}
+                    <i class="fas fa-calendar-check"></i>
+                    {% endif %}
+                </div>
+                <div class="meeting-alert-content">
+                    {% if scheduled_meeting.is_expired %}
+                    <h3><i class="fas fa-times-circle"></i> MEETING MISSED - URGENT</h3>
+                    <p>You missed your mandatory meeting with the OSA Coordinator on <strong>{{ scheduled_meeting.datetime|date:"F d, Y" }}</strong> at <strong>{{ scheduled_meeting.datetime|date:"g:i A" }}</strong>.</p>
+                    <p class="meeting-alert-action">⚠️ Contact the OSA Office immediately to reschedule. Failure to comply may result in additional disciplinary action.</p>
+                    {% else %}
+                    <h3><i class="fas fa-bell"></i> MANDATORY MEETING SCHEDULED</h3>
+                    <p>You have a mandatory meeting with the OSA Coordinator at the <strong>OSA Office</strong>.</p>
+                    <div class="meeting-alert-details">
+                        <span class="meeting-date"><i class="fas fa-calendar-day"></i> {{ scheduled_meeting.datetime|date:"l, F d, Y" }}</span>
+                        <span class="meeting-time"><i class="fas fa-clock"></i> {{ scheduled_meeting.datetime|date:"g:i A" }}</span>
+                    </div>
+                    {% if scheduled_meeting.notes %}
+                    <p class="meeting-notes"><i class="fas fa-sticky-note"></i> Notes: {{ scheduled_meeting.notes }}</p>
+                    {% endif %}
+                    <div class="meeting-countdown" id="meetingCountdown" data-meeting-time="{{ scheduled_meeting.datetime|date:'c' }}">
+                        <span class="countdown-label">Time until meeting:</span>
+                        <span class="countdown-timer" id="countdownTimer">Calculating...</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <button class="meeting-alert-close" onclick="document.getElementById('meetingAlertBanner').style.display='none';">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            {% endif %}
+
             <!-- Statistics Grid -->
             <div class="stats-grid">
-                <div class="stat-card">
+                <a href="#violationsSection" class="stat-card stat-card-link" title="View violations">
                     <div class="stat-icon stat-icon-info">
                         <i class="fas fa-list"></i>
                     </div>
@@ -417,9 +454,9 @@
                         <span class="stat-value">{{ violations|length }}</span>
                         <span class="stat-desc">Recorded incidents</span>
                     </div>
-                </div>
+                </a>
 
-                <div class="stat-card">
+                <a href="#violationsSection" class="stat-card stat-card-link" title="View latest case">
                     <div class="stat-icon stat-icon-warning">
                         <i class="fas fa-triangle-exclamation"></i>
                     </div>
@@ -428,7 +465,7 @@
                         <span class="stat-value" style="font-size:14px;">{% if violations and violations.0 %}{{ violations.0.get_status_display }}{% else %}None{% endif %}</span>
                         <span class="stat-desc">Most recent case</span>
                     </div>
-                </div>
+                </a>
 
                 <div class="stat-card stat-card-link" id="loginHistoryCard" role="button" tabindex="0" title="View login history">
                     <div class="stat-icon stat-icon-secondary">
@@ -441,7 +478,7 @@
                     </div>
                 </div>
 
-                <div class="stat-card{% if student.should_alert_staff %} stat-card-alert{% endif %}"{% if student.should_alert_staff %} id="alertCard" role="button" tabindex="0" title="View important notice"{% endif %}>
+                <a href="#violationsSection" class="stat-card stat-card-link{% if student.should_alert_staff %} stat-card-alert{% endif %}" title="View violations">
                     <div class="stat-icon {% if student.should_alert_staff %}stat-icon-danger{% else %}stat-icon-success{% endif %}">
                         <i class="fas fa-scale-balanced{% if student.should_alert_staff %} pulse-icon{% endif %}"></i>
                     </div>
@@ -451,7 +488,7 @@
                         <span class="stat-desc">{% if student.should_alert_staff %}Action required{% elif violations|length %}Under monitoring{% else %}No issues{% endif %}</span>
                         <!-- Debug: Major={{ student.major_violation_count }}, Minor={{ student.minor_violation_count }}, Effective={{ student.effective_major_violations }}, Alert={{ student.should_alert_staff }} -->
                     </div>
-                </div>
+                </a>
             </div>
 
             <!-- Stats Footer -->
@@ -588,7 +625,7 @@
             </aside>
 
             <!-- Official Violations Table -->
-            <section class="official-violations-section">
+            <section class="official-violations-section" id="violationsSection">
                 <div class="violations-header">
                     <div class="header-logo-small">
                         <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU Logo">
@@ -826,6 +863,8 @@
 
         .stat-card-link {
             cursor: pointer;
+            text-decoration: none;
+            color: inherit;
         }
 
         .stat-card-link:hover {
@@ -884,6 +923,180 @@
             border-radius: 8px;
             font-size: 9px;
             margin-left: 4px;
+        }
+
+        /* Meeting Alert Banner Styles */
+        .meeting-alert-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin: 0 20px 16px 20px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            position: relative;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .meeting-alert-upcoming {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 2px solid #3b82f6;
+            border-left: 5px solid #2563eb;
+        }
+
+        .meeting-alert-expired {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 2px solid #ef4444;
+            border-left: 5px solid #dc2626;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .meeting-alert-past {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-left: 5px solid #d97706;
+        }
+
+        .meeting-alert-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .meeting-alert-upcoming .meeting-alert-icon {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            color: white;
+        }
+
+        .meeting-alert-expired .meeting-alert-icon {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        .meeting-alert-past .meeting-alert-icon {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            color: white;
+        }
+
+        .meeting-alert-content {
+            flex: 1;
+        }
+
+        .meeting-alert-content h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+        }
+
+        .meeting-alert-upcoming .meeting-alert-content h3 {
+            color: #1e40af;
+        }
+
+        .meeting-alert-expired .meeting-alert-content h3 {
+            color: #b91c1c;
+        }
+
+        .meeting-alert-past .meeting-alert-content h3 {
+            color: #92400e;
+        }
+
+        .meeting-alert-content p {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            margin: 0 0 8px 0;
+            color: #374151;
+        }
+
+        .meeting-alert-details {
+            display: flex;
+            gap: 20px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .meeting-alert-details span {
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .meeting-alert-details span i {
+            color: #2563eb;
+        }
+
+        .meeting-notes {
+            font-style: italic;
+            font-size: 12px !important;
+            color: #6b7280 !important;
+        }
+
+        .meeting-alert-action {
+            font-weight: 600 !important;
+            color: #b91c1c !important;
+        }
+
+        .meeting-countdown {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 8px;
+            width: fit-content;
+        }
+
+        .countdown-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .countdown-timer {
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: #2563eb;
+        }
+
+        .meeting-alert-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            color: #6b7280;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .meeting-alert-close:hover {
+            background: rgba(0,0,0,0.1);
+            color: #374151;
         }
 
         .stat-content {
@@ -3222,6 +3435,58 @@
                 closeEditProfileModal();
             }
         });
+    })();
+    </script>
+
+    <!-- Meeting Countdown Timer Script -->
+    <script>
+    (function() {
+        const countdownElement = document.getElementById('meetingCountdown');
+        const timerElement = document.getElementById('countdownTimer');
+        
+        if (countdownElement && timerElement) {
+            const meetingTime = new Date(countdownElement.dataset.meetingTime);
+            
+            function updateCountdown() {
+                const now = new Date();
+                const diff = meetingTime - now;
+                
+                if (diff <= 0) {
+                    timerElement.textContent = 'Meeting time has passed!';
+                    timerElement.style.color = '#dc2626';
+                    return;
+                }
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                let timeString = '';
+                if (days > 0) {
+                    timeString += `${days}d `;
+                }
+                if (hours > 0 || days > 0) {
+                    timeString += `${hours}h `;
+                }
+                timeString += `${minutes}m ${seconds}s`;
+                
+                timerElement.textContent = timeString;
+                
+                // Change color based on urgency
+                if (diff < 1000 * 60 * 60) { // Less than 1 hour
+                    timerElement.style.color = '#dc2626';
+                } else if (diff < 1000 * 60 * 60 * 24) { // Less than 1 day
+                    timerElement.style.color = '#d97706';
+                } else {
+                    timerElement.style.color = '#2563eb';
+                }
+            }
+            
+            // Update immediately and then every second
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        }
     })();
     </script>
 
