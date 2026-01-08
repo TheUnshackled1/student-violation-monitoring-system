@@ -1,8 +1,0 @@
-pip install Django==5.2.7
-pip install django-jazzmin==3.0.1
-pip install channels==4.3.1
-pip install requests==2.32.5
-pip install click==8.1.8
-pip install whitenoise==6.8.2
-pip install sqlparse==0.5.3
-pip install tzdata==2025.2
