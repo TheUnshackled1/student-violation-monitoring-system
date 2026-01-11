@@ -535,7 +535,7 @@
                 <div class="toolbar-right">
                     <div class="directory-search">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="studentSearchInput" placeholder="Search by name, ID, program, department..." />
+                        <input type="text" id="studentSearchInput" placeholder="Search by name, ID, department..." />
                     </div>
                 </div>
             </div>
@@ -548,7 +548,7 @@
                             <th class="col-seq">#</th>
                             <th class="col-id">Student ID</th>
                             <th class="col-name">Full Name</th>
-                            <th class="col-program">Program</th>
+                            <!-- Program column removed -->
                             <th class="col-year">Year</th>
                             <th class="col-dept">College/Department</th>
                             <th class="col-status">Status</th>
@@ -568,24 +568,28 @@
                                         {{ s.user.last_name|default:'' }}{% if s.user.last_name %}, {% endif %}{{ s.user.first_name|default:s.user.username }}
                                     </a>
                                 </td>
-                                <td class="col-program">{{ s.program|default:'—' }}</td>
+                                <!-- Program cell removed -->
                                 <td class="col-year text-center">{{ s.year_level }}</td>
                                 <td class="col-dept">
-                                    {% with dept=s.department|default:'' %}
-                                        {% if 'CAS' in dept or 'Arts and Science' in dept or 'Arts & Science' in dept %}
-                                            <span class="college-tag college-cas">CAS</span>
-                                        {% elif 'CBMA' in dept or 'Business' in dept or 'Accountancy' in dept %}
-                                            <span class="college-tag college-cbma">CBMA</span>
-                                        {% elif 'CCS' in dept or 'Computer' in dept %}
-                                            <span class="college-tag college-ccs">CCS</span>
-                                        {% elif 'COEd' in dept or 'Education' in dept %}
-                                            <span class="college-tag college-coed">COEd</span>
-                                        {% elif 'CIT' in dept or 'Industrial' in dept %}
-                                            <span class="college-tag college-cit">CIT</span>
-                                        {% elif 'COE' in dept or 'Engineering' in dept %}
-                                            <span class="college-tag college-coe">COE</span>
-                                        {% elif dept %}
-                                            <span class="college-tag">{{ dept|truncatechars:12 }}</span>
+                                    {% with dept=s.department|default:'' program=s.program|default:'' %}
+                                        {% if dept %}
+                                            {% if 'CAS' in dept or 'Arts and Science' in dept or 'Arts & Science' in dept %}
+                                                <span class="college-tag college-cas">CAS</span>
+                                            {% elif 'CBMA' in dept or 'Business' in dept or 'Accountancy' in dept %}
+                                                <span class="college-tag college-cbma">CBMA</span>
+                                            {% elif 'CCS' in dept or 'Computer' in dept %}
+                                                <span class="college-tag college-ccs">CCS</span>
+                                            {% elif 'COEd' in dept or 'Education' in dept %}
+                                                <span class="college-tag college-coed">COEd</span>
+                                            {% elif 'CIT' in dept or 'Industrial' in dept %}
+                                                <span class="college-tag college-cit">CIT</span>
+                                            {% elif 'COE' in dept or 'Engineering' in dept %}
+                                                <span class="college-tag college-coe">COE</span>
+                                            {% else %}
+                                                <span class="college-tag">{{ dept|truncatechars:12 }}</span>
+                                            {% endif %}
+                                        {% elif program %}
+                                            <span class="college-tag college-{{ program|lower }}">{{ program }}</span>
                                         {% else %}
                                             <span class="text-muted">—</span>
                                         {% endif %}

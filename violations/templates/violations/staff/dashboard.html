@@ -1055,7 +1055,7 @@
         <div class="toolbar-right">
           <div class="directory-search">
             <i class="fas fa-search"></i>
-            <input type="text" placeholder="Search by name, ID, program, department..." oninput="filterStudentTable(this.value)" />
+            <input type="text" placeholder="Search by name, ID, department..." oninput="filterStudentTable(this.value)" />
           </div>
         </div>
       </div>
@@ -1068,7 +1068,7 @@
               <th class="col-seq">#</th>
               <th class="col-id">Student ID</th>
               <th class="col-name">Full Name</th>
-              <th class="col-program">Program</th>
+              <!-- Program column removed -->
               <th class="col-year">Year</th>
               <th class="col-dept">College/Department</th>
               <th class="col-status">Enrollment Status</th>
@@ -1102,28 +1102,10 @@
                     {{ s.user.last_name|default:'' }}{% if s.user.last_name %}, {% endif %}{{ s.user.first_name|default:s.user.username }}
                   </a>
                 </td>
-                <td class="col-program">{{ s.program|default:'—' }}</td>
+                <!-- Program cell removed -->
                 <td class="col-year text-center">{{ s.year_level }}</td>
                 <td class="col-dept">
-                  {% with dept=s.department|default:'' %}
-                    {% if 'CAS' in dept or 'Arts and Science' in dept or 'Arts & Science' in dept %}
-                      <span class="college-tag college-cas">CAS</span>
-                    {% elif 'CBMA' in dept or 'Business' in dept or 'Accountancy' in dept %}
-                      <span class="college-tag college-cbma">CBMA</span>
-                    {% elif 'CCS' in dept or 'Computer' in dept %}
-                      <span class="college-tag college-ccs">CCS</span>
-                    {% elif 'COEd' in dept or 'Education' in dept %}
-                      <span class="college-tag college-coed">COEd</span>
-                    {% elif 'CIT' in dept or 'Industrial' in dept %}
-                      <span class="college-tag college-cit">CIT</span>
-                    {% elif 'COE' in dept or 'Engineering' in dept %}
-                      <span class="college-tag college-coe">COE</span>
-                    {% elif dept %}
-                      <span class="college-tag">{{ dept|truncatechars:12 }}</span>
-                    {% else %}
-                      <span class="text-muted">—</span>
-                    {% endif %}
-                  {% endwith %}
+                  <span class="college-tag college-{{ s.program|lower }}">{{ s.program|default:'—' }}</span>
                 </td>
                 <td class="col-status">
                   {% if s.enrollment_status == 'Enrolled' or s.enrollment_status == 'Active' %}
@@ -1966,7 +1948,6 @@
           </div>
         </div>
         <div style="display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; margin-top:12px;">
-          <div class="stat-card small"><div class="label">Program</div><div class="value" id="sdProgram">—</div></div>
           <div class="stat-card small"><div class="label">Year Level</div><div class="value" id="sdYear">—</div></div>
           <div class="stat-card small"><div class="label">Department</div><div class="value" id="sdDepartment">—</div></div>
           <div class="stat-card small"><div class="label">Enrollment</div><div class="value" id="sdEnrollment">—</div></div>
@@ -2332,8 +2313,9 @@
             <div class="form-group">
               <label for="newProgram" style="font-weight:500; margin-bottom:6px; display:block;">College/Program <span style="color:#ef4444;">*</span></label>
               <select name="program" id="newProgram" required
-                      style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;">
-                <option value="">Select College</option>
+                      style="width:100%; padding:10px; border:1px solid #d0d5dd; border-radius:8px;"
+                      title="This selection will appear in both the Program and College/Department columns">
+                <option value="">Select College/Program</option>
                 <option value="CAS">CAS - College of Arts and Sciences</option>
                 <option value="CBMA">CBMA - College of Business Management and Accountancy</option>
                 <option value="CCS">CCS - College of Computer Studies</option>
@@ -2341,6 +2323,7 @@
                 <option value="CIT">CIT - College of Industrial Technology</option>
                 <option value="COE">COE - College of Engineering</option>
               </select>
+              <small style="color:#667085; font-size:12px;">This selection will be shown in both the <b>Program</b> and <b>College/Department</b> columns.</small>
             </div>
             <div class="form-group">
               <label for="newYearLevel" style="font-weight:500; margin-bottom:6px; display:block;">Year Level <span style="color:#ef4444;">*</span></label>
@@ -2803,17 +2786,6 @@
       if(btnClose) btnClose.addEventListener('click', closeModal);
       if(btnCancel) btnCancel.addEventListener('click', closeModal);
       if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
-      document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && modal.classList.contains('show')) closeModal(); });
-
-      // Attach click handlers to all message buttons
-      document.querySelectorAll('.message-student-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          const studentId = btn.dataset.studentId;
-          const studentName = btn.dataset.studentName;
-          openModal(studentId, studentName);
-        });
-      });
     })();
   </script>
   <script>
@@ -3143,8 +3115,6 @@
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const alertId = btn.dataset.alertId;
-          
-          if (!confirm('Restore this alert? It will appear back in the pending alerts list.')) return;
           
           try {
             const response = await fetch(`/staff/restore-alert/${alertId}/`, {

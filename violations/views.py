@@ -374,7 +374,8 @@ def signup_view(request):
 		suffix = (request.POST.get("student_suffix") or "").strip()
 		email = (request.POST.get("student_email") or "").strip().lower()
 
-		# Student profile fields (program removed, contact_number removed)
+		# Student profile fields
+		program = (request.POST.get("program") or "").strip()
 		year_level_raw = (request.POST.get("student_year_level") or "").strip()
 		department = (request.POST.get("student_department") or "").strip()
 		enrollment_status = (request.POST.get("student_enrollment_status") or "Active").strip()
@@ -388,6 +389,7 @@ def signup_view(request):
 				"Name": name,
 				"Email": email,
 				"Year Level": year_level_raw,
+				"Program": program,
 				"Department": department,
 				"Guardian Name": guardian_name,
 				"Guardian Contact": guardian_contact,
@@ -445,6 +447,7 @@ def signup_view(request):
 				# Defensive: ensure student_id is always 8 digits
 				student.student_id = student_id[:8]
 				student.year_level = year_level
+				student.program = program
 				student.department = department
 				student.enrollment_status = enrollment_status
 				student.guardian_name = guardian_name
@@ -3152,6 +3155,7 @@ def staff_add_student_view(request):
 		email = request.POST.get('email', '').strip()
 		contact_number = request.POST.get('contact_number', '').strip()
 		program = request.POST.get('program', '').strip()
+		print('DEBUG: received program =', repr(program))
 		year_level = request.POST.get('year_level', '').strip()
 		guardian_name = request.POST.get('guardian_name', '').strip()
 		guardian_contact = request.POST.get('guardian_contact', '').strip()
