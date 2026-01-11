@@ -102,10 +102,6 @@ class StudentAdmin(admin.ModelAdmin):
 			"COEd": "#3b82f6",     # Blue - College of Education
 			"CIT": "#ef4444",      # Red - College of Industrial Technology
 			"COE": "#f97316",      # Orange - College of Engineering
-			"CON": "#ec4899",      # Pink - College of Nursing
-			"CTHM": "#8b5cf6",     # Purple - College of Tourism and Hospitality Management
-			"CAF": "#14b8a6",      # Teal - College of Agriculture and Fishery
-			"CGS": "#1a472a",      # Dark Green - College of Graduate Studies
 		}
 		dept = obj.department or "—"
 		color = colors.get(dept, "#64748b")  # Slate gray for unknown
