@@ -368,19 +368,18 @@ def signup_view(request):
 
 		# Collect basic fields
 		student_id = (request.POST.get("student_id") or "").strip()
+		# Always enforce 8 digits immediately
+		student_id = student_id[:8]
 		name = (request.POST.get("student_name") or "").strip()
+		suffix = (request.POST.get("student_suffix") or "").strip()
 		email = (request.POST.get("student_email") or "").strip().lower()
-		password = request.POST.get("student_password") or ""
 
-		# Student profile fields
-		program = (request.POST.get("student_program") or "").strip()
+		# Student profile fields (program removed, contact_number removed)
 		year_level_raw = (request.POST.get("student_year_level") or "").strip()
 		department = (request.POST.get("student_department") or "").strip()
 		enrollment_status = (request.POST.get("student_enrollment_status") or "Active").strip()
-		contact_number = (request.POST.get("student_contact_number") or "").strip()
 		guardian_name = (request.POST.get("guardian_name") or "").strip()
 		guardian_contact = (request.POST.get("guardian_contact") or "").strip()
-		profile_image = request.FILES.get("student_profile_image")
 
 		# Basic validation
 		missing = [
@@ -388,18 +387,24 @@ def signup_view(request):
 				"Student ID": student_id,
 				"Name": name,
 				"Email": email,
-				"Password": password,
-				"Program": program,
 				"Year Level": year_level_raw,
 				"Department": department,
-				"Enrollment Status": enrollment_status,
-				"Contact Number": contact_number,
 				"Guardian Name": guardian_name,
 				"Guardian Contact": guardian_contact,
 			}.items() if not v
 		]
 		if missing:
 			messages.error(request, f"Please fill in all required fields: {', '.join(missing)}.")
+			return render(request, "violations/signup.html", status=400)
+
+		# Validate student ID is 8 digits
+		if not student_id.isdigit() or len(student_id) != 8:
+			messages.error(request, "Student ID must be exactly 8 digits.")
+			return render(request, "violations/signup.html", status=400)
+
+		# Validate guardian contact is 11 digits
+		if not guardian_contact.isdigit() or len(guardian_contact) != 11:
+			messages.error(request, "Guardian contact must be exactly 11 digits.")
 			return render(request, "violations/signup.html", status=400)
 
 		try:
@@ -411,17 +416,22 @@ def signup_view(request):
 		# Create user and update student profile
 		try:
 			with transaction.atomic():
+				# Generate a random password (user will need to reset via email)
+				import secrets
+				random_password = secrets.token_urlsafe(16)
+				
 				# Use email as username to keep uniqueness simple
 				username = email or slugify(name) or student_id
 				user = User.objects.create_user(
 					username=username,
 					email=email,
-					password=password,
+					password=random_password,
 					role=User.Role.STUDENT,
 				)
-				# Optional: store name into first_name for display
-				if name:
-					user.first_name = name
+				# Store name and suffix into first_name for display
+				full_name = f"{name} {suffix}".strip() if suffix else name
+				if full_name:
+					user.first_name = full_name
 					user.save(update_fields=["first_name"])
 
 				# Signals created a Student profile; update it
@@ -430,19 +440,15 @@ def signup_view(request):
 					# Fallback if signal didn't fire for some reason
 					from .models import Student as StudentModel
 
-					student = StudentModel.objects.create(user=user, student_id=student_id)
+					student = StudentModel.objects.create(user=user, student_id=student_id[:8])
 
-				# Ensure unique student_id is set to provided value
-				student.student_id = student_id
-				student.program = program
+				# Defensive: ensure student_id is always 8 digits
+				student.student_id = student_id[:8]
 				student.year_level = year_level
 				student.department = department
 				student.enrollment_status = enrollment_status
-				student.contact_number = contact_number
 				student.guardian_name = guardian_name
 				student.guardian_contact = guardian_contact
-				if profile_image:
-					student.profile_image = profile_image
 				student.save()
 
 		except IntegrityError as e:
@@ -2807,26 +2813,23 @@ def staff_reports_view(request):
 	# ============================================
 	monthly_trend = []
 	six_months_ago = timezone.now() - timedelta(days=180)
+	from django.db.models.functions import TruncMonth
 	monthly_data = (
 		violations.filter(incident_at__gte=six_months_ago)
-		.extra(select={'month': "strftime('%%Y-%%m', incident_at)"})
+		.annotate(month=TruncMonth('incident_at'))
 		.values('month')
 		.annotate(count=Count('id'))
 		.order_by('month')
 	)
-	
 	max_monthly_count = max([m['count'] for m in monthly_data], default=1)
 	for m in monthly_data:
 		if m['month']:
-			try:
-				month_date = datetime.strptime(m['month'], '%Y-%m')
-				month_label = month_date.strftime('%b')
-			except:
-				month_label = m['month']
+			# m['month'] is a datetime/date object from TruncMonth
+			month_label = m['month'].strftime('%b')
 			height = int((m['count'] / max_monthly_count) * 100) if max_monthly_count > 0 else 0
 			monthly_trend.append({
 				'month': month_label,
-				'full_month': m['month'],
+				'full_month': m['month'].strftime('%Y-%m'),
 				'count': m['count'],
 				'height': max(height, 5)  # Minimum 5% height for visibility
 			})

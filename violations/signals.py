@@ -12,7 +12,8 @@ def create_role_profile(sender, instance: User, created: bool, **kwargs):
         return
     # Auto-create a matching role profile for convenience
     if instance.role == User.Role.STUDENT:
-        Student.objects.create(user=instance, student_id=f"{instance.username}")
+        # Always trim username to 8 characters for student_id
+        Student.objects.create(user=instance, student_id=f"{instance.username}"[:8])
     elif instance.role == User.Role.OSA_COORDINATOR:
         OSACoordinator.objects.create(user=instance, employee_id=f"OSA-{instance.username}")
     elif instance.role == User.Role.STAFF:
