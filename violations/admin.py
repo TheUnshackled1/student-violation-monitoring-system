@@ -12,7 +12,6 @@ from .models import (
 	ViolationType,
 	ViolationDocument,
 	ApologyLetter,
-	StaffVerification,
 	LoginActivity,
 	ChatMessage,
 )
@@ -281,30 +280,6 @@ class ApologyLetterAdmin(admin.ModelAdmin):
 			'<span style="background-color:{}; color:white; padding:3px 10px; border-radius:12px; font-size:11px;">{}</span>',
 			color, obj.status.title()
 		)
-
-
-@admin.register(StaffVerification)
-class StaffVerificationAdmin(admin.ModelAdmin):
-	list_display = ("id", "violation", "staff", "action_badge", "notes_preview", "created_at")
-	list_filter = ("action", "created_at")
-	search_fields = ("violation__student__student_id", "staff__username", "notes")
-	list_per_page = 25
-	date_hierarchy = "created_at"
-	
-	@admin.display(description="Action")
-	def action_badge(self, obj):
-		colors = {"verified": "#22c55e", "corrected": "#3b82f6", "flagged": "#f59e0b", "approved": "#22c55e"}
-		color = colors.get(obj.action, "#6b7280")
-		return format_html(
-			'<span style="background-color:{}; color:white; padding:3px 10px; border-radius:12px; font-size:11px;">{}</span>',
-			color, obj.get_action_display()
-		)
-	
-	@admin.display(description="Notes")
-	def notes_preview(self, obj):
-		if obj.notes:
-			return obj.notes[:30] + "..." if len(obj.notes) > 30 else obj.notes
-		return "—"
 
 
 @admin.register(Message)

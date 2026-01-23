@@ -246,12 +246,16 @@ function selectRole(role, options) {
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         const studentAction = loginForm.getAttribute('data-student-action');
-        const credentialsAction = loginForm.getAttribute('data-credentials-action');
+        const staffAction = loginForm.getAttribute('data-staff-action');
+        const facultyAction = loginForm.getAttribute('data-faculty-action');
         if (role === 'student') {
             if (studentAction) loginForm.setAttribute('action', studentAction);
             loginForm.dataset.mode = 'student-backend';
-        } else if (role === 'staff' || role === 'faculty') {
-            if (credentialsAction) loginForm.setAttribute('action', credentialsAction);
+        } else if (role === 'staff') {
+            if (staffAction) loginForm.setAttribute('action', staffAction);
+            loginForm.dataset.mode = 'credentials-backend';
+        } else if (role === 'faculty') {
+            if (facultyAction) loginForm.setAttribute('action', facultyAction);
             loginForm.dataset.mode = 'credentials-backend';
         }
     }

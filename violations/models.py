@@ -942,27 +942,6 @@ class ApologyLetter(models.Model):
 		return f"Apology Letter from {self.student.student_id} for Violation #{self.violation.id}"
 
 
-class StaffVerification(models.Model):
-	"""Record staff verification actions on violations."""
-	class Action(models.TextChoices):
-		VERIFIED = "verified", "Verified Correct"
-		CORRECTED = "corrected", "Corrected"
-		FLAGGED = "flagged", "Flagged for Review"
-		APPROVED = "approved", "Approved"
-
-	violation = models.ForeignKey(Violation, on_delete=models.CASCADE, related_name="verifications")
-	staff = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="staff_verifications")
-	action = models.CharField(max_length=20, choices=Action.choices)
-	notes = models.TextField(blank=True)
-	created_at = models.DateTimeField(auto_now_add=True)
-
-	class Meta:
-		ordering = ["-created_at"]
-
-	def __str__(self):
-		return f"{self.get_action_display()} by {self.staff.username} on Violation #{self.violation.id}"
-
-
 # Signal: create a StaffAlert when a Violation is created and the student's
 # effective major violations (3 minors = 1 major) reach the alert threshold.
 @receiver(post_save, sender='violations.Violation')

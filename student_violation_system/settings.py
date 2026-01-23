@@ -172,7 +172,6 @@ JAZZMIN_SETTINGS = {
         "violations.IDConfiscation": "fas fa-id-card",
         "violations.ViolationClearance": "fas fa-clipboard-check",
         "violations.ViolationDocument": "fas fa-file-alt",
-        "violations.StaffVerification": "fas fa-check-double",
         "violations.LoginActivity": "fas fa-history",
         "violations.Message": "fas fa-comments",
         "violations.ChatMessage": "fas fa-comment-dots",

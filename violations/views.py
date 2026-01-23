@@ -19,7 +19,7 @@ import json
 from .models import (
 	User, Student as StudentModel, Staff as StaffModel, OSACoordinator as OSACoordinatorModel,
 	Violation, ViolationType, LoginActivity,
-	ViolationDocument, ApologyLetter, StaffVerification,
+	ViolationDocument, ApologyLetter,
 	Message, StaffAlert
 )
 from .decorators import login_required, role_required
@@ -230,12 +230,16 @@ def get_head_size_guidance(head_size):
 
 ############################################
 # Authentication
-# - GET /login/ renders the login page
-# - POST /login/student/ authenticates Student by Student ID
+# - GET /login/ renders the staff login page
+# - GET /student/login/ renders the student login page
+# - GET /faculty/login/ renders the OSA coordinator login page
+# - POST /student/login/ authenticates Student by Student ID
+# - POST /staff/login/ authenticates Staff by email/password
+# - POST /faculty/login/ authenticates OSA Coordinator by email/password
 ############################################
 
 def login_view(request):
-	"""Render the login page; redirects authenticated users to their dashboard."""
+	"""Render the staff login page; redirects authenticated users to their dashboard."""
 	# Redirect authenticated users to their dashboards
 	if request.user.is_authenticated:
 		return redirect("violations:route_dashboard")
@@ -246,7 +250,25 @@ def login_view(request):
 		"default_role": default_role,
 		"prefill_student_id": prefill_student_id,
 	}
-	return render(request, "violations/login.html", ctx)
+	return render(request, "violations/staff/login.html", ctx)
+
+
+def student_login_view(request):
+	"""Render the student login page; redirects authenticated users to their dashboard."""
+	if request.user.is_authenticated:
+		return redirect("violations:route_dashboard")
+	prefill_student_id = request.session.pop("login_prefill_student_id", "")
+	ctx = {
+		"prefill_student_id": prefill_student_id,
+	}
+	return render(request, "violations/student/login.html", ctx)
+
+
+def faculty_login_view(request):
+	"""Render the OSA Coordinator login page; redirects authenticated users to their dashboard."""
+	if request.user.is_authenticated:
+		return redirect("violations:route_dashboard")
+	return render(request, "violations/osa_coordinator/login.html", {})
 
 
 def student_login_auth(request):
@@ -255,12 +277,12 @@ def student_login_auth(request):
 	If not found, re-render login with a suggestion to sign up.
 	"""
 	if request.method != "POST":
-		return redirect("violations:login")
+		return redirect("violations:student_login")
 
 	student_id = (request.POST.get("student_id") or "").strip()
 	if not student_id:
 		messages.error(request, "Please enter your Student ID number.")
-		return render(request, "violations/login.html", status=400)
+		return render(request, "violations/student/login.html", status=400)
 
 	try:
 		student = StudentModel.objects.select_related("user").get(student_id=student_id)
@@ -272,12 +294,12 @@ def student_login_auth(request):
 		# Suggest the UI to keep Student role active
 		request.session["login_prefill_role"] = "student"
 		request.session["login_prefill_student_id"] = student_id
-		return render(request, "violations/login.html", status=404)
+		return render(request, "violations/student/login.html", {"prefill_student_id": student_id}, status=404)
 
 	user = student.user
 	if not user.is_active:
 		messages.error(request, "Your account is inactive. Please contact support.")
-		return render(request, "violations/login.html", status=403)
+		return render(request, "violations/student/login.html", status=403)
 
 	# Log in the user via default backend (no password flow for Student ID auth)
 	login(request, user, backend="django.contrib.auth.backends.ModelBackend")
@@ -292,6 +314,15 @@ def credentials_login_auth(request):
 	"""
 	if request.method != "POST":
 		return redirect("violations:login")
+
+	# Determine which login template to use based on the role
+	selected_role = (request.POST.get("role") or "staff").strip().lower()
+	if selected_role == "faculty":
+		login_template = "violations/osa_coordinator/login.html"
+		redirect_login = "violations:faculty_login"
+	else:
+		login_template = "violations/staff/login.html"
+		redirect_login = "violations:login"
 
 	# Accept multiple possible field names from the UI
 	identifier = (
@@ -311,7 +342,7 @@ def credentials_login_auth(request):
 
 	if not identifier or not password:
 		messages.error(request, "Please provide both email and password.")
-		return render(request, "violations/login.html", status=400)
+		return render(request, login_template, status=400)
 
 	# Try authentication in a robust way:
 	# 1) Treat identifier as username directly
@@ -326,26 +357,22 @@ def credentials_login_auth(request):
 			user = None
 	if user is None:
 		messages.error(request, "Invalid email or password.")
-		return render(request, "violations/login.html", status=401)
+		return render(request, login_template, status=401)
 
 	if not user.is_active:
 		messages.error(request, "Your account is inactive. Please contact support.")
-		return render(request, "violations/login.html", status=403)
+		return render(request, login_template, status=403)
 
 	# Enforce role: this endpoint is intended for Staff/Faculty (and superusers)
 	role = getattr(user, "role", None)
 	if not getattr(user, "is_superuser", False) and role == getattr(User.Role, "STUDENT", "student"):
 		messages.warning(request, "Students, please sign in using your Student ID number.")
-		# Keep the student role active in UI
-		request.session["login_prefill_role"] = "student"
-		return render(request, "violations/login.html", status=400)
+		return redirect("violations:student_login")
 
 	# If user selected the Faculty role in the UI, require Django superuser
-	selected_role = (request.POST.get("role") or "").strip().lower()
 	if selected_role == "faculty" and not getattr(user, "is_superuser", False):
-		messages.error(request, "Only Django admin superusers can sign in as Faculty.")
-		request.session["login_prefill_role"] = "faculty"
-		return render(request, "violations/login.html", status=403)
+		messages.error(request, "Only Django admin superusers can sign in as OSA Coordinator.")
+		return render(request, login_template, status=403)
 
 	login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 	return redirect("violations:route_dashboard")
@@ -2435,7 +2462,6 @@ def staff_violation_detail_view(request, violation_id):
 	# Get related data
 	documents = ViolationDocument.objects.filter(violation=violation)
 	apology_letters = ApologyLetter.objects.filter(violation=violation)
-	verifications = StaffVerification.objects.filter(violation=violation).select_related('staff')
 	
 	# Get offense history for the student
 	student_violations = Violation.objects.filter(student=violation.student).order_by('-created_at')
@@ -2446,7 +2472,6 @@ def staff_violation_detail_view(request, violation_id):
 		'violation': violation,
 		'documents': documents,
 		'apology_letters': apology_letters,
-		'verifications': verifications,
 		'offense_number': offense_number,
 		'total_offenses': total_offenses,
 		'student_violations': student_violations[:5],
@@ -2462,14 +2487,6 @@ def staff_verify_violation_view(request, violation_id):
 	if request.method == 'POST':
 		action = request.POST.get('action', 'verified')
 		notes = request.POST.get('notes', '').strip()
-		
-		# Create verification record
-		StaffVerification.objects.create(
-			violation=violation,
-			verified_by=request.user,
-			action=action,
-			notes=notes,
-		)
 		
 		# Update violation status based on action
 		from .models import ActivityLog
@@ -3231,7 +3248,6 @@ def staff_add_student_view(request):
 		email = request.POST.get('email', '').strip()
 		contact_number = request.POST.get('contact_number', '').strip()
 		program = request.POST.get('program', '').strip()
-		print('DEBUG: received program =', repr(program))
 		year_level = request.POST.get('year_level', '').strip()
 		guardian_name = request.POST.get('guardian_name', '').strip()
 		guardian_contact = request.POST.get('guardian_contact', '').strip()
@@ -3284,19 +3300,22 @@ def staff_add_student_view(request):
 				role=User.Role.STUDENT
 			)
 			
-			# Create the student profile with year_level_assigned_at for auto-promotion
-			StudentModel.objects.create(
+			# Update the student profile (signal auto-creates it with blank fields)
+			# Use update_or_create to handle both cases
+			StudentModel.objects.update_or_create(
 				user=user,
-				student_id=student_id,
-				suffix=suffix,
-				program=program,
-				year_level=int(year_level),
-				year_level_assigned_at=timezone.now(),
-				department=program,  # Use program/college as department
-				contact_number=contact_number or '',
-				guardian_name=guardian_name or '',
-				guardian_contact=guardian_contact or '',
-				enrollment_status='Active'
+				defaults={
+					'student_id': student_id,
+					'suffix': suffix,
+					'program': program,
+					'year_level': int(year_level),
+					'year_level_assigned_at': timezone.now(),
+					'department': program,  # Use program/college as department
+					'contact_number': contact_number or '',
+					'guardian_name': guardian_name or '',
+					'guardian_contact': guardian_contact or '',
+					'enrollment_status': 'Active'
+				}
 			)
 			
 			messages.success(request, f"Student '{first_name} {last_name}' ({student_id}) has been added successfully.")

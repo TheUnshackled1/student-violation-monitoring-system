@@ -7,18 +7,17 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#7c3aed" />
+  <meta name="theme-color" content="#1a472a" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Formator Login - CHMSU SVMS</title>
+  <title>Student Login - CHMSU SVMS</title>
   <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
   <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
   <link rel="apple-touch-icon" href="{% static 'violations/images/chmsu_logo.png' %}" />
   <link rel="icon" type="image/png" href="{% static 'violations/images/chmsu_favicon_round.png' %}" />
-  <link rel="manifest" href="{% static 'violations/manifest.json' %}" />
 </head>
-<body class="role-formator">
+<body class="role-student">
   <div class="background-overlay"></div>
   <div class="background-image"></div>
   
@@ -48,64 +47,81 @@
       <div class="card-role-section">
         <div class="role-icon-wrapper">
           <div class="role-icon-bg">
-            <i class="fas fa-user-tie"></i>
+            <i class="fas fa-user-graduate"></i>
           </div>
           <div class="role-badge">
-            <i class="fas fa-shield-alt"></i>
+            <i class="fas fa-id-card"></i>
           </div>
         </div>
-        <h2 class="role-title">Student Formator Portal</h2>
-        <p class="role-subtitle">Authorized Personnel Access Only</p>
+        <h2 class="role-title">Student Portal</h2>
+        <p class="role-subtitle">Access Your Violation Records</p>
       </div>
 
       <!-- Login Form -->
       <div class="card-body">
-        <form method="POST" action="{% url 'violations:formator_login' %}" class="login-form">
+        <form method="POST" action="{% url 'violations:student_login_auth' %}" class="login-form">
           {% csrf_token %}
           
-          {% if error %}
+          {% if messages %}
           <div class="error-message">
             <div class="error-icon">
               <i class="fas fa-exclamation-triangle"></i>
             </div>
             <div class="error-content">
               <span class="error-title">Authentication Failed</span>
-              <span class="error-text">{{ error }}</span>
+              {% for message in messages %}
+              <span class="error-text">{{ message }}</span>
+              {% endfor %}
             </div>
           </div>
           {% endif %}
 
           <div class="form-group">
-            <label for="formator_code">
-              <i class="fas fa-key"></i> Formator Code
+            <label for="student_id">
+              <i class="fas fa-id-card"></i> Student ID Number
             </label>
             <div class="input-wrapper">
               <input 
                 type="text" 
-                id="formator_code" 
-                name="formator_code" 
-                placeholder="Enter your assigned code"
-                value="{{ formator_code|default:'' }}"
+                id="student_id" 
+                name="student_id" 
+                placeholder="Enter 8-digit Student ID (e.g., 20240001)"
+                pattern="\d{8}"
+                maxlength="8"
+                minlength="8"
+                inputmode="numeric"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)"
+                value="{{ prefill_student_id|default:'' }}"
+                autocomplete="off"
                 required 
                 autofocus
               />
               <span class="input-icon">
-                <i class="fas fa-id-badge"></i>
+                <i class="fas fa-user-graduate"></i>
               </span>
             </div>
             <span class="input-hint">
               <i class="fas fa-info-circle"></i>
-              Use your assigned Formator code (e.g., FormatorHead)
+              Enter your 8-digit student ID number
             </span>
           </div>
 
           <button type="submit" class="btn-login">
-            <span class="btn-text">Access Dashboard</span>
+            <span class="btn-text">Sign In</span>
             <span class="btn-icon">
               <i class="fas fa-arrow-right"></i>
             </span>
           </button>
         </form>
+
+        <!-- Sign Up Link -->
+        <div class="signup-section">
+          <p>Don't have an account?</p>
+          <a href="{% url 'violations:signup' %}" class="signup-link">
+            <i class="fas fa-user-plus"></i>
+            <span>Create Account</span>
+          </a>
+        </div>
       </div>
 
       <!-- Card Footer -->
@@ -113,10 +129,6 @@
         <div class="other-portals">
           <span class="portal-label">Other Portals:</span>
           <div class="portal-links">
-            <a href="{% url 'violations:student_login' %}" class="portal-link" title="Student Login">
-              <i class="fas fa-user-graduate"></i>
-              <span>Student</span>
-            </a>
             <a href="{% url 'violations:login' %}" class="portal-link" title="Staff Login">
               <i class="fas fa-user-tie"></i>
               <span>Staff</span>
@@ -129,6 +141,10 @@
               <i class="fas fa-shield-alt"></i>
               <span>Guard</span>
             </a>
+            <a href="{% url 'violations:formator_login' %}" class="portal-link" title="Formator Login">
+              <i class="fas fa-user-check"></i>
+              <span>Formator</span>
+            </a>
           </div>
         </div>
       </div>
@@ -140,7 +156,7 @@
         <i class="fas fa-shield-alt"></i>
         Student Violation Management System
       </p>
-      <p class="copyright">&copy; {{ current_year }} Carlos Hilado Memorial State University</p>
+      <p class="copyright">&copy; {{ current_year|default:"2026" }} Carlos Hilado Memorial State University</p>
     </div>
   </main>
 
@@ -577,6 +593,41 @@
       font-size: 10px;
     }
 
+    /* Signup Section */
+    .signup-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    .signup-section p {
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    .signup-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a472a;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      background: #d1fae5;
+      transition: all 0.2s ease;
+    }
+
+    .signup-link:hover {
+      background: #a7f3d0;
+      transform: translateY(-1px);
+    }
+
     /* Card Footer */
     .card-footer {
       padding: 12px 20px;
@@ -789,8 +840,6 @@
       }
     }
 
-    /* ===== MOBILE APP / PWA ENHANCEMENTS ===== */
-    
     /* Safe Area Insets for Notched Devices */
     @supports (padding: env(safe-area-inset-top)) {
       .login-container {
@@ -808,24 +857,6 @@
       -webkit-user-select: none;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
-    }
-
-    /* Smooth Touch Feedback */
-    .btn-login:active,
-    .back-link:active {
-      transform: scale(0.98);
-      transition: transform 0.1s ease;
-    }
-
-    /* Standalone PWA Mode */
-    @media (display-mode: standalone) {
-      body {
-        padding-top: env(safe-area-inset-top);
-      }
-      
-      .login-container {
-        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-      }
     }
 
     /* Disable Pull-to-Refresh */
@@ -847,30 +878,6 @@
         display: none;
       }
     }
-
-    /* Landscape Mode Adjustments */
-    @media (max-height: 500px) and (orientation: landscape) {
-      .login-container {
-        padding: 20px;
-      }
-      
-      .login-card {
-        max-width: 500px;
-      }
-      
-      .card-role-section {
-        padding: 16px;
-      }
-      
-      .role-icon-bg {
-        width: 50px;
-        height: 50px;
-      }
-      
-      .card-body {
-        padding: 16px 20px;
-      }
-    }
   </style>
 
   <script src="{% static 'violations/js/script.js' %}"></script>
@@ -883,7 +890,7 @@
       
       function announceRole() {
         if (!('speechSynthesis' in window)) return;
-        const message = 'Student Formator role selected. Enter your formator code to access the dashboard.';
+        const message = 'Student role selected. Enter your 8-digit student ID to sign in.';
         try {
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(message);

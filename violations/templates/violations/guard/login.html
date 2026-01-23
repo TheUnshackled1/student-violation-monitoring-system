@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
   <link rel="apple-touch-icon" href="{% static 'violations/images/chmsu_logo.png' %}" />
-  <link rel="icon" type="image/png" href="{% static 'violations/images/chmsu_logo.png' %}" />
+  <link rel="icon" type="image/png" href="{% static 'violations/images/chmsu_favicon_round.png' %}" />
   <link rel="manifest" href="{% static 'violations/manifest.json' %}" />
 </head>
 <body class="role-guard">
@@ -111,10 +111,27 @@
 
       <!-- Card Footer -->
       <div class="card-footer">
-        <a href="{% url 'violations:login' %}" class="back-link">
-          <i class="fas fa-arrow-left"></i>
-          <span>Back to Main Login</span>
-        </a>
+        <div class="other-portals">
+          <span class="portal-label">Other Portals:</span>
+          <div class="portal-links">
+            <a href="{% url 'violations:student_login' %}" class="portal-link" title="Student Login">
+              <i class="fas fa-user-graduate"></i>
+              <span>Student</span>
+            </a>
+            <a href="{% url 'violations:login' %}" class="portal-link" title="Staff Login">
+              <i class="fas fa-user-tie"></i>
+              <span>Staff</span>
+            </a>
+            <a href="{% url 'violations:faculty_login' %}" class="portal-link" title="OSA Coordinator Login">
+              <i class="fas fa-chalkboard-user"></i>
+              <span>OSA Coordinator</span>
+            </a>
+            <a href="{% url 'violations:formator_login' %}" class="portal-link" title="Formator Login">
+              <i class="fas fa-user-check"></i>
+              <span>Formator</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -127,17 +144,6 @@
       <p class="copyright">&copy; {{ current_year|default:"2026" }} Carlos Hilado Memorial State University</p>
     </div>
   </main>
-
-  <script>
-    // Auto-capitalize Guard code input
-    document.getElementById('guard_code').addEventListener('input', function(e) {
-      let value = this.value;
-      if (value.length > 0) {
-        // Capitalize first letter
-        this.value = value.charAt(0).toUpperCase() + value.slice(1);
-      }
-    });
-  </script>
 
   <style>
     * {
@@ -225,16 +231,7 @@
       75% { transform: translate(-20px, -20px) rotate(-5deg); }
     }
 
-    .login-container {
-      position: relative;
-      z-index: 2;
-      min-height: 50vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 5px 5px 5px;
-    }
+    .login-container { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0 5px 5px; margin: 0; }
 
     /* Login Card */
     .login-card {
@@ -247,6 +244,7 @@
       max-width: 440px;
       overflow: hidden;
       animation: cardSlideUp 0.6s ease-out;
+      margin: 15px 0 0 0;
     }
 
     @keyframes cardSlideUp {
@@ -263,7 +261,7 @@
     /* Official Header Inside Card */
     .card-official-header {
       background: linear-gradient(135deg, #1a472a 0%, #0d2818 100%);
-      padding: 16px 20px;
+      padding: 10px 20px;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -318,7 +316,7 @@
     /* Role Section */
     .card-role-section {
       background: linear-gradient(180deg, #f8faf9 0%, #ffffff 100%);
-      padding: 14px 20px 12px;
+      padding: 8px 20px 6px;
       text-align: center;
       border-bottom: 1px solid #e5e7eb;
     }
@@ -326,12 +324,12 @@
     .role-icon-wrapper {
       position: relative;
       display: inline-block;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .role-icon-bg {
-      width: 52px;
-      height: 52px;
+      width: 45px;
+      height: 45px;
       background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
       border-radius: 14px;
       display: flex;
@@ -394,7 +392,7 @@
 
     /* Card Body */
     .card-body {
-      padding: 16px 20px;
+      padding: 10px 20px;
     }
 
     /* Error Message */
@@ -445,7 +443,7 @@
 
     /* Form Group */
     .form-group {
-      margin-bottom: 14px;
+      margin-bottom: 8px;
     }
 
     .form-group label {
@@ -491,11 +489,11 @@
 
     .input-icon {
       position: absolute;
-      right: 14px;
+      right: 16px;
       top: 50%;
       transform: translateY(-50%);
       color: #9ca3af;
-      font-size: 16px;
+      font-size: 18px;
       transition: color 0.3s ease;
     }
 
@@ -585,34 +583,51 @@
       padding: 12px 20px;
       background: #f9fafb;
       border-top: 1px solid #e5e7eb;
+    }
+
+    .other-portals {
       text-align: center;
     }
 
-    .back-link {
+    .portal-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      color: #6b7280;
+      font-weight: 500;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .portal-links {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .portal-link {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       font-family: 'Poppins', sans-serif;
-      font-size: 12px;
+      font-size: 11px;
       color: #6b7280;
       text-decoration: none;
       font-weight: 500;
-      padding: 8px 16px;
+      padding: 6px 12px;
       border-radius: 6px;
+      background: #e5e7eb;
       transition: all 0.2s ease;
     }
 
-    .back-link:hover {
+    .portal-link:hover {
       color: #1a472a;
-      background: #e5e7eb;
+      background: #d1fae5;
+      transform: translateY(-1px);
     }
 
-    .back-link i {
-      transition: transform 0.2s ease;
-    }
-
-    .back-link:hover i {
-      transform: translateX(-4px);
+    .portal-link i {
+      font-size: 10px;
     }
 
     /* Login Footer */
@@ -769,13 +784,12 @@
         font-size: 16px;
       }
 
-      .back-link {
-        min-height: 48px;
+      .portal-link {
+        min-height: 40px;
+        padding: 8px 14px;
       }
     }
 
-    /* ===== MOBILE APP / PWA ENHANCEMENTS ===== */
-    
     /* Safe Area Insets for Notched Devices */
     @supports (padding: env(safe-area-inset-top)) {
       .login-container {
@@ -788,29 +802,11 @@
 
     /* Prevent Text Selection on UI Elements */
     .btn-login,
-    .back-link,
+    .portal-link,
     .login-card {
       -webkit-user-select: none;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
-    }
-
-    /* Smooth Touch Feedback */
-    .btn-login:active,
-    .back-link:active {
-      transform: scale(0.98);
-      transition: transform 0.1s ease;
-    }
-
-    /* Standalone PWA Mode */
-    @media (display-mode: standalone) {
-      body {
-        padding-top: env(safe-area-inset-top);
-      }
-      
-      .login-container {
-        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-      }
     }
 
     /* Disable Pull-to-Refresh */
@@ -832,30 +828,50 @@
         display: none;
       }
     }
-
-    /* Landscape Mode Adjustments */
-    @media (max-height: 500px) and (orientation: landscape) {
-      .login-container {
-        padding: 20px;
-      }
-      
-      .login-card {
-        max-width: 500px;
-      }
-      
-      .card-role-section {
-        padding: 16px;
-      }
-      
-      .role-icon-bg {
-        width: 50px;
-        height: 50px;
-      }
-      
-      .card-body {
-        padding: 16px 20px;
-      }
-    }
   </style>
+
+  <script>
+    // Auto-capitalize Guard code input
+    document.getElementById('guard_code').addEventListener('input', function(e) {
+      // Keep the original value but capitalize for display
+    });
+  </script>
+
+  <script src="{% static 'violations/js/script.js' %}"></script>
+  <script>
+    // Text-to-Speech Role Announcement
+    (function() {
+      let ttsMuted = false;
+      try { ttsMuted = localStorage.getItem('svms_tts_muted') === 'true'; } catch(e) {}
+      if (ttsMuted) return;
+      
+      function announceRole() {
+        if (!('speechSynthesis' in window)) return;
+        const message = 'Security Guard role selected. Enter your guard code to access the dashboard.';
+        try {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(message);
+          utterance.rate = 0.95;
+          utterance.pitch = 0.85;
+          utterance.volume = 1;
+          const voices = window.speechSynthesis.getVoices();
+          const preferredVoice = voices.find(v =>
+            v.name.toLowerCase().includes('google uk english male') ||
+            v.name.toLowerCase().includes('david') ||
+            v.name.toLowerCase().includes('mark') ||
+            (v.lang.startsWith('en') && v.name.toLowerCase().includes('male'))
+          );
+          if (preferredVoice) utterance.voice = preferredVoice;
+          window.speechSynthesis.speak(utterance);
+        } catch(e) { console.error('TTS Error:', e); }
+      }
+      
+      if (window.speechSynthesis.getVoices().length > 0) {
+        setTimeout(announceRole, 300);
+      } else {
+        window.speechSynthesis.onvoiceschanged = () => setTimeout(announceRole, 300);
+      }
+    })();
+  </script>
 </body>
 </html>

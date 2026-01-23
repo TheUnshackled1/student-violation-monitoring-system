@@ -7,18 +7,17 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#7c3aed" />
+  <meta name="theme-color" content="#1a472a" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Formator Login - CHMSU SVMS</title>
+  <title>OSA Coordinator Login - CHMSU SVMS</title>
   <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
   <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
   <link rel="apple-touch-icon" href="{% static 'violations/images/chmsu_logo.png' %}" />
   <link rel="icon" type="image/png" href="{% static 'violations/images/chmsu_favicon_round.png' %}" />
-  <link rel="manifest" href="{% static 'violations/manifest.json' %}" />
 </head>
-<body class="role-formator">
+<body class="role-faculty">
   <div class="background-overlay"></div>
   <div class="background-image"></div>
   
@@ -48,59 +47,77 @@
       <div class="card-role-section">
         <div class="role-icon-wrapper">
           <div class="role-icon-bg">
-            <i class="fas fa-user-tie"></i>
+            <i class="fas fa-chalkboard-user"></i>
           </div>
           <div class="role-badge">
-            <i class="fas fa-shield-alt"></i>
+            <i class="fas fa-user-shield"></i>
           </div>
         </div>
-        <h2 class="role-title">Student Formator Portal</h2>
-        <p class="role-subtitle">Authorized Personnel Access Only</p>
+        <h2 class="role-title">OSA Coordinator Portal</h2>
+        <p class="role-subtitle">Administrative Access</p>
       </div>
 
       <!-- Login Form -->
       <div class="card-body">
-        <form method="POST" action="{% url 'violations:formator_login' %}" class="login-form">
+        <form method="POST" action="{% url 'violations:faculty_login_auth' %}" class="login-form">
           {% csrf_token %}
+          <input type="hidden" name="role" value="faculty" />
           
-          {% if error %}
+          {% if messages %}
           <div class="error-message">
             <div class="error-icon">
               <i class="fas fa-exclamation-triangle"></i>
             </div>
             <div class="error-content">
               <span class="error-title">Authentication Failed</span>
-              <span class="error-text">{{ error }}</span>
+              {% for message in messages %}
+              <span class="error-text">{{ message }}</span>
+              {% endfor %}
             </div>
           </div>
           {% endif %}
 
           <div class="form-group">
-            <label for="formator_code">
-              <i class="fas fa-key"></i> Formator Code
+            <label for="faculty_email">
+              <i class="fas fa-envelope"></i> Email Address
             </label>
             <div class="input-wrapper">
               <input 
-                type="text" 
-                id="formator_code" 
-                name="formator_code" 
-                placeholder="Enter your assigned code"
-                value="{{ formator_code|default:'' }}"
+                type="email" 
+                id="faculty_email" 
+                name="faculty_email" 
+                placeholder="you@chmsu.edu.ph"
+                autocomplete="email"
                 required 
                 autofocus
               />
               <span class="input-icon">
-                <i class="fas fa-id-badge"></i>
+                <i class="fas fa-at"></i>
               </span>
             </div>
-            <span class="input-hint">
-              <i class="fas fa-info-circle"></i>
-              Use your assigned Formator code (e.g., FormatorHead)
-            </span>
+          </div>
+
+          <div class="form-group">
+            <label for="faculty_password">
+              <i class="fas fa-lock"></i> Password
+            </label>
+            <div class="input-wrapper">
+              <input 
+                type="password" 
+                id="faculty_password" 
+                name="faculty_password" 
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                required
+              />
+              <span class="input-icon password-toggle" onclick="togglePassword()">
+                <i class="fas fa-eye" id="toggleIcon"></i>
+              </span>
+            </div>
           </div>
 
           <button type="submit" class="btn-login">
-            <span class="btn-text">Access Dashboard</span>
+            <span class="btn-text">Sign In</span>
             <span class="btn-icon">
               <i class="fas fa-arrow-right"></i>
             </span>
@@ -121,13 +138,13 @@
               <i class="fas fa-user-tie"></i>
               <span>Staff</span>
             </a>
-            <a href="{% url 'violations:faculty_login' %}" class="portal-link" title="OSA Coordinator Login">
-              <i class="fas fa-chalkboard-user"></i>
-              <span>OSA Coordinator</span>
-            </a>
             <a href="{% url 'violations:guard_login' %}" class="portal-link" title="Guard Login">
               <i class="fas fa-shield-alt"></i>
               <span>Guard</span>
+            </a>
+            <a href="{% url 'violations:formator_login' %}" class="portal-link" title="Formator Login">
+              <i class="fas fa-user-check"></i>
+              <span>Formator</span>
             </a>
           </div>
         </div>
@@ -140,7 +157,7 @@
         <i class="fas fa-shield-alt"></i>
         Student Violation Management System
       </p>
-      <p class="copyright">&copy; {{ current_year }} Carlos Hilado Memorial State University</p>
+      <p class="copyright">&copy; {{ current_year|default:"2026" }} Carlos Hilado Memorial State University</p>
     </div>
   </main>
 
@@ -496,21 +513,16 @@
       transition: color 0.3s ease;
     }
 
-    .form-group input:focus + .input-icon {
+    .password-toggle {
+      cursor: pointer;
+    }
+
+    .password-toggle:hover {
       color: #1a472a;
     }
 
-    .input-hint {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 10px;
-      color: #9ca3af;
-      margin-top: 5px;
-    }
-
-    .input-hint i {
-      font-size: 10px;
+    .form-group input:focus + .input-icon {
+      color: #1a472a;
     }
 
     /* Login Button */
@@ -789,8 +801,6 @@
       }
     }
 
-    /* ===== MOBILE APP / PWA ENHANCEMENTS ===== */
-    
     /* Safe Area Insets for Notched Devices */
     @supports (padding: env(safe-area-inset-top)) {
       .login-container {
@@ -808,24 +818,6 @@
       -webkit-user-select: none;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
-    }
-
-    /* Smooth Touch Feedback */
-    .btn-login:active,
-    .back-link:active {
-      transform: scale(0.98);
-      transition: transform 0.1s ease;
-    }
-
-    /* Standalone PWA Mode */
-    @media (display-mode: standalone) {
-      body {
-        padding-top: env(safe-area-inset-top);
-      }
-      
-      .login-container {
-        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-      }
     }
 
     /* Disable Pull-to-Refresh */
@@ -847,31 +839,24 @@
         display: none;
       }
     }
+  </style>
 
-    /* Landscape Mode Adjustments */
-    @media (max-height: 500px) and (orientation: landscape) {
-      .login-container {
-        padding: 20px;
-      }
+  <script>
+    function togglePassword() {
+      const passwordInput = document.getElementById('faculty_password');
+      const toggleIcon = document.getElementById('toggleIcon');
       
-      .login-card {
-        max-width: 500px;
-      }
-      
-      .card-role-section {
-        padding: 16px;
-      }
-      
-      .role-icon-bg {
-        width: 50px;
-        height: 50px;
-      }
-      
-      .card-body {
-        padding: 16px 20px;
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+      } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
       }
     }
-  </style>
+  </script>
 
   <script src="{% static 'violations/js/script.js' %}"></script>
   <script>
@@ -881,9 +866,12 @@
       try { ttsMuted = localStorage.getItem('svms_tts_muted') === 'true'; } catch(e) {}
       if (ttsMuted) return;
       
+      const sessionKey = 'osa_login_announced';
+      if (sessionStorage.getItem(sessionKey)) return;
+      
       function announceRole() {
         if (!('speechSynthesis' in window)) return;
-        const message = 'Student Formator role selected. Enter your formator code to access the dashboard.';
+        const message = 'OSA Coordinator role selected. Enter your email and password to sign in.';
         try {
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(message);
@@ -899,6 +887,7 @@
           );
           if (preferredVoice) utterance.voice = preferredVoice;
           window.speechSynthesis.speak(utterance);
+          sessionStorage.setItem(sessionKey, 'true');
         } catch(e) { console.error('TTS Error:', e); }
       }
       

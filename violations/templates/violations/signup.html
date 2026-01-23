@@ -2,820 +2,1341 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>CHMSU Student Violation Tracker - Sign Up</title>
-	<link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
-	<link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
-	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-	<link href="https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap" rel="stylesheet" />
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-
-	<!-- Official CHMSU Signup Page Styles -->
-	<style>
-		/* Official Header Banner */
-		.header-banner {
-			width: 100%;
-			background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
-			color: #ffffff;
-			padding: 12px 24px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			position: fixed;
-			top: 0;
-			left: 0;
-			z-index: 100;
-			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-			min-height: 64px;
-			gap: 16px;
-			border-bottom: 3px solid #fbbf24;
-		}
-
-		.header-logo {
-			height: 45px;
-			width: 45px;
-			border-radius: 50%;
-			object-fit: cover;
-			border: 2px solid rgba(255, 255, 255, 0.3);
-		}
-
-		.header-title {
-			font-family: 'Times New Roman', serif;
-			font-weight: 700;
-			font-size: 1.3rem;
-			letter-spacing: 1px;
-			text-transform: uppercase;
-		}
-
-		/* Background */
-		.background-overlay {
-			background: linear-gradient(135deg, rgba(26, 71, 42, 0.85) 0%, rgba(45, 90, 63, 0.75) 100%);
-		}
-
-		/* Main Container */
-		.login-container {
-			margin-top: 100px;
-			padding: 20px;
-			margin-bottom: 40px;
-		}
-
-		/* Auth Card - Official Design */
-		.auth-wrapper {
-			max-width: 1050px;
-			margin: 0 auto;
-		}
-
-		.auth-card {
-			display: flex;
-			background: #ffffff;
-			border-radius: 0;
-			overflow: hidden;
-			box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
-			border: 3px solid #1a472a;
-		}
-
-		/* Left Panel - Official Branding */
-		.auth-left {
-			flex: 0 0 280px;
-			background: linear-gradient(180deg, #1a472a 0%, #15392a 100%);
-			padding: 48px 28px;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: center;
-			text-align: center;
-			position: relative;
-			border-right: 4px solid #fbbf24;
-		}
-
-		.auth-left::before {
-			content: '';
-			position: absolute;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-			opacity: 0.5;
-			pointer-events: none;
-		}
-
-		.brand-logo-circle {
-			width: 120px;
-			height: 120px;
-			background: #ffffff;
-			border-radius: 50%;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			margin-bottom: 20px;
-			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-			border: 4px solid #fbbf24;
-			position: relative;
-			z-index: 1;
-		}
-
-		.brand-logo-circle img {
-			width: 85px;
-			height: 85px;
-			object-fit: contain;
-		}
-
-		.auth-welcome {
-			font-family: 'Times New Roman', serif;
-			font-size: 1.4rem;
-			font-weight: 700;
-			color: #ffffff;
-			margin-bottom: 12px;
-			position: relative;
-			z-index: 1;
-			text-transform: uppercase;
-			letter-spacing: 1px;
-		}
-
-		.auth-subtext {
-			font-family: 'Poppins', sans-serif;
-			font-size: 0.85rem;
-			color: rgba(255, 255, 255, 0.8);
-			margin-bottom: 24px;
-			position: relative;
-			z-index: 1;
-			line-height: 1.5;
-		}
-
-		.auth-cta {
-			position: relative;
-			z-index: 1;
-		}
-
-		.ghost-btn {
-			display: inline-block;
-			padding: 12px 28px;
-			border: 2px solid #fbbf24;
-			color: #fbbf24;
-			text-decoration: none;
-			font-family: 'Poppins', sans-serif;
-			font-weight: 600;
-			font-size: 0.85rem;
-			border-radius: 8px;
-			transition: all 0.3s ease;
-			text-transform: uppercase;
-			letter-spacing: 0.5px;
-		}
-
-		.ghost-btn:hover {
-			background: #fbbf24;
-			color: #1a472a;
-			transform: translateY(-2px);
-			box-shadow: 0 4px 16px rgba(251, 191, 36, 0.4);
-		}
-
-		/* Right Panel - Form */
-		.auth-right {
-			flex: 1;
-			padding: 36px 44px;
-			background: #ffffff;
-			max-height: 85vh;
-			overflow-y: auto;
-		}
-
-		.auth-right-top {
-			display: none;
-		}
-
-		.auth-title {
-			font-family: 'Times New Roman', serif;
-			font-size: 1.8rem;
-			font-weight: 700;
-			color: #1a472a;
-			margin-bottom: 8px;
-			text-transform: uppercase;
-			letter-spacing: 1px;
-			position: relative;
-			padding-bottom: 16px;
-		}
-
-		.auth-title::after {
-			content: '';
-			position: absolute;
-			bottom: 0;
-			left: 0;
-			width: 60px;
-			height: 4px;
-			background: linear-gradient(90deg, #1a472a, #fbbf24);
-			border-radius: 2px;
-		}
-
-		/* Role Selector - Official Design */
-		.role-selector {
-			display: flex;
-			gap: 8px;
-			margin: 24px 0;
-			padding: 6px;
-			background: #f3f4f6;
-			border-radius: 10px;
-			border: 2px solid #e5e7eb;
-		}
-
-		.role-btn {
-			flex: 1;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 6px;
-			padding: 14px 12px;
-			border: 2px solid transparent;
-			background: transparent;
-			border-radius: 8px;
-			cursor: pointer;
-			transition: all 0.3s ease;
-			font-family: 'Poppins', sans-serif;
-			font-size: 0.8rem;
-			font-weight: 500;
-			color: #6b7280;
-		}
-
-		.role-btn i {
-			font-size: 1.3rem;
-			transition: transform 0.2s ease;
-		}
-
-		.role-btn:hover {
-			background: #ffffff;
-			color: #1a472a;
-			border-color: #d1d5db;
-		}
-
-		.role-btn.active {
-			background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
-			color: #ffffff;
-			border-color: #1a472a;
-			box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
-		}
-
-		.role-btn.active i {
-			color: #fbbf24;
-		}
-
-		/* Collapsible Form Sections */
-		.form-section {
-			margin-bottom: 20px;
-		}
-
-		.form-section.collapsible {
-			border: 2px solid #e5e7eb;
-			border-radius: 10px;
-			overflow: hidden;
-			background: #ffffff;
-		}
-
-		.collapsible-header {
-			width: 100%;
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			padding: 14px 18px;
-			background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-			border: none;
-			cursor: pointer;
-			transition: all 0.2s ease;
-		}
-
-		.collapsible-header:hover {
-			background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-		}
-
-		.form-section.collapsible.open .collapsible-header {
-			background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
-			border-bottom: 2px solid #fbbf24;
-		}
-
-		.form-section.collapsible.open .collapsible-header .section-title {
-			color: #ffffff;
-		}
-
-		.form-section.collapsible.open .collapsible-header .chevron {
-			color: #fbbf24;
-			transform: rotate(180deg);
-		}
-
-		.section-title {
-			font-family: 'Poppins', sans-serif;
-			font-size: 0.9rem;
-			font-weight: 600;
-			color: #374151;
-			display: flex;
-			align-items: center;
-			gap: 8px;
-		}
-
-		.chevron {
-			color: #6b7280;
-			font-size: 0.8rem;
-			transition: transform 0.3s ease, color 0.2s ease;
-		}
-
-		.collapsible-content {
-			padding: 20px 18px;
-			background: #ffffff;
-			overflow: hidden;
-			height: 0;
-			transition: height 0.25s ease;
-		}
-
-		.form-section.collapsible.open .collapsible-content {
-			height: auto;
-		}
-
-		/* Form Grid */
-		.form-grid {
-			display: grid;
-			grid-template-columns: repeat(2, 1fr);
-			gap: 16px;
-		}
-
-		.form-group {
-			margin-bottom: 0;
-		}
-
-		.form-group:only-child,
-		.form-group[data-role="student"]:nth-last-child(1):nth-child(odd) {
-			grid-column: 1 / -1;
-		}
-
-		.form-group label {
-			font-family: 'Poppins', sans-serif;
-			font-size: 0.8rem;
-			font-weight: 600;
-			color: #374151;
-			display: block;
-			margin-bottom: 6px;
-		}
-
-		.input-with-icon {
-			position: relative;
-			display: flex;
-			align-items: center;
-		}
-
-		.input-with-icon i:first-child {
-			position: absolute;
-			left: 12px;
-			color: #1a472a;
-			font-size: 0.95rem;
-			z-index: 1;
-		}
-
-		.input-with-icon input,
-		.input-with-icon select {
-			width: 100%;
-			padding: 12px 12px 12px 40px;
-			border: 2px solid #e5e7eb;
-			border-radius: 8px;
-			font-family: 'Poppins', sans-serif;
-			font-size: 0.9rem;
-			color: #374151;
-			background: #f9fafb;
-			transition: all 0.3s ease;
-		}
-
-		.input-with-icon input:focus,
-		.input-with-icon select:focus {
-			outline: none;
-			border-color: #1a472a;
-			background: #ffffff;
-			box-shadow: 0 0 0 3px rgba(26, 71, 42, 0.1);
-		}
-
-		.input-with-icon input::placeholder {
-			color: #9ca3af;
-		}
-
-		.helper-text {
-			font-family: 'Poppins', sans-serif;
-			font-size: 0.75rem;
-			color: #6b7280;
-			margin-top: 4px;
-			display: block;
-		}
-
-		/* File Input */
-		.file-input-row input[type="file"] {
-			width: 100%;
-			padding: 10px;
-			border: 2px dashed #d1d5db;
-			border-radius: 8px;
-			background: #f9fafb;
-			font-family: 'Poppins', sans-serif;
-			font-size: 0.85rem;
-			color: #6b7280;
-			cursor: pointer;
-			transition: all 0.2s ease;
-		}
-
-		.file-input-row input[type="file"]:hover {
-			border-color: #1a472a;
-			background: #f0fdf4;
-		}
-
-		/* Password Toggle */
-		.password-toggle {
-			position: absolute;
-			right: 12px;
-			color: #6b7280;
-			cursor: pointer;
-			padding: 8px;
-			transition: color 0.2s ease;
-			z-index: 2;
-		}
-
-		.password-toggle:hover {
-			color: #1a472a;
-		}
-
-		/* Alert Messages */
-		.form-messages .alert {
-			background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
-			border: 1px solid #fca5a5 !important;
-			border-left: 4px solid #dc2626 !important;
-			border-radius: 8px !important;
-			padding: 12px 16px !important;
-			font-family: 'Poppins', sans-serif;
-			font-size: 0.85rem;
-		}
-
-		/* Terms Checkbox */
-		.terms-row {
-			display: flex;
-			align-items: center;
-			gap: 10px;
-			font-family: 'Poppins', sans-serif;
-			font-size: 0.85rem;
-			color: #374151;
-			margin: 20px 0;
-			cursor: pointer;
-		}
-
-		.terms-row input[type="checkbox"] {
-			width: 18px;
-			height: 18px;
-			accent-color: #1a472a;
-		}
-
-		/* Auth Actions */
-		.auth-actions {
-			margin-top: 24px;
-		}
-
-		.login-button {
-			width: 100%;
-			padding: 14px 24px;
-			background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
-			color: #ffffff;
-			border: none;
-			border-radius: 10px;
-			font-family: 'Poppins', sans-serif;
-			font-size: 0.95rem;
-			font-weight: 600;
-			cursor: pointer;
-			transition: all 0.3s ease;
-			text-transform: uppercase;
-			letter-spacing: 1px;
-		}
-
-		.login-button:hover {
-			background: linear-gradient(135deg, #15392a 0%, #1a472a 100%);
-			transform: translateY(-2px);
-			box-shadow: 0 8px 24px rgba(26, 71, 42, 0.35);
-		}
-
-		/* Form Links */
-		.form-links {
-			text-align: center;
-			font-family: 'Poppins', sans-serif;
-			font-size: 0.85rem;
-			color: #6b7280;
-		}
-
-		.form-links a {
-			color: #1a472a;
-			font-weight: 600;
-			text-decoration: none;
-			margin-left: 6px;
-			transition: color 0.2s ease;
-		}
-
-		.form-links a:hover {
-			color: #fbbf24;
-			text-decoration: underline;
-		}
-
-		/* Responsive Design */
-		@media (max-width: 900px) {
-			.auth-card {
-				flex-direction: column;
-			}
-
-			.auth-left {
-				flex: none;
-				padding: 28px 24px;
-				border-right: none;
-				border-bottom: 4px solid #fbbf24;
-			}
-
-			.brand-logo-circle {
-				width: 90px;
-				height: 90px;
-				margin-bottom: 14px;
-			}
-
-			.brand-logo-circle img {
-				width: 65px;
-				height: 65px;
-			}
-
-			.auth-welcome {
-				font-size: 1.2rem;
-			}
-
-			.auth-cta {
-				display: none;
-			}
-
-			.auth-right {
-				padding: 28px 24px;
-				max-height: none;
-			}
-
-			.form-grid {
-				grid-template-columns: 1fr;
-			}
-		}
-
-		@media (max-width: 480px) {
-			.login-container {
-				padding: 12px;
-				margin-top: 80px;
-			}
-
-			.header-banner {
-				padding: 10px 16px;
-				min-height: 56px;
-			}
-
-			.header-title {
-				font-size: 1rem;
-			}
-
-			.header-logo {
-				height: 36px;
-				width: 36px;
-			}
-
-			.auth-left {
-				padding: 24px 20px;
-			}
-
-			.auth-right {
-				padding: 24px 20px;
-			}
-
-			.auth-title {
-				font-size: 1.4rem;
-			}
-
-			.collapsible-header {
-				padding: 12px 14px;
-			}
-
-			.collapsible-content {
-				padding: 16px 14px;
-			}
-		}
-	</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#1a472a" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>Sign Up - CHMSU SVMS</title>
+  <link rel="stylesheet" href="{% static 'violations/css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'violations/css/main.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link rel="apple-touch-icon" href="{% static 'violations/images/chmsu_logo.png' %}" />
+  <link rel="icon" type="image/png" href="{% static 'violations/images/chmsu_favicon_round.png' %}" />
 </head>
-<body>
-	<div class="header-banner">
-		<img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU Logo" class="header-logo" />
-		<span class="header-title">Student Violation Tracker</span>
-	</div>
+<body class="role-student">
+  <div class="background-overlay"></div>
+  <div class="background-image"></div>
+  
+  <!-- Floating Decorative Elements -->
+  <div class="floating-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
 
-	<div class="background-overlay"></div>
-	<div class="background-image"></div>
+  <main class="login-container">
+    <!-- Signup Card -->
+    <div class="login-card signup-card">
+      <!-- Official Header Inside Card -->
+      <div class="card-official-header">
+        <div class="header-logo-wrapper">
+          <img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU Logo" />
+        </div>
+        <div class="header-details">
+          <span class="republic-text">Republic of the Philippines</span>
+          <h1 class="university-name">CARLOS HILADO MEMORIAL STATE UNIVERSITY</h1>
+          <span class="department-text">Office of Student Affairs</span>
+        </div>
+      </div>
 
-	<main class="login-container">
-		<div class="auth-wrapper">
-			<section class="auth-card" data-role-img-student="{% static 'violations/images/student.png' %}"
-								 data-role-img-staff="{% static 'violations/images/staff.png' %}">
-				<aside class="auth-left">
-					<div class="brand-logo-circle">
-						<img src="{% static 'violations/images/chmsu_logo.png' %}" alt="CHMSU Logo" id="roleImage" />
-					</div>
-					<h2 class="auth-welcome" id="welcomeText">Join Us</h2>
-					<p class="auth-subtext">Carlos Hilado Memorial State University<br/>Office of Student Affairs</p>
-					<div class="auth-cta">
-						<a class="ghost-btn" href="{% url 'violations:login' %}">Sign In</a>
-					</div>
-				</aside>
+      <!-- Role Section -->
+      <div class="card-role-section">
+        <div class="role-icon-wrapper">
+          <div class="role-icon-bg">
+            <i class="fas fa-user-plus"></i>
+          </div>
+          <div class="role-badge">
+            <i class="fas fa-id-card"></i>
+          </div>
+        </div>
+        <h2 class="role-title">Create Account</h2>
+        <p class="role-subtitle">Student Violation Management System</p>
+      </div>
 
-				<section class="auth-right">
-					<h1 class="auth-title">Create Account</h1>
+      <!-- Signup Form -->
+      <div class="card-body">
+        <!-- Role Selector -->
+        <div class="role-selector" role="tablist" aria-label="Select your role">
+          <button type="button" class="role-btn active" data-role="student" onclick="selectRole('student', true)" role="tab" aria-selected="true">
+            <i class="fa-solid fa-user-graduate" aria-hidden="true"></i>
+            <span>Student</span>
+          </button>
+          <button type="button" class="role-btn" data-role="staff" onclick="selectRole('staff', true)" role="tab" aria-selected="false">
+            <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
+            <span>Staff</span>
+          </button>
+        </div>
 
-					<!-- Role Selector -->
-					<div class="role-selector" role="tablist" aria-label="Select your role">
-						<button type="button" class="role-btn" data-role="student" onclick="selectRole('student')" role="tab" aria-selected="true">
-							<i class="fa-solid fa-user-graduate" aria-hidden="true"></i>
-							<span>Student</span>
-						</button>
-						<button type="button" class="role-btn" data-role="staff" onclick="selectRole('staff')" role="tab" aria-selected="false">
-							<i class="fa-solid fa-user-tie" aria-hidden="true"></i>
-							<span>Staff</span>
-						</button>
-					</div>
+        <form class="signup-form" novalidate id="signupForm" method="post" enctype="multipart/form-data" action="{% url 'violations:signup' %}">
+          {% csrf_token %}
+          <input type="hidden" name="role" id="role_field" value="student" />
+          
+          {% if messages %}
+          <div class="form-messages">
+            {% for message in messages %}
+            <div class="error-message">
+              <div class="error-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+              <div class="error-content">
+                <span class="error-title">Error</span>
+                <span class="error-text">{{ message }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
 
-					<form class="auth-form" style="max-width:520px;" novalidate id="signupForm" method="post" enctype="multipart/form-data" data-mode="backend" action="{% url 'violations:signup' %}">
-						{% csrf_token %}
-						<input type="hidden" name="role" id="role_field" value="student" />
-						{% if messages %}
-						<div class="form-messages" style="margin-bottom:12px;">
-							{% for message in messages %}
-								<div class="alert {{ message.tags }}" style="padding:10px; border-radius:6px; background:#ffe9e9; color:#b20000; margin-bottom:8px;">
-									{{ message }}
-								</div>
-							{% endfor %}
-						</div>
-						{% endif %}
-						<!-- Student Fields -->
-						<div class="form-section collapsible open" data-role="student" id="student-account">
-							<button class="collapsible-header" type="button" aria-expanded="true" aria-controls="student-account-content">
-								<span class="section-title">Account</span>
-								<i class="fa-solid fa-chevron-down chevron" aria-hidden="true"></i>
-							</button>
-							<div class="collapsible-content" id="student-account-content">
-							<div class="form-grid">
-								<div class="form-group" data-role="student">
-									<label for="student_id">Student ID Number</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-id-card"></i>
-										<input type="text" id="student_id" name="student_id" placeholder="e.g., 20251234" pattern="[0-9]{8}" maxlength="8" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required />
-									</div>
-									<small class="helper-text">Enter your 8-digit CHMSU student ID (numbers only).</small>
-								</div>
-								<div class="form-group" data-role="student">
-									<label for="student_name">Full Name</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-user"></i>
-										<input type="text" id="student_name" name="student_name" placeholder="Surname, Firstname Middlename" pattern="[A-Za-z\s,.-]+" oninput="this.value = this.value.replace(/[^A-Za-z\s,.-]/g, '')" required />
-									</div>
-									<small class="helper-text">Letters only (e.g., Dela Cruz, Juan Santos).</small>
-								</div>
-								<div class="form-group" data-role="student">
-									<label for="student_suffix">Suffix (Optional)</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-user-tag"></i>
-										<input type="text" id="student_suffix" name="student_suffix" placeholder="e.g., Jr., Sr., III" pattern="[A-Za-z.]+" oninput="this.value = this.value.replace(/[^A-Za-z.]/g, '')" />
-									</div>
-									<small class="helper-text">Letters only (Jr., Sr., III, etc.).</small>
-								</div>
-								<div class="form-group" data-role="student">
-									<label for="student_email">E-mail Address</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-envelope"></i>
-										<input type="email" id="student_email" name="student_email" placeholder="you@chmsu.edu.ph" required />
-									</div>
-								</div>
-							</div>
-							</div>
-						</div>
+          <!-- Student Fields -->
+          <div class="form-section collapsible open" data-role="student" id="student-account">
+            <button class="collapsible-header" type="button" aria-expanded="true" aria-controls="student-account-content">
+              <span class="section-title"><i class="fas fa-user-circle"></i> Account</span>
+              <i class="fa-solid fa-chevron-down chevron" aria-hidden="true"></i>
+            </button>
+            <div class="collapsible-content" id="student-account-content">
+              <div class="form-grid">
+                <div class="form-group" data-role="student">
+                  <label for="student_id">
+                    <i class="fas fa-id-card"></i> Student ID Number
+                  </label>
+                  <div class="input-wrapper">
+                    <input type="text" id="student_id" name="student_id" placeholder="e.g., 20251234" pattern="[0-9]{8}" maxlength="8" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required />
+                    <span class="input-icon"><i class="fas fa-hashtag"></i></span>
+                  </div>
+                  <span class="input-hint"><i class="fas fa-info-circle"></i> Enter your 8-digit CHMSU student ID</span>
+                </div>
+                <div class="form-group" data-role="student">
+                  <label for="student_name">
+                    <i class="fas fa-user"></i> Full Name
+                  </label>
+                  <div class="input-wrapper">
+                    <input type="text" id="student_name" name="student_name" placeholder="Surname, Firstname Middlename" pattern="[A-Za-z\s,.-]+" oninput="this.value = this.value.replace(/[^A-Za-z\s,.-]/g, '')" required />
+                    <span class="input-icon"><i class="fas fa-signature"></i></span>
+                  </div>
+                  <span class="input-hint"><i class="fas fa-info-circle"></i> Letters only (e.g., Dela Cruz, Juan Santos)</span>
+                </div>
+                <div class="form-group" data-role="student">
+                  <label for="student_suffix">
+                    <i class="fas fa-user-tag"></i> Suffix (Optional)
+                  </label>
+                  <div class="input-wrapper">
+                    <input type="text" id="student_suffix" name="student_suffix" placeholder="e.g., Jr., Sr., III" pattern="[A-Za-z.]+" oninput="this.value = this.value.replace(/[^A-Za-z.]/g, '')" />
+                    <span class="input-icon"><i class="fas fa-tag"></i></span>
+                  </div>
+                </div>
+                <div class="form-group" data-role="student">
+                  <label for="student_email">
+                    <i class="fas fa-envelope"></i> E-mail Address
+                  </label>
+                  <div class="input-wrapper">
+                    <input type="email" id="student_email" name="student_email" placeholder="you@chmsu.edu.ph" required />
+                    <span class="input-icon"><i class="fas fa-at"></i></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-						<div class="form-section collapsible" data-role="student" id="student-academic">
-							<button class="collapsible-header" type="button" aria-expanded="false" aria-controls="student-academic-content">
-								<span class="section-title">Academic Information</span>
-								<i class="fa-solid fa-chevron-down chevron" aria-hidden="true"></i>
-							</button>
-							<div class="collapsible-content" id="student-academic-content">
-							<div class="form-grid">
-								<div class="form-group" data-role="student">
-									<label for="student_year_level">Year Level</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-layer-group"></i>
-										<select id="student_year_level" name="student_year_level" required>
-											<option value="" disabled selected>Select Year Level</option>
-											<option value="1">1st Year</option>
-											<option value="2">2nd Year</option>
-											<option value="3">3rd Year</option>
-											<option value="4">4th Year</option>
-										</select>
-									</div>
-									<small class="helper-text">Automatically levels up after 10 months.</small>
-								</div>
-								<div class="form-group" data-role="student">
-									<label for="student_department">College / Department</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-building-columns"></i>
-										<select id="student_department" name="student_department" required>
-											<option value="" disabled selected>Select College</option>
-											<option value="CAS">CAS - College of Arts and Sciences</option>
-											<option value="CBMA">CBMA - College of Business Management and Accountancy</option>
-											<option value="CCS">CCS - College of Computer Studies</option>
-											<option value="COEd">COEd - College of Education</option>
-											<option value="CIT">CIT - College of Industrial Technology</option>
-											<option value="COE">COE - College of Engineering</option>
-										</select>
-									</div>
-								</div>
-								<div class="form-group" data-role="student">
-									<label for="student_enrollment_status">Enrollment Status</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-toggle-on"></i>
-										<select id="student_enrollment_status" name="student_enrollment_status">
-											<option value="Active">Active</option>
-											<option value="Suspended">Suspended</option>
-											<option value="Graduated">Graduated</option>
-										</select>
-									</div>
-								</div>
-							</div>
-							</div>
-						</div>
+          <div class="form-section collapsible" data-role="student" id="student-academic">
+            <button class="collapsible-header" type="button" aria-expanded="false" aria-controls="student-academic-content">
+              <span class="section-title"><i class="fas fa-graduation-cap"></i> Academic Information</span>
+              <i class="fa-solid fa-chevron-down chevron" aria-hidden="true"></i>
+            </button>
+            <div class="collapsible-content" id="student-academic-content">
+              <div class="form-grid">
+                <div class="form-group" data-role="student">
+                  <label for="program">
+                    <i class="fas fa-book-open"></i> Program / Course
+                  </label>
+                  <div class="input-wrapper">
+                    <input type="text" id="program" name="program" placeholder="e.g., BSIT, BSCS, BSEd" required />
+                    <span class="input-icon"><i class="fas fa-graduation-cap"></i></span>
+                  </div>
+                  <span class="input-hint"><i class="fas fa-info-circle"></i> Your enrolled degree program</span>
+                </div>
+                <div class="form-group" data-role="student">
+                  <label for="student_year_level">
+                    <i class="fas fa-layer-group"></i> Year Level
+                  </label>
+                  <div class="input-wrapper">
+                    <select id="student_year_level" name="student_year_level" required>
+                      <option value="" disabled selected>Select Year Level</option>
+                      <option value="1">1st Year</option>
+                      <option value="2">2nd Year</option>
+                      <option value="3">3rd Year</option>
+                      <option value="4">4th Year</option>
+                    </select>
+                    <span class="input-icon"><i class="fas fa-chevron-down"></i></span>
+                  </div>
+                  <span class="input-hint"><i class="fas fa-info-circle"></i> Automatically levels up after 10 months</span>
+                </div>
+                <div class="form-group" data-role="student">
+                  <label for="student_department">
+                    <i class="fas fa-building-columns"></i> College / Department
+                  </label>
+                  <div class="input-wrapper">
+                    <select id="student_department" name="student_department" required>
+                      <option value="" disabled selected>Select College</option>
+                      <option value="CAS">CAS - College of Arts and Sciences</option>
+                      <option value="CBMA">CBMA - College of Business Management and Accountancy</option>
+                      <option value="CCS">CCS - College of Computer Studies</option>
+                      <option value="COEd">COEd - College of Education</option>
+                      <option value="CIT">CIT - College of Industrial Technology</option>
+                      <option value="COE">COE - College of Engineering</option>
+                    </select>
+                    <span class="input-icon"><i class="fas fa-chevron-down"></i></span>
+                  </div>
+                </div>
+                <div class="form-group" data-role="student">
+                  <label for="student_enrollment_status">
+                    <i class="fas fa-toggle-on"></i> Enrollment Status
+                  </label>
+                  <div class="input-wrapper">
+                    <select id="student_enrollment_status" name="student_enrollment_status">
+                      <option value="Active">Active</option>
+                      <option value="Suspended">Suspended</option>
+                      <option value="Graduated">Graduated</option>
+                    </select>
+                    <span class="input-icon"><i class="fas fa-chevron-down"></i></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-						<div class="form-section collapsible" data-role="student" id="student-contact">
-							<button class="collapsible-header" type="button" aria-expanded="false" aria-controls="student-contact-content">
-								<span class="section-title">Guardian Information</span>
-								<i class="fa-solid fa-chevron-down chevron" aria-hidden="true"></i>
-							</button>
-							<div class="collapsible-content" id="student-contact-content">
-							<div class="form-grid">
-								<div class="form-group" data-role="student">
-									<label for="guardian_name">Guardian Name</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-user-shield"></i>
-										<input type="text" id="guardian_name" name="guardian_name" placeholder="Parent/Guardian full name" pattern="[A-Za-z\s,.-]+" oninput="this.value = this.value.replace(/[^A-Za-z\s,.-]/g, '')" required />
-									</div>
-									<small class="helper-text">Letters only.</small>
-								</div>
-								<div class="form-group" data-role="student">
-									<label for="guardian_contact">Guardian Contact Number</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-mobile-screen-button"></i>
-										<input type="text" id="guardian_contact" name="guardian_contact" placeholder="e.g., 09XXXXXXXXX" pattern="[0-9]{11}" maxlength="11" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required />
-									</div>
-									<small class="helper-text">11-digit mobile number (e.g., 09171234567).</small>
-								</div>
-							</div>
-							</div>
-						</div>
+          <div class="form-section collapsible" data-role="student" id="student-contact">
+            <button class="collapsible-header" type="button" aria-expanded="false" aria-controls="student-contact-content">
+              <span class="section-title"><i class="fas fa-user-shield"></i> Guardian Information</span>
+              <i class="fa-solid fa-chevron-down chevron" aria-hidden="true"></i>
+            </button>
+            <div class="collapsible-content" id="student-contact-content">
+              <div class="form-grid">
+                <div class="form-group" data-role="student">
+                  <label for="guardian_name">
+                    <i class="fas fa-user-shield"></i> Guardian Name
+                  </label>
+                  <div class="input-wrapper">
+                    <input type="text" id="guardian_name" name="guardian_name" placeholder="Parent/Guardian full name" pattern="[A-Za-z\s,.-]+" oninput="this.value = this.value.replace(/[^A-Za-z\s,.-]/g, '')" required />
+                    <span class="input-icon"><i class="fas fa-signature"></i></span>
+                  </div>
+                  <span class="input-hint"><i class="fas fa-info-circle"></i> Letters only</span>
+                </div>
+                <div class="form-group" data-role="student">
+                  <label for="guardian_contact">
+                    <i class="fas fa-mobile-screen-button"></i> Guardian Contact Number
+                  </label>
+                  <div class="input-wrapper">
+                    <input type="text" id="guardian_contact" name="guardian_contact" placeholder="e.g., 09XXXXXXXXX" pattern="[0-9]{11}" maxlength="11" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required />
+                    <span class="input-icon"><i class="fas fa-phone"></i></span>
+                  </div>
+                  <span class="input-hint"><i class="fas fa-info-circle"></i> 11-digit mobile number</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-						<!-- Staff Fields -->
-						<div class="form-section" data-role="staff">
-							<div class="form-grid">
-								<div class="form-group" data-role="staff">
-									<label for="staff_name">Full Name</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-user-tie"></i>
-										<input type="text" id="staff_name" name="staff_name" placeholder="Surname, Firstname Middlename" />
-									</div>
-								</div>
-								<div class="form-group" data-role="staff">
-									<label for="staff_email">E-mail Address</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-envelope"></i>
-										<input type="email" id="staff_email" name="staff_email" placeholder="you@chmsu.edu.ph" />
-									</div>
-								</div>
-								<div class="form-group password-group" data-role="staff">
-									<label for="staff_password">Password</label>
-									<div class="input-with-icon">
-										<i class="fa-solid fa-lock"></i>
-										<input type="password" id="staff_password" name="staff_password" placeholder="Create a strong password" />
-										<span class="password-toggle" onclick="togglePasswordVisibility('staff_password')">
-											<i class="fas fa-eye"></i>
-										</span>
-									</div>
-								</div>
-							</div>
-						</div>
+          <!-- Staff Fields -->
+          <div class="form-section staff-section" data-role="staff">
+            <div class="form-grid">
+              <div class="form-group" data-role="staff">
+                <label for="staff_name">
+                  <i class="fas fa-user-tie"></i> Full Name
+                </label>
+                <div class="input-wrapper">
+                  <input type="text" id="staff_name" name="staff_name" placeholder="Surname, Firstname Middlename" />
+                  <span class="input-icon"><i class="fas fa-signature"></i></span>
+                </div>
+              </div>
+              <div class="form-group" data-role="staff">
+                <label for="staff_email">
+                  <i class="fas fa-envelope"></i> E-mail Address
+                </label>
+                <div class="input-wrapper">
+                  <input type="email" id="staff_email" name="staff_email" placeholder="you@chmsu.edu.ph" />
+                  <span class="input-icon"><i class="fas fa-at"></i></span>
+                </div>
+              </div>
+              <div class="form-group password-group" data-role="staff">
+                <label for="staff_password">
+                  <i class="fas fa-lock"></i> Password
+                </label>
+                <div class="input-wrapper">
+                  <input type="password" id="staff_password" name="staff_password" placeholder="Create a strong password" />
+                  <span class="input-icon password-toggle" onclick="togglePasswordVisibility('staff_password')">
+                    <i class="fas fa-eye"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-						<label class="terms-row" id="termsCheckbox" style="display:none;">
-							<input type="checkbox" required />
-							<span>I accept the terms of the agreement</span>
-						</label>
+          <button type="submit" class="btn-login">
+            <span class="btn-text">Create Account</span>
+            <span class="btn-icon">
+              <i class="fas fa-arrow-right"></i>
+            </span>
+          </button>
 
-						<div class="auth-actions">
-							<button type="submit" class="login-button">Sign Up</button>
-						</div>
+          <div class="form-links">
+            <span>Already have an account?</span>
+            <a href="{% url 'violations:login' %}">Sign In</a>
+          </div>
+        </form>
+      </div>
 
-						<div class="form-links" style="margin-top:16px;">
-							<span>Already have an account?</span>
-							<a href="{% url 'violations:login' %}">Sign In</a>
-						</div>
-					</form>
-				</section>
-			</section>
-		</div>
-	</main>
+      <!-- Card Footer -->
+      <div class="card-footer">
+        <div class="other-portals">
+          <span class="portal-label">Other Portals:</span>
+          <div class="portal-links">
+            <a href="{% url 'violations:student_login' %}" class="portal-link" title="Student Login">
+              <i class="fas fa-user-graduate"></i>
+              <span>Student</span>
+            </a>
+            <a href="{% url 'violations:login' %}" class="portal-link" title="Staff Login">
+              <i class="fas fa-user-tie"></i>
+              <span>Staff</span>
+            </a>
+            <a href="{% url 'violations:faculty_login' %}" class="portal-link" title="OSA Coordinator Login">
+              <i class="fas fa-chalkboard-user"></i>
+              <span>OSA Coordinator</span>
+            </a>
+            <a href="{% url 'violations:guard_login' %}" class="portal-link" title="Guard Login">
+              <i class="fas fa-shield-alt"></i>
+              <span>Guard</span>
+            </a>
+            <a href="{% url 'violations:formator_login' %}" class="portal-link" title="Formator Login">
+              <i class="fas fa-user-check"></i>
+              <span>Formator</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
 
-	<script src="{% static 'violations/js/script.js' %}"></script>
+    <!-- Footer -->
+    <div class="login-footer">
+      <p>
+        <i class="fas fa-shield-alt"></i>
+        Student Violation Management System
+      </p>
+      <p class="copyright">&copy; 2026 Carlos Hilado Memorial State University</p>
+    </div>
+  </main>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: 'Poppins', sans-serif;
+      background: #0a1f13;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .background-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(26, 71, 42, 0.97) 0%, rgba(10, 31, 19, 0.98) 100%);
+      z-index: 1;
+    }
+
+    .background-image {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("{% static 'violations/images/chmsu_bg.jpg' %}") center/cover no-repeat;
+      z-index: 0;
+      filter: blur(3px);
+    }
+
+    /* Floating Decorative Shapes */
+    .floating-shapes {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%);
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .shape-1 {
+      width: 400px;
+      height: 400px;
+      top: -100px;
+      right: -100px;
+      animation-delay: 0s;
+    }
+
+    .shape-2 {
+      width: 300px;
+      height: 300px;
+      bottom: -50px;
+      left: -50px;
+      animation-delay: -5s;
+    }
+
+    .shape-3 {
+      width: 200px;
+      height: 200px;
+      top: 50%;
+      left: 10%;
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(20px, -20px) rotate(5deg); }
+      50% { transform: translate(0, -40px) rotate(0deg); }
+      75% { transform: translate(-20px, -20px) rotate(-5deg); }
+    }
+
+    .login-container { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0 5px 5px; margin: 0; }
+
+    /* Login Card */
+    .login-card {
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 
+        0 25px 80px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+      width: 100%;
+      max-width: 440px;
+      overflow: hidden;
+      animation: cardSlideUp 0.6s ease-out;
+      margin: 15px 0 0 0;
+    }
+
+    .login-card.signup-card {
+      max-width: 520px;
+    }
+
+    @keyframes cardSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Official Header Inside Card */
+    .card-official-header {
+      background: linear-gradient(135deg, #1a472a 0%, #0d2818 100%);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 3px solid #fbbf24;
+    }
+
+    .header-logo-wrapper {
+      flex-shrink: 0;
+    }
+
+    .header-logo-wrapper img {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+      border-radius: 50%;
+      background: white;
+      padding: 2px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .header-details {
+      flex: 1;
+    }
+
+    .republic-text {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 9px;
+      color: #fbbf24;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: block;
+    }
+
+    .university-name {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+      margin: 2px 0;
+      line-height: 1.2;
+    }
+
+    .department-text {
+      font-family: 'Poppins', sans-serif;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.85);
+      font-weight: 500;
+      display: block;
+    }
+
+    /* Role Section */
+    .card-role-section {
+      background: linear-gradient(180deg, #f8faf9 0%, #ffffff 100%);
+      padding: 8px 20px 6px;
+      text-align: center;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .role-icon-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+
+    .role-icon-bg {
+      width: 45px;
+      height: 45px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 
+        0 10px 30px rgba(26, 71, 42, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transform: rotate(-5deg);
+      transition: transform 0.3s ease;
+    }
+
+    .login-card:hover .role-icon-bg {
+      transform: rotate(0deg);
+    }
+
+    .role-icon-bg i {
+      font-size: 22px;
+      color: #ffffff;
+    }
+
+    .role-badge {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+      border: 3px solid #ffffff;
+    }
+
+    .role-badge i {
+      font-size: 10px;
+      color: #1a472a;
+    }
+
+    .role-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a472a;
+      margin: 0 0 2px 0;
+    }
+
+    .role-subtitle {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      color: #6b7280;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    /* Card Body */
+    .card-body {
+      padding: 10px 20px;
+    }
+
+    /* Role Selector */
+    .role-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      background: #f3f4f6;
+      padding: 4px;
+      border-radius: 10px;
+    }
+
+    .role-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #6b7280;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .role-btn:hover {
+      background: rgba(26, 71, 42, 0.1);
+      color: #1a472a;
+    }
+
+    .role-btn.active {
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+    }
+
+    .role-btn i {
+      font-size: 14px;
+    }
+
+    /* Error Message */
+    .form-messages {
+      margin-bottom: 12px;
+    }
+
+    .error-message {
+      background: linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%);
+      border: 1px solid #fecaca;
+      border-left: 4px solid #dc2626;
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .error-icon {
+      width: 32px;
+      height: 32px;
+      background: #fee2e2;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .error-icon i {
+      color: #dc2626;
+      font-size: 14px;
+    }
+
+    .error-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .error-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #991b1b;
+    }
+
+    .error-text {
+      font-size: 11px;
+      color: #dc2626;
+    }
+
+    /* Form Sections */
+    .form-section {
+      margin-bottom: 8px;
+    }
+
+    .form-section[data-role="staff"] {
+      display: none;
+    }
+
+    .form-section.staff-section {
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+    }
+
+    /* Collapsible Sections */
+    .collapsible {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .collapsible-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #f9fafb;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .collapsible-header:hover {
+      background: #f3f4f6;
+    }
+
+    .section-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: #1a472a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title i {
+      color: #2d6a3f;
+      font-size: 12px;
+    }
+
+    .chevron {
+      font-size: 10px;
+      color: #6b7280;
+      transition: transform 0.3s ease;
+    }
+
+    .collapsible.open .chevron {
+      transform: rotate(180deg);
+    }
+
+    .collapsible-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .collapsible.open .collapsible-content {
+      max-height: 500px;
+      padding: 12px 14px;
+    }
+
+    /* Form Grid */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    /* Form Group */
+    .form-group {
+      margin-bottom: 0;
+    }
+
+    .form-group label {
+      display: block;
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #1a472a;
+      margin-bottom: 5px;
+    }
+
+    .form-group label i {
+      margin-right: 6px;
+      color: #2d6a3f;
+      font-size: 10px;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px 36px 10px 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: #374151;
+      background: #f9fafb;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #1a472a;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(26, 71, 42, 0.1);
+    }
+
+    .form-group input::placeholder {
+      color: #9ca3af;
+    }
+
+    .input-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      font-size: 14px;
+      transition: color 0.3s ease;
+      pointer-events: none;
+    }
+
+    .input-icon.password-toggle {
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .form-group input:focus + .input-icon,
+    .form-group select:focus + .input-icon {
+      color: #1a472a;
+    }
+
+    .input-hint {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 9px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    .input-hint i {
+      font-size: 9px;
+    }
+
+    /* Login Button */
+    .btn-login {
+      width: 100%;
+      padding: 12px 18px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6a3f 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .btn-login::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .btn-login:hover::before {
+      left: 100%;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(26, 71, 42, 0.4);
+    }
+
+    .btn-login:active {
+      transform: translateY(0);
+    }
+
+    .btn-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+    }
+
+    .btn-login:hover .btn-icon {
+      transform: translateX(4px);
+    }
+
+    .btn-icon i {
+      font-size: 10px;
+    }
+
+    /* Form Links */
+    .form-links {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .form-links a {
+      color: #1a472a;
+      font-weight: 600;
+      text-decoration: none;
+      margin-left: 4px;
+    }
+
+    .form-links a:hover {
+      text-decoration: underline;
+    }
+
+    /* Card Footer */
+    .card-footer {
+      padding: 12px 20px;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .other-portals {
+      text-align: center;
+    }
+
+    .portal-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      color: #6b7280;
+      font-weight: 500;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .portal-links {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .portal-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      color: #6b7280;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: #e5e7eb;
+      transition: all 0.2s ease;
+    }
+
+    .portal-link:hover {
+      color: #1a472a;
+      background: #d1fae5;
+      transform: translateY(-1px);
+    }
+
+    .portal-link i {
+      font-size: 10px;
+    }
+
+    /* Login Footer */
+    .login-footer {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .login-footer p {
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .login-footer p i {
+      color: #fbbf24;
+    }
+
+    .login-footer .copyright {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 4px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .login-container {
+        padding: 20px 16px;
+      }
+
+      .login-card {
+        max-width: 100%;
+        border-radius: 16px;
+      }
+
+      .card-official-header {
+        padding: 20px;
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+      }
+
+      .header-logo-wrapper img {
+        width: 60px;
+        height: 60px;
+      }
+
+      .university-name {
+        font-size: 13px;
+      }
+
+      .card-role-section {
+        padding: 24px 20px 20px;
+      }
+
+      .role-icon-bg {
+        width: 70px;
+        height: 70px;
+      }
+
+      .role-icon-bg i {
+        font-size: 30px;
+      }
+
+      .role-title {
+        font-size: 20px;
+      }
+
+      .card-body {
+        padding: 24px 20px;
+      }
+
+      .form-group input {
+        padding: 14px 45px 14px 16px;
+        font-size: 16px;
+      }
+
+      .btn-login {
+        padding: 14px 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 16px 12px;
+      }
+
+      .card-official-header {
+        padding: 16px;
+      }
+
+      .header-logo-wrapper img {
+        width: 50px;
+        height: 50px;
+      }
+
+      .university-name {
+        font-size: 12px;
+      }
+
+      .department-text {
+        font-size: 10px;
+      }
+
+      .card-role-section {
+        padding: 20px 16px;
+      }
+
+      .role-icon-bg {
+        width: 60px;
+        height: 60px;
+        border-radius: 16px;
+      }
+
+      .role-icon-bg i {
+        font-size: 26px;
+      }
+
+      .role-badge {
+        width: 28px;
+        height: 28px;
+      }
+
+      .role-title {
+        font-size: 18px;
+      }
+
+      .role-subtitle {
+        font-size: 12px;
+      }
+
+      .card-body {
+        padding: 20px 16px;
+      }
+
+      .card-footer {
+        padding: 16px;
+      }
+
+      .floating-shapes {
+        display: none;
+      }
+    }
+
+    /* Touch-friendly improvements */
+    @media (hover: none) and (pointer: coarse) {
+      .form-group input,
+      .form-group select,
+      .btn-login {
+        min-height: 48px;
+        font-size: 16px;
+      }
+
+      .portal-link {
+        min-height: 40px;
+        padding: 8px 14px;
+      }
+    }
+
+    /* ===== MOBILE APP / PWA ENHANCEMENTS ===== */
+    
+    /* Safe Area Insets for Notched Devices */
+    @supports (padding: env(safe-area-inset-top)) {
+      .login-container {
+        padding-top: calc(40px + env(safe-area-inset-top));
+        padding-bottom: calc(40px + env(safe-area-inset-bottom));
+        padding-left: calc(20px + env(safe-area-inset-left));
+        padding-right: calc(20px + env(safe-area-inset-right));
+      }
+    }
+
+    /* Prevent Text Selection on UI Elements */
+    .btn-login,
+    .portal-link,
+    .login-card,
+    .role-btn {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Smooth Touch Feedback */
+    .btn-login:active,
+    .role-btn:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+
+    /* Standalone PWA Mode */
+    @media (display-mode: standalone) {
+      body {
+        padding-top: env(safe-area-inset-top);
+      }
+      
+      .login-container {
+        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      }
+    }
+
+    /* Disable Pull-to-Refresh */
+    body {
+      overscroll-behavior-y: contain;
+    }
+
+    /* Reduced Motion for Accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      
+      .floating-shapes {
+        display: none;
+      }
+    }
+
+    /* Landscape Mode Adjustments */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .login-container {
+        padding: 20px;
+      }
+      
+      .login-card {
+        max-width: 500px;
+      }
+      
+      .card-role-section {
+        padding: 16px;
+      }
+      
+      .role-icon-bg {
+        width: 50px;
+        height: 50px;
+      }
+      
+      .card-body {
+        padding: 16px 20px;
+      }
+    }
+  </style>
+
+  <script>
+    // Role Selection
+    function selectRole(role, announce = false) {
+      // Update hidden role field
+      const roleField = document.getElementById('role_field');
+      if (roleField) roleField.value = role;
+      
+      // Update buttons
+      document.querySelectorAll('.role-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      document.querySelector(`.role-btn[data-role="${role}"]`).classList.add('active');
+      document.querySelector(`.role-btn[data-role="${role}"]`).setAttribute('aria-selected', 'true');
+
+      // Show/hide form sections
+      document.querySelectorAll('.form-section[data-role]').forEach(section => {
+        if (section.dataset.role === role) {
+          section.style.display = 'block';
+        } else {
+          section.style.display = 'none';
+        }
+      });
+
+      // Update required fields
+      document.querySelectorAll('.form-group[data-role]').forEach(group => {
+        const inputs = group.querySelectorAll('input, select');
+        inputs.forEach(input => {
+          if (group.dataset.role === role) {
+            if (input.hasAttribute('data-required')) {
+              input.setAttribute('required', '');
+            }
+          } else {
+            input.removeAttribute('required');
+          }
+        });
+      });
+      
+      // TTS announcement when manually switching roles
+      if (announce) {
+        announceSignupRole(role);
+      }
+    }
+
+    // Collapsible Sections
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+      header.addEventListener('click', function() {
+        const section = this.closest('.collapsible');
+        const isOpen = section.classList.contains('open');
+        
+        // Toggle current section
+        section.classList.toggle('open');
+        this.setAttribute('aria-expanded', !isOpen);
+      });
+    });
+
+    // Password Toggle
+    function togglePasswordVisibility(inputId) {
+      const input = document.getElementById(inputId);
+      const icon = input.parentElement.querySelector('.password-toggle i');
+      
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      selectRole('student');
+      
+      // Initial TTS announcement
+      setTimeout(function() {
+        announceSignupRole('student');
+      }, 500);
+    });
+    
+    // TTS Announcement for Signup
+    function announceSignupRole(role) {
+      let ttsMuted = false;
+      try { ttsMuted = localStorage.getItem('svms_tts_muted') === 'true'; } catch(e) {}
+      if (ttsMuted) return;
+      if (!('speechSynthesis' in window)) return;
+      
+      const messages = {
+        student: 'Student role selected. Fill in your student information to create an account.',
+        staff: 'Staff role selected. Enter your credentials to create a staff account.'
+      };
+      const message = messages[role] || `${role} role selected.`;
+      
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.rate = 0.95;
+        utterance.pitch = 0.85;
+        utterance.volume = 1;
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v =>
+          v.name.toLowerCase().includes('google uk english male') ||
+          v.name.toLowerCase().includes('david') ||
+          v.name.toLowerCase().includes('mark') ||
+          (v.lang.startsWith('en') && v.name.toLowerCase().includes('male'))
+        );
+        if (preferredVoice) utterance.voice = preferredVoice;
+        window.speechSynthesis.speak(utterance);
+      } catch(e) { console.error('TTS Error:', e); }
+    }
+  </script>
+  
+  <script src="{% static 'violations/js/script.js' %}"></script>
 </body>
 </html>
