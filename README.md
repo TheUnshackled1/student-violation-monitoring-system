@@ -104,3 +104,7 @@ License
 
 ---
 Generated summary README for local development and quick reference.
+
+UI text: This is the UI for each page.
+
+
