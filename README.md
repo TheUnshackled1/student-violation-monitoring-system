@@ -129,6 +129,11 @@ UI text: This is the UI for each page.
 <img width="1183" height="908" alt="image" src="https://github.com/user-attachments/assets/ccbb397a-5925-4da1-a284-52cd5d8e3e66" />
 <hr>
 
+<h1>Student FormatorHead Login Page and Dashboard</h1>
 <img width="1919" height="1031" alt="Screenshot 2026-02-05 002744" src="https://github.com/user-attachments/assets/6c9624a6-0e32-450c-b76d-4720ce8653be" />
+<img width="1323" height="1023" alt="image" src="https://github.com/user-attachments/assets/0b08dbbb-ca7c-4367-b05b-f5f10b2545db" />
+<img width="1199" height="907" alt="image" src="https://github.com/user-attachments/assets/9841e4ec-83c2-48aa-bf2a-f8588020b2a2" />
+<img width="1223" height="1029" alt="image" src="https://github.com/user-attachments/assets/51a04485-d1ff-4de7-aebe-a76bae003413" />
+
 >>>>>>> 2ad885d62b0f19c2a64755bdcb1d13cf1ec2348a
 
