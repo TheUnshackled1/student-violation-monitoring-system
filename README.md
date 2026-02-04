@@ -104,3 +104,8 @@ License
 
 ---
 Generated summary README for local development and quick reference.
+<img width="1919" height="1022" alt="Screenshot 2026-02-05 002710" src="https://github.com/user-attachments/assets/65c148f5-0cce-4879-9253-e8a3cdbbd433" />
+
+<img width="1919" height="1024" alt="Screenshot 2026-02-05 002718" src="https://github.com/user-attachments/assets/10158819-548e-4c1d-b819-a402ee41535b" />
+
+
