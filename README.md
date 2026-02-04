@@ -119,12 +119,14 @@ UI text: This is the UI for each page.
 <img width="1188" height="968" alt="image" src="https://github.com/user-attachments/assets/d8c40b71-d2c0-4533-af6d-0ee123a51144" />
 <hr>
 
-<h1>OSA Coordinator Login Page and Dashboard</h1>
+<h1>OSA Coordinator/Admin Login Page and Dashboard</h1>
 <img width="1918" height="1029" alt="Screenshot 2026-02-05 002729" src="https://github.com/user-attachments/assets/57c33044-81f5-4319-bba3-31f29b73efaa" />
 <img width="1175" height="1009" alt="image" src="https://github.com/user-attachments/assets/4ced7b89-afa2-4b9a-b108-f0909b52b158" />
 <hr>
 
+<h1>Guard Login Page and Dashboard</h1>
 <img width="1919" height="1027" alt="Screenshot 2026-02-05 002738" src="https://github.com/user-attachments/assets/3767a4e5-6ea9-4a57-b62c-25ada531e79c" />
+<img width="1183" height="908" alt="image" src="https://github.com/user-attachments/assets/ccbb397a-5925-4da1-a284-52cd5d8e3e66" />
 <hr>
 
 <img width="1919" height="1031" alt="Screenshot 2026-02-05 002744" src="https://github.com/user-attachments/assets/6c9624a6-0e32-450c-b76d-4720ce8653be" />
