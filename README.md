@@ -104,7 +104,19 @@ License
 
 ---
 Generated summary README for local development and quick reference.
+<<<<<<< HEAD
 
 UI text: This is the UI for each page.
 
+=======
+<img width="1919" height="1022" alt="Screenshot 2026-02-05 002710" src="https://github.com/user-attachments/assets/65c148f5-0cce-4879-9253-e8a3cdbbd433" />
+
+<img width="1919" height="1024" alt="Screenshot 2026-02-05 002718" src="https://github.com/user-attachments/assets/10158819-548e-4c1d-b819-a402ee41535b" />
+
+<img width="1918" height="1029" alt="Screenshot 2026-02-05 002729" src="https://github.com/user-attachments/assets/57c33044-81f5-4319-bba3-31f29b73efaa" />
+
+<img width="1919" height="1027" alt="Screenshot 2026-02-05 002738" src="https://github.com/user-attachments/assets/3767a4e5-6ea9-4a57-b62c-25ada531e79c" />
+
+<img width="1919" height="1031" alt="Screenshot 2026-02-05 002744" src="https://github.com/user-attachments/assets/6c9624a6-0e32-450c-b76d-4720ce8653be" />
+>>>>>>> 2ad885d62b0f19c2a64755bdcb1d13cf1ec2348a
 
