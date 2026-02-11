@@ -109,14 +109,31 @@ Generated summary README for local development and quick reference.
 UI text: This is the UI for each page.
 
 =======
+<h1>Staff Login Page and Dashboard</h1>
 <img width="1919" height="1022" alt="Screenshot 2026-02-05 002710" src="https://github.com/user-attachments/assets/65c148f5-0cce-4879-9253-e8a3cdbbd433" />
+<img width="1193" height="1023" alt="image" src="https://github.com/user-attachments/assets/7cfaa82e-be8d-479c-a85b-f5cb9426997e" />
 
+<hr>
+<h1>Student Login Page and Dashboard</h1>
 <img width="1919" height="1024" alt="Screenshot 2026-02-05 002718" src="https://github.com/user-attachments/assets/10158819-548e-4c1d-b819-a402ee41535b" />
+<img width="1188" height="968" alt="image" src="https://github.com/user-attachments/assets/d8c40b71-d2c0-4533-af6d-0ee123a51144" />
+<hr>
 
+<h1>OSA Coordinator/Admin Login Page and Dashboard</h1>
 <img width="1918" height="1029" alt="Screenshot 2026-02-05 002729" src="https://github.com/user-attachments/assets/57c33044-81f5-4319-bba3-31f29b73efaa" />
+<img width="1175" height="1009" alt="image" src="https://github.com/user-attachments/assets/4ced7b89-afa2-4b9a-b108-f0909b52b158" />
+<hr>
 
+<h1>Guard Login Page and Dashboard</h1>
 <img width="1919" height="1027" alt="Screenshot 2026-02-05 002738" src="https://github.com/user-attachments/assets/3767a4e5-6ea9-4a57-b62c-25ada531e79c" />
+<img width="1183" height="908" alt="image" src="https://github.com/user-attachments/assets/ccbb397a-5925-4da1-a284-52cd5d8e3e66" />
+<hr>
 
+<h1>Student FormatorHead Login Page and Dashboard</h1>
 <img width="1919" height="1031" alt="Screenshot 2026-02-05 002744" src="https://github.com/user-attachments/assets/6c9624a6-0e32-450c-b76d-4720ce8653be" />
+<img width="1323" height="1023" alt="image" src="https://github.com/user-attachments/assets/0b08dbbb-ca7c-4367-b05b-f5f10b2545db" />
+<img width="1199" height="907" alt="image" src="https://github.com/user-attachments/assets/9841e4ec-83c2-48aa-bf2a-f8588020b2a2" />
+<img width="1223" height="1029" alt="image" src="https://github.com/user-attachments/assets/51a04485-d1ff-4de7-aebe-a76bae003413" />
+
 >>>>>>> 2ad885d62b0f19c2a64755bdcb1d13cf1ec2348a
 
