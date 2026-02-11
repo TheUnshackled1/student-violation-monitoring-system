@@ -1,6 +1,6 @@
-# CHMSU Student Violation Management System
+# CHMSU Student Violation Management System (Talisay Campus)
 
-A Django-based student violation tracking and OSA (Office of Student Affairs) workflow system. Provides staff/faculty/student flows for reporting incidents, managing violations, scheduling meetings, issuing apology letters, and generating alerts when a student reaches disciplinary thresholds.
+A Django-based student violation tracking and OSA (Office of Student Affairs) workflow system for CHMSU Talisay Campus. Provides staff/faculty/student flows for reporting incidents, managing violations, scheduling meetings, issuing apology letters, and generating alerts when a student reaches disciplinary thresholds.
 
 **Key features**
 - Role-based accounts: `Student`, `Staff`, `OSA Coordinator` (custom `User` model)
