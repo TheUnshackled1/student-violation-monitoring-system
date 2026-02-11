@@ -868,7 +868,7 @@
       
       function announceRole() {
         if (!('speechSynthesis' in window)) return;
-        const message = 'Staff role selected. Enter your email and password to sign in.';
+        const message = 'Talisay Campus Staff role selected. Enter your email and password to sign in.';
         try {
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(message);

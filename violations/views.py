@@ -44,11 +44,15 @@ def welcome_tts_view(request):
 		name = (request.GET.get("name") or getattr(request.user, "first_name", "") or getattr(request.user, "username", "") or "there").strip() or "there"
 		role_raw = (request.GET.get("role") or getattr(getattr(request.user, "role", None), "lower", lambda: str(getattr(request.user, "role", "")))() or "").lower()
 		if role_raw in {"osa_coordinator", "faculty_admin", "faculty"}:
-			role_label = "OSA Coordinator"
+			role_label = "Talisay Campus OSA Coordinator"
 		elif role_raw == "staff":
-			role_label = "Staff"
+			role_label = "Talisay Campus Staff"
+		elif role_raw == "guard":
+			role_label = "Talisay Campus Guard"
+		elif role_raw == "formator":
+			role_label = "Talisay Campus Formator"
 		else:
-			role_label = "Student"
+			role_label = "Talisay Campus Student"
 		text = f"Welcome back, {name}. You are now on your {role_label} dashboard."
 
 	# Try gTTS first (MP3)

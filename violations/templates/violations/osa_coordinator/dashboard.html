@@ -2857,5 +2857,42 @@
                 }
             }
         </style>
+
+        <script>
+          // Text-to-Speech Welcome Announcement - Talisay Campus OSA Coordinator Dashboard
+          (function() {
+            let ttsMuted = false;
+            try { ttsMuted = localStorage.getItem('svms_tts_muted') === 'true'; } catch(e) {}
+            if (ttsMuted) return;
+
+            function announceWelcome() {
+              if (!('speechSynthesis' in window)) return;
+              const name = '{{ request.user.first_name|default:request.user.username }}';
+              const message = `Welcome back, ${name}. You are now on your Talisay Campus OSA Coordinator dashboard.`;
+              try {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(message);
+                utterance.rate = 0.95;
+                utterance.pitch = 0.85;
+                utterance.volume = 1;
+                const voices = window.speechSynthesis.getVoices();
+                const preferredVoice = voices.find(v =>
+                  v.name.toLowerCase().includes('google uk english male') ||
+                  v.name.toLowerCase().includes('david') ||
+                  v.name.toLowerCase().includes('mark') ||
+                  (v.lang.startsWith('en') && v.name.toLowerCase().includes('male'))
+                );
+                if (preferredVoice) utterance.voice = preferredVoice;
+                window.speechSynthesis.speak(utterance);
+              } catch(e) { console.error('TTS Error:', e); }
+            }
+
+            if (window.speechSynthesis.getVoices().length > 0) {
+              setTimeout(announceWelcome, 300);
+            } else {
+              window.speechSynthesis.onvoiceschanged = () => setTimeout(announceWelcome, 300);
+            }
+          })();
+        </script>
 </body>
 </html>

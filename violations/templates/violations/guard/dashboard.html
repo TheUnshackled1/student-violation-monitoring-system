@@ -635,7 +635,7 @@
         if (!('speechSynthesis' in window)) return;
         
         const guardCode = '{{ guard_code|escapejs }}';
-        const message = `Welcome ${guardCode}. You are now logged into the Security Guard Portal. Campus security monitoring is active.`;
+        const message = `Welcome ${guardCode}. You are now logged into the Talisay Campus Security Guard Portal. Campus security monitoring is active.`;
         
         try {
           window.speechSynthesis.cancel();

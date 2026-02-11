@@ -883,7 +883,7 @@
       
       function announceRole() {
         if (!('speechSynthesis' in window)) return;
-        const message = 'Student Formator role selected. Enter your formator code to access the dashboard.';
+        const message = 'Talisay Campus Student Formator role selected. Enter your formator code to access the dashboard.';
         try {
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(message);

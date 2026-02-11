@@ -847,7 +847,7 @@
       
       function announceRole() {
         if (!('speechSynthesis' in window)) return;
-        const message = 'Security Guard role selected. Enter your guard code to access the dashboard.';
+        const message = 'Talisay Campus Security Guard role selected. Enter your guard code to access the dashboard.';
         try {
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(message);

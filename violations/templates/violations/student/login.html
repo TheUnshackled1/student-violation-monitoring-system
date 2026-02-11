@@ -890,7 +890,7 @@
       
       function announceRole() {
         if (!('speechSynthesis' in window)) return;
-        const message = 'Student role selected. Enter your 8-digit student ID to sign in.';
+        const message = 'Talisay Campus Student role selected. Enter your 8-digit student ID to sign in.';
         try {
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(message);

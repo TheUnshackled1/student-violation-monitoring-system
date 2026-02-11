@@ -451,7 +451,7 @@
         
         const formatorCode = '{{ formator_code|escapejs }}';
         const pendingCount = {{ pending_letters|length|default:0 }};
-        let message = `Welcome ${formatorCode}. You are now logged into the Student Formator Portal.`;
+        let message = `Welcome ${formatorCode}. You are now logged into the Talisay Campus Student Formator Portal.`;
         
         if (pendingCount > 0) {
           message += ` You have ${pendingCount} pending apology ${pendingCount === 1 ? 'letter' : 'letters'} awaiting your review.`;
