@@ -24,6 +24,7 @@
 - [API Endpoints](#-api-endpoints)
 - [UI Snapshots](#️-ui-snapshots)
 - [Configuration & Security](#️-configuration--security)
+- [Project Structure](#-project-structure)
 - [About](#-about)
 - [License](#-license)
 
@@ -94,44 +95,44 @@ The result: a transparent, consistent, and accountable discipline system across 
 
 ### Overall Flow
 
-```
-Reporters (Staff / Faculty / Guards)
-    │
-    ├─ File Incident Report
-    ├─ Attach Evidence / Documents
-    └─ Submit Violation Record
-             │
-             ▼
-     ┌───────────────────┐
-     │  Violations DB     │
-     │  (PostgreSQL/      │
-     │   SQLite)          │
-     └────────┬──────────┘
-              │
-              ▼
-     ┌───────────────────────┐
-     │  OSA Coordinator       │
-     │  Dashboard             │
-     │  (Review / Schedule /  │
-     │   Escalate / Resolve)  │
-     └────────┬──────────────┘
-              │
-              ▼
-     ┌─────────────────────┐
-     │  Student Dashboard  │  ◄── Apology Letters
-     │  (View / Submit)    │
-     └─────────────────────┘
+```mermaid
+flowchart TD
+    %% Define styles
+    classDef default fill:#092E20,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef db fill:#003B57,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef highlight fill:#4169E1,stroke:#fff,stroke-width:2px,color:#fff;
+
+    A[🗣️ Reporters<br/>Staff / Faculty / Guards] -->|1. File Incident Report<br/>2. Attach Evidence<br/>3. Submit Record| B[(🗄️ Violations DB<br/>PostgreSQL / SQLite)]
+    B -->|Syncs to| C{⚙️ OSA Coordinator Dashboard<br/>Review / Schedule / Escalate / Resolve}
+    C -->|Sends Status / Feedback| D[👤 Student Dashboard<br/>View / Submit Apology]
+    D -.->|Submits Apology Letters| C
+    
+    %% Apply custom colors
+    class B db;
+    class C highlight;
 ```
 
 ### Violation Lifecycle
 
-```
-  Filed ──► Pending Review ──► Under Investigation
-                                      │
-                        ┌─────────────┴────────────┐
-                        ▼                          ▼
-                   Resolved                  Escalated
-                                         (3 Major Alerts)
+```mermaid
+flowchart LR
+    %% Define styles
+    classDef pending fill:#eab308,stroke:#fff,stroke-width:2px,color:#000;
+    classDef active fill:#3b82f6,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef resolved fill:#22c55e,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef escalated fill:#ef4444,stroke:#fff,stroke-width:2px,color:#fff;
+
+    A([📝 Filed]) --> B([⏳ Pending Review])
+    B --> C([🔍 Under Investigation])
+    
+    C --> D([✅ Resolved])
+    C --> E([🚨 Escalated<br/>3 Major Alerts])
+
+    %% Apply custom colors
+    class A,B pending;
+    class C active;
+    class D resolved;
+    class E escalated;
 ```
 
 ---
@@ -349,22 +350,22 @@ python check_overdue.py
 
 ---
 
-## 📁 Repository Layout
+## 📁 Project Structure
 
 ```
-syande/
-├── student_violation_system/   # Django project: settings, urls, wsgi, asgi
-├── violations/                 # Main app: models, views, admin, templates, static
-│   ├── models.py               # User, Violation, ApologyLetter, Meeting models
-│   ├── views.py                # All role-specific view logic
-│   ├── admin.py                # Jazzmin-themed admin configuration
-│   ├── templates/              # HTML templates per role
-│   └── static/                 # App-level CSS, JS, images
-├── media/                      # Uploaded files (apology_letters, profiles, evidence)
-├── staticfiles/                # Collected static assets (after collectstatic)
-├── check_overdue.py            # Script: list violations overdue by 7+ days
-├── manage.py
-└── requirements.txt
+📦 syande/
+├── 📂 student_violation_system/   ⚙️ Django project: settings, urls, wsgi, asgi
+├── 📂 violations/                 ⚙️ Main app: models, views, admin, templates, static
+│   ├── 🐍 models.py               # User, Violation, ApologyLetter, Meeting models
+│   ├── 🐍 views.py                # All role-specific view logic
+│   ├── 🐍 admin.py                # Jazzmin-themed admin configuration
+│   ├── 🎨 templates/              # HTML templates per role
+│   └── 🎨 static/                 # App-level CSS, JS, images
+├── 📂 media/                      🗄️ Uploaded files (apology_letters, profiles, evidence)
+├── 📂 staticfiles/                🗄️ Collected static assets (after collectstatic)
+├── 🐍 check_overdue.py            # Script: list violations overdue by 7+ days
+├── 🐍 manage.py
+└── ⚙️ requirements.txt
 ```
 
 ---
